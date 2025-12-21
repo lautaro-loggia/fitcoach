@@ -21,7 +21,6 @@ const navigation = [
     { name: 'Mis asesorados', href: '/clients', icon: Users },
     { name: 'Recetas', href: '/recipes', icon: Utensils },
     { name: 'Entrenamientos', href: '/workouts', icon: Dumbbell },
-    { name: 'Dietas', href: '/diets', icon: Utensils }, // Using Utensils for now, maybe custom icon later
     { name: 'Pagos', href: '/payments', icon: CreditCard },
     { name: 'Ajustes', href: '/settings', icon: Settings },
 ]
