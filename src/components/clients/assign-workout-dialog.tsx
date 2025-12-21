@@ -6,17 +6,23 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus, X, GripVertical, Save, ArrowLeft } from 'lucide-react'
+import { Plus, X, GripVertical, Save, ArrowLeft, Pencil, CalendarIcon } from 'lucide-react'
 import { ExerciseSelector } from '@/components/workouts/exercise-selector'
 import { createClient } from '@/lib/supabase/client'
-import { assignWorkoutAction } from '@/app/(dashboard)/clients/[id]/training-actions'
-import { toast } from 'sonner' // Assuming sonner or generic alert
+import { assignWorkoutAction, updateAssignedWorkoutAction } from '@/app/(dashboard)/clients/[id]/training-actions'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Calendar } from '@/components/ui/calendar'
+import { format } from 'date-fns'
+import { es } from 'date-fns/locale'
+import { cn } from '@/lib/utils'
 
 interface AssignWorkoutDialogProps {
     clientId: string
+    existingWorkout?: any // If provided, it's edit mode
+    trigger?: React.ReactNode // Custom trigger button
 }
 
-export function AssignWorkoutDialog({ clientId }: AssignWorkoutDialogProps) {
+export function AssignWorkoutDialog({ clientId, existingWorkout, trigger }: AssignWorkoutDialogProps) {
     const [open, setOpen] = useState(false)
     const [step, setStep] = useState<'select' | 'edit'>('select')
     const [loading, setLoading] = useState(false)
@@ -28,14 +34,24 @@ export function AssignWorkoutDialog({ clientId }: AssignWorkoutDialogProps) {
     // Editor state
     const [workoutName, setWorkoutName] = useState('')
     const [exercises, setExercises] = useState<any[]>([])
+    const [validUntil, setValidUntil] = useState<Date | undefined>(undefined)
 
     useEffect(() => {
         if (open) {
-            fetchTemplates()
-            setStep('select')
-            resetEditor()
+            if (existingWorkout) {
+                // Edit mode: Load existing data
+                setWorkoutName(existingWorkout.name)
+                setExercises(Array.isArray(existingWorkout.structure) ? JSON.parse(JSON.stringify(existingWorkout.structure)) : [])
+                setValidUntil(existingWorkout.valid_until ? new Date(existingWorkout.valid_until) : undefined)
+                setStep('edit')
+            } else {
+                // New mode
+                fetchTemplates()
+                setStep('select')
+                resetEditor()
+            }
         }
-    }, [open])
+    }, [open, existingWorkout])
 
     const fetchTemplates = async () => {
         const supabase = createClient()
@@ -50,6 +66,7 @@ export function AssignWorkoutDialog({ clientId }: AssignWorkoutDialogProps) {
         setWorkoutName('')
         setExercises([])
         setSelectedTemplateId('')
+        setValidUntil(undefined)
     }
 
     const handleSelectTemplate = () => {
@@ -57,10 +74,9 @@ export function AssignWorkoutDialog({ clientId }: AssignWorkoutDialogProps) {
 
         const template = templates.find(t => t.id === selectedTemplateId)
         if (template) {
-            setWorkoutName(template.name) // Can be renamed
-            // Ensure structure is array
+            setWorkoutName(template.name)
             const exList = Array.isArray(template.structure) ? template.structure : []
-            setExercises(JSON.parse(JSON.stringify(exList))) // Deep copy
+            setExercises(JSON.parse(JSON.stringify(exList)))
             setStep('edit')
         }
     }
@@ -86,12 +102,26 @@ export function AssignWorkoutDialog({ clientId }: AssignWorkoutDialogProps) {
 
     const handleSave = async () => {
         setLoading(true)
-        const result = await assignWorkoutAction({
+
+        const payload = {
             clientId,
             name: workoutName,
             exercises,
-            originTemplateId: selectedTemplateId || undefined
-        })
+            validUntil: validUntil ? format(validUntil, 'yyyy-MM-dd') : undefined
+        }
+
+        let result
+        if (existingWorkout) {
+            result = await updateAssignedWorkoutAction({
+                id: existingWorkout.id,
+                ...payload
+            })
+        } else {
+            result = await assignWorkoutAction({
+                ...payload,
+                originTemplateId: selectedTemplateId || undefined
+            })
+        }
 
         if (result?.error) {
             alert(result.error)
@@ -104,19 +134,24 @@ export function AssignWorkoutDialog({ clientId }: AssignWorkoutDialogProps) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button className="bg-primary hover:bg-primary/90 text-white">
-                    <Plus className="mr-2 h-4 w-4" /> Asignar Rutina
-                </Button>
+                {trigger ? trigger : (
+                    <Button className="bg-primary hover:bg-primary/90 text-white">
+                        <Plus className="mr-2 h-4 w-4" /> Asignar Rutina
+                    </Button>
+                )}
             </DialogTrigger>
 
             <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>
-                        {step === 'select' ? 'Seleccionar Plantilla' : 'Editar Rutina para Cliente'}
+                        {existingWorkout
+                            ? 'Editar Rutina del Cliente'
+                            : (step === 'select' ? 'Seleccionar Plantilla' : 'Nueva Rutina para Cliente')
+                        }
                     </DialogTitle>
                 </DialogHeader>
 
-                {step === 'select' ? (
+                {step === 'select' && !existingWorkout ? (
                     <div className="space-y-6 py-4">
                         <div className="space-y-2">
                             <Label>Elegir una plantilla existente</Label>
@@ -155,18 +190,48 @@ export function AssignWorkoutDialog({ clientId }: AssignWorkoutDialogProps) {
                     </div>
                 ) : (
                     <div className="space-y-6">
-                        <div className="flex items-center gap-2 mb-4">
-                            <Button variant="ghost" size="sm" onClick={() => setStep('select')}>
-                                <ArrowLeft className="h-4 w-4 mr-1" /> Volver
-                            </Button>
-                        </div>
+                        {!existingWorkout && (
+                            <div className="flex items-center gap-2 mb-4">
+                                <Button variant="ghost" size="sm" onClick={() => setStep('select')}>
+                                    <ArrowLeft className="h-4 w-4 mr-1" /> Volver
+                                </Button>
+                            </div>
+                        )}
 
-                        <div className="space-y-2">
-                            <Label>Nombre de la Rutina (Personalizado)</Label>
-                            <Input
-                                value={workoutName}
-                                onChange={(e) => setWorkoutName(e.target.value)}
-                            />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Nombre de la Rutina</Label>
+                                <Input
+                                    value={workoutName}
+                                    onChange={(e) => setWorkoutName(e.target.value)}
+                                />
+                            </div>
+
+                            <div className="space-y-2 flex flex-col">
+                                <Label>Válida hasta (Opcional)</Label>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant={"outline"}
+                                            className={cn(
+                                                "w-full justify-start text-left font-normal",
+                                                !validUntil && "text-muted-foreground"
+                                            )}
+                                        >
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {validUntil ? format(validUntil, "PPP", { locale: es }) : <span>Seleccionar fecha</span>}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar
+                                            mode="single"
+                                            selected={validUntil}
+                                            onSelect={setValidUntil}
+                                            initialFocus
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
                         </div>
 
                         <div className="space-y-4 border rounded-md p-4 bg-muted/10">
@@ -207,7 +272,7 @@ export function AssignWorkoutDialog({ clientId }: AssignWorkoutDialogProps) {
                         <div className="flex justify-end gap-3">
                             <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
                             <Button onClick={handleSave} disabled={loading || !workoutName}>
-                                {loading ? 'Guardando...' : 'Asignar Rutina'}
+                                {loading ? 'Guardando...' : (existingWorkout ? 'Guardar Cambios' : 'Asignar Rutina')}
                             </Button>
                         </div>
                     </div>

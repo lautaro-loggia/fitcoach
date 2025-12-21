@@ -8,6 +8,7 @@ export async function assignWorkoutAction(data: {
     name: string
     exercises: any[]
     originTemplateId?: string
+    validUntil?: string
 }) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -22,12 +23,45 @@ export async function assignWorkoutAction(data: {
         name: data.name,
         structure: data.exercises,
         origin_template_id: data.originTemplateId || null,
-        is_customized: true // Always true if we are saving a copy
+        is_customized: true,
+        valid_until: data.validUntil || null
     })
 
     if (error) {
         console.error('Error assigning workout:', error)
         return { error: 'Error al asignar el entrenamiento' }
+    }
+
+    revalidatePath(`/clients/${data.clientId}`)
+    return { success: true }
+}
+
+export async function updateAssignedWorkoutAction(data: {
+    id: string
+    clientId: string
+    name: string
+    exercises: any[]
+    validUntil?: string
+}) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { error: 'No autorizado' }
+    }
+
+    const { error } = await supabase.from('assigned_workouts')
+        .update({
+            name: data.name,
+            structure: data.exercises,
+            valid_until: data.validUntil || null
+        })
+        .eq('id', data.id)
+        .eq('trainer_id', user.id) // Security check
+
+    if (error) {
+        console.error('Error updating workout:', error)
+        return { error: 'Error al actualizar el entrenamiento' }
     }
 
     revalidatePath(`/clients/${data.clientId}`)
