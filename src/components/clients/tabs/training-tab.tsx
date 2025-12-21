@@ -9,6 +9,7 @@ import { deleteAssignedWorkoutAction, updateAssignedWorkoutAction } from '@/app/
 import { WorkoutCard } from '../workout-card'
 import { CalendarView } from '../calendar-view'
 import { cn } from '@/lib/utils'
+import { WorkoutDetailDialog } from '../workout-detail-dialog'
 
 interface TrainingTabProps {
     clientId: string
@@ -18,6 +19,7 @@ export function TrainingTab({ clientId }: TrainingTabProps) {
     const [workouts, setWorkouts] = useState<any[]>([])
     const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list')
     const [editingWorkout, setEditingWorkout] = useState<any>(null)
+    const [viewingWorkout, setViewingWorkout] = useState<any>(null) // New state for viewing details
 
     useEffect(() => {
         fetchAssignedWorkouts()
@@ -93,7 +95,7 @@ export function TrainingTab({ clientId }: TrainingTabProps) {
                                 workout={workout}
                                 onEdit={() => setEditingWorkout(workout)}
                                 onDelete={() => handleDelete(workout.id)}
-                                onView={() => console.log('View detail')}
+                                onView={() => setViewingWorkout(workout)}
                             />
                         ))}
                         {workouts.length === 0 && (
@@ -122,6 +124,14 @@ export function TrainingTab({ clientId }: TrainingTabProps) {
                         }
                     }}
                     trigger={<span className="hidden" />}
+                />
+            )}
+
+            {viewingWorkout && (
+                <WorkoutDetailDialog
+                    isOpen={true}
+                    onClose={() => setViewingWorkout(null)}
+                    workout={viewingWorkout}
                 />
             )}
         </div>

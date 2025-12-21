@@ -22,7 +22,7 @@ export function ExerciseSelector({ onAdd }: ExerciseSelectorProps) {
     // Exercise details states
     const [sets, setSets] = useState('3')
     const [reps, setReps] = useState('10-12')
-    const [rpe, setRpe] = useState('')
+    const [weight, setWeight] = useState('')
     const [rest, setRest] = useState('90')
 
     useEffect(() => {
@@ -46,15 +46,15 @@ export function ExerciseSelector({ onAdd }: ExerciseSelectorProps) {
             onAdd(selectedExercise, {
                 sets,
                 reps,
-                rpe,
+                weight, // Replaced rpe with weight
                 rest,
             })
-            // Reset fields
+            // Reset fields but keep sets/reps as they are often reused
             setSelectedExercise(null)
-            setSets('3')
-            setReps('10-12')
-            setRpe('')
-            setRest('90')
+            // setSets('3') 
+            // setReps('10-12')
+            setWeight('')
+            // setRest('90')
         }
     }
 
@@ -126,12 +126,12 @@ export function ExerciseSelector({ onAdd }: ExerciseSelectorProps) {
                     />
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="rpe">RPE/RIR</Label>
+                    <Label htmlFor="weight">Peso (kg)</Label>
                     <Input
-                        id="rpe"
-                        value={rpe}
-                        onChange={(e) => setRpe(e.target.value)}
-                        placeholder="Optional"
+                        id="weight"
+                        value={weight}
+                        onChange={(e) => setWeight(e.target.value)}
+                        placeholder="0"
                     />
                 </div>
                 <div className="space-y-2">
