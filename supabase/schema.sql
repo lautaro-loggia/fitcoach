@@ -80,31 +80,27 @@ create policy "Trainers can manage own clients checkins"
 -- INGREDIENTS
 create table public.ingredients (
   id uuid default gen_random_uuid() primary key,
-  trainer_id uuid references public.profiles(id) on delete cascade, -- Nullable for global ingredients? User said "Base de datos... Fuente única. Editable." "No impacta recetas ya asignadas"
-  -- If global, trainer_id is null. IF editable, maybe each trainer has their own copy or extends global?
-  -- "Fuente única" implies shared? But "Editable" implies changes. 
-  -- Best approach: Global library (null trainer_id) + Private library (trainer_id).
-  -- User said "Editable". If I edit "Chicken", does it change for everyone? Probably not.
-  -- Let's make it private per trainer for simpler MVP, or Copy-on-write.
-  -- "No impacta recetas ya asignadas" -> handled by Recipe snapshot.
-  
+  trainer_id uuid references public.profiles(id) on delete cascade, -- NULL = global ingredients, available to all trainers
   name text not null,
-  calories numeric default 0,
-  proteins numeric default 0,
-  carbs numeric default 0,
-  fats numeric default 0,
-  
+  category text, -- Proteína animal, Pescados, Huevos, Carbohidratos, Verduras, Frutas, Grasas, Lácteos, etc.
+  state text, -- crudo, cocido, listo, seco, líquido, preparado, etc.
+  kcal_100g numeric,
+  protein_100g numeric,
+  carbs_100g numeric,
+  fat_100g numeric,
+  fiber_100g numeric,
+  notes text,
   created_at timestamptz default now()
 );
 alter table public.ingredients enable row level security;
 
 create policy "Trainers can view global and own ingredients" 
   on public.ingredients for select 
-  using (trainer_id is null or trainer_id = auth.uid());
+  using (trainer_id is null or auth.uid() = trainer_id);
 
 create policy "Trainers can insert own ingredients" 
   on public.ingredients for insert 
-  with check (trainer_id = auth.uid());
+  with check (auth.uid() = trainer_id);
 
 create policy "Trainers can update own ingredients" 
   on public.ingredients for update 
