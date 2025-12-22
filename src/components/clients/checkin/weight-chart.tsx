@@ -6,11 +6,12 @@ import { format } from "date-fns"
 import { es } from "date-fns/locale"
 
 interface WeightChartProps {
-    data: any[] // Expects { date: string, weight: number } sorted asc
+    data: any[] // Expects { date: string, value: number } sorted asc
     target?: number | null
+    unit: string
 }
 
-export function WeightChart({ data, target }: WeightChartProps) {
+export function WeightChart({ data, target, unit }: WeightChartProps) {
     const formattedData = data.map(d => ({
         ...d,
         displayDate: format(new Date(d.date), 'MMM', { locale: es }), // Simplified for XAxis
@@ -51,14 +52,14 @@ export function WeightChart({ data, target }: WeightChartProps) {
                                     }}
                                     itemStyle={{ color: '#fff', fontSize: '13px', fontWeight: 500 }}
                                     labelStyle={{ display: 'none' }}
-                                    formatter={(value: number) => [`${value} kg`, '']}
+                                    formatter={(value: number) => [`${value} ${unit}`, '']}
                                 />
                                 {target && (
                                     <ReferenceLine y={target} stroke="#ea580c" strokeDasharray="3 3" opacity={0.5} />
                                 )}
                                 <Line
                                     type="monotone"
-                                    dataKey="weight"
+                                    dataKey="value"
                                     stroke="#ea580c"
                                     strokeWidth={3}
                                     dot={{ fill: '#ea580c', r: 4, strokeWidth: 2, stroke: '#fff' }}

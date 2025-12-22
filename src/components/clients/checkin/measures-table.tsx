@@ -5,9 +5,11 @@ import { es } from "date-fns/locale"
 
 interface MeasuresTableProps {
     checkins: any[]
+    selectedMetric: string
+    onSelect: (key: string) => void
 }
 
-export function MeasuresTable({ checkins }: MeasuresTableProps) {
+export function MeasuresTable({ checkins, selectedMetric, onSelect }: MeasuresTableProps) {
     // Determine latest values for each metric
     // If we assume checkins are ordered by date ascending, we reverse to find latest non-null
     const sortedCheckins = [...checkins].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -33,16 +35,16 @@ export function MeasuresTable({ checkins }: MeasuresTableProps) {
     }
 
     const rows = [
-        { label: "Grasa corporal", ...getLatest("body_fat"), unit: "%" },
-        { label: "Peso", ...getLatest("weight"), unit: "kg", highlight: true },
-        { label: "Masa magra", ...getLatest("lean_mass"), unit: "kg" },
+        { key: 'body_fat', label: "Grasa corporal", ...getLatest("body_fat"), unit: "%" },
+        { key: 'weight', label: "Peso", ...getLatest("weight"), unit: "kg" },
+        { key: 'lean_mass', label: "Masa magra", ...getLatest("lean_mass"), unit: "kg" },
         // Measurements
-        { label: "Medida Pecho", ...getLatest("chest", true), unit: "cm" },
-        { label: "Medida Cintura", ...getLatest("waist", true), unit: "cm" },
-        { label: "Medida Cadera", ...getLatest("hips", true), unit: "cm" },
-        { label: "Medida Brazo", ...getLatest("arm", true), unit: "cm" },
-        { label: "Medida Muslo", ...getLatest("thigh", true), unit: "cm" },
-        { label: "Medida Gemelos", ...getLatest("calves", true), unit: "cm" },
+        { key: 'measurements.chest', label: "Medida Pecho", ...getLatest("chest", true), unit: "cm" },
+        { key: 'measurements.waist', label: "Medida Cintura", ...getLatest("waist", true), unit: "cm" },
+        { key: 'measurements.hips', label: "Medida Cadera", ...getLatest("hips", true), unit: "cm" },
+        { key: 'measurements.arm', label: "Medida Brazo", ...getLatest("arm", true), unit: "cm" },
+        { key: 'measurements.thigh', label: "Medida Muslo", ...getLatest("thigh", true), unit: "cm" },
+        { key: 'measurements.calves', label: "Medida Gemelos", ...getLatest("calves", true), unit: "cm" },
     ]
 
     return (
@@ -58,25 +60,29 @@ export function MeasuresTable({ checkins }: MeasuresTableProps) {
                         <div className="col-span-4 text-right">Última actualización</div>
                     </div>
                     <div>
-                        {rows.map((row, i) => (
-                            <div
-                                key={i}
-                                className={cn(
-                                    "grid grid-cols-12 px-6 py-4 items-center border-b border-border/40 last:border-0 hover:bg-muted/20 transition-colors",
-                                    row.highlight && "bg-orange-50/50 hover:bg-orange-50/80"
-                                )}
-                            >
-                                <div className={cn("col-span-5 font-medium", row.highlight && "text-orange-600")}>
-                                    {row.label}
+                        {rows.map((row, i) => {
+                            const isSelected = selectedMetric === row.key
+                            return (
+                                <div
+                                    key={i}
+                                    onClick={() => onSelect(row.key)}
+                                    className={cn(
+                                        "grid grid-cols-12 px-6 py-4 items-center border-b border-border/40 last:border-0 cursor-pointer transition-colors",
+                                        isSelected ? "bg-orange-50/80 hover:bg-orange-100/80" : "hover:bg-muted/20"
+                                    )}
+                                >
+                                    <div className={cn("col-span-5 font-medium", isSelected && "text-orange-700")}>
+                                        {row.label}
+                                    </div>
+                                    <div className={cn("col-span-3 text-right font-semibold pr-4", isSelected && "text-orange-700")}>
+                                        {row.value !== "—" ? `${row.value}${row.unit} ` : "—"}
+                                    </div>
+                                    <div className={cn("col-span-4 text-right text-muted-foreground", isSelected && "text-orange-700/80")}>
+                                        {formatDate(row.date)}
+                                    </div>
                                 </div>
-                                <div className={cn("col-span-3 text-right font-semibold pr-4", row.highlight && "text-orange-600")}>
-                                    {row.value !== "—" ? `${row.value}${row.unit}` : "—"}
-                                </div>
-                                <div className={cn("col-span-4 text-right text-muted-foreground", row.highlight && "text-orange-600/80")}>
-                                    {formatDate(row.date)}
-                                </div>
-                            </div>
-                        ))}
+                            )
+                        })}
                     </div>
                 </div>
             </CardContent>

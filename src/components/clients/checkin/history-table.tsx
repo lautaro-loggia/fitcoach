@@ -1,14 +1,15 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { format } from "date-fns"
-import { es } from "date-fns/locale"
 
 interface HistoryTableProps {
-    checkins: any[]
+    data: any[] // Expects { date: string, value: number }
+    unit: string
+    checkins?: any[] // Kept for retro compatibility or full details if needed, but unused for now based on requirement
 }
 
-export function HistoryTable({ checkins }: HistoryTableProps) {
+export function HistoryTable({ data, unit }: HistoryTableProps) {
     // Sort descending for history
-    const sorted = [...checkins].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    const sorted = [...data].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
     return (
         <Card className="border-muted/60 shadow-sm">
@@ -33,7 +34,7 @@ export function HistoryTable({ checkins }: HistoryTableProps) {
                                         {format(new Date(c.date), 'dd/MM/yyyy')}
                                     </span>
                                     <span className="font-semibold text-sm text-foreground/80">
-                                        {c.weight ? `${c.weight}kg` : '—'}
+                                        {c.value !== null ? `${c.value}${unit}` : '—'}
                                     </span>
                                 </div>
                             ))
