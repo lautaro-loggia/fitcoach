@@ -27,38 +27,48 @@ export function ProfileTab({ client }: ProfileTabProps) {
     }, [client.id])
 
     const fetchData = async () => {
-        const supabase = createClient()
+        try {
+            const supabase = createClient()
 
-        // Fetch checkins for charts and history
-        const { data: checkinsData } = await supabase
-            .from('checkins')
-            .select('*')
-            .eq('client_id', client.id)
-            .order('date', { ascending: true })
+            // Fetch checkins for charts and history
+            const { data: checkinsData, error } = await supabase
+                .from('checkins')
+                .select('*')
+                .eq('client_id', client.id)
+                .order('date', { ascending: true })
 
-        if (checkinsData) {
-            setCheckins(checkinsData)
+            if (error) {
+                console.error("Error fetching checkins:", error)
+                return
+            }
 
-            // Extract photos
-            // Assuming checkin.photos is string[]
-            const allPhotos: any[] = []
-            checkinsData.forEach(c => {
-                if (c.photos && Array.isArray(c.photos)) {
-                    c.photos.forEach((url: string) => {
-                        allPhotos.push({
-                            id: c.id, // Use checkin ID as base, ideally photos should have unique IDs if in separate table, but here url is unique enough or index
-                            url,
-                            date: c.date,
-                            weight: c.weight,
-                            bodyFat: c.body_fat
+            if (checkinsData) {
+                setCheckins(checkinsData)
+
+                // Extract photos
+                // Assuming checkin.photos is string[]
+                const allPhotos: any[] = []
+                checkinsData.forEach(c => {
+                    if (c.photos && Array.isArray(c.photos)) {
+                        c.photos.forEach((url: string) => {
+                            allPhotos.push({
+                                id: c.id, // Use checkin ID as base, ideally photos should have unique IDs if in separate table, but here url is unique enough or index
+                                url,
+                                date: c.date,
+                                weight: c.weight,
+                                bodyFat: c.body_fat
+                            })
                         })
-                    })
-                }
-            })
-            // Sort photos descending
-            setPhotos(allPhotos.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()))
+                    }
+                })
+                // Sort photos descending
+                setPhotos(allPhotos.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()))
+            }
+        } catch (err) {
+            console.error("UNEXPECTED ERROR in ProfileTab fetchData:", err)
+        } finally {
+            setLoading(false)
         }
-        setLoading(false)
     }
 
     // -- Process Data for Charts --

@@ -14,14 +14,22 @@ export function DietTab({ client }: { client: any }) {
     }, [client.id])
 
     const fetchDiets = async () => {
-        const supabase = createClient()
-        const { data } = await supabase
-            .from('assigned_diets')
-            .select('*')
-            .eq('client_id', client.id)
-            .order('created_at', { ascending: true })
+        try {
+            const supabase = createClient()
+            const { data, error } = await supabase
+                .from('assigned_diets')
+                .select('*')
+                .eq('client_id', client.id)
+                .order('created_at', { ascending: true })
 
-        if (data) setDiets(data)
+            if (error) {
+                console.error("Error fetching diets:", error)
+            } else if (data) {
+                setDiets(data)
+            }
+        } catch (err) {
+            console.error("UNEXPECTED ERROR in DietTab fetchDiets:", err)
+        }
     }
 
     const handleDelete = async (id: string) => {
