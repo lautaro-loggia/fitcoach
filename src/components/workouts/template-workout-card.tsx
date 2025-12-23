@@ -4,6 +4,7 @@ import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter }
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { Dumbbell, MoreVertical, Edit, Trash2, UserPlus } from "lucide-react"
+import { format } from "date-fns"
 
 interface TemplateWorkoutCardProps {
     workout: any
@@ -85,7 +86,7 @@ export function TemplateWorkoutCard({ workout, onClick, onEdit, onDelete, onAssi
 
             <CardFooter className="pt-0 border-t bg-muted/20 p-4 mt-auto">
                 <div className="text-xs text-muted-foreground w-full flex justify-between items-center px-2">
-                    <span>Creado el {new Date(workout.created_at).toLocaleDateString()}</span>
+                    <span>Creado el {format(new Date(workout.created_at), 'dd/MM/yyyy')}</span>
                 </div>
             </CardFooter>
         </Card>
