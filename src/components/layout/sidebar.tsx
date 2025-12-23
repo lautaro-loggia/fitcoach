@@ -54,7 +54,7 @@ export function Sidebar() {
             )}>
                 {!collapsed && (
                     <div className="flex items-center justify-start px-2 w-full">
-                        <Image src="/orbit_logo.png" alt="Orbit" width={120} height={40} className="h-8 w-auto object-contain" priority />
+                        <Image src="/orbit_logo_v2.png" alt="Orbit" width={120} height={40} className="h-8 w-auto object-contain" priority />
                     </div>
                 )}
                 {collapsed && (
