@@ -52,7 +52,7 @@ export function WeightChart({ data, target, unit }: WeightChartProps) {
                                     }}
                                     itemStyle={{ color: '#fff', fontSize: '13px', fontWeight: 500 }}
                                     labelStyle={{ display: 'none' }}
-                                    formatter={(value: number) => [`${value} ${unit}`, '']}
+                                    formatter={(value) => [`${value} ${unit}`, '']}
                                 />
                                 {target && (
                                     <ReferenceLine y={target} stroke="#ea580c" strokeDasharray="3 3" opacity={0.5} />
