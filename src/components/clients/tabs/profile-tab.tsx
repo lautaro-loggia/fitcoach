@@ -17,6 +17,23 @@ interface ProfileTabProps {
     client: any
 }
 
+const goalTranslations: { [key: string]: string } = {
+    gain_muscle: "Ganar Músculo",
+    lose_weight: "Perder Peso",
+    maintenance: "Mantenimiento",
+    improve_endurance: "Mejorar Resistencia",
+    increase_strength: "Aumentar Fuerza"
+}
+
+const activityTranslations: { [key: string]: string } = {
+    sedentary: "Sedentario",
+    light: "Ligero",
+    moderate: "Moderado",
+    active: "Activo",
+    very_active: "Muy Activo"
+}
+
+
 export function ProfileTab({ client }: ProfileTabProps) {
     const [checkins, setCheckins] = useState<any[]>([])
     const [photos, setPhotos] = useState<any[]>([])
@@ -127,7 +144,7 @@ export function ProfileTab({ client }: ProfileTabProps) {
                     </CardHeader>
                     <CardContent>
                         <p className="text-sm text-muted-foreground capitalize">
-                            {client.goal_specific?.replace('_', ' ') || "Mantener"}
+                            {client.goal_specific ? (goalTranslations[client.goal_specific] || client.goal_specific.replace(/_/g, ' ')) : "Mantener"}
                         </p>
                     </CardContent>
                 </Card>
@@ -137,7 +154,7 @@ export function ProfileTab({ client }: ProfileTabProps) {
                     </CardHeader>
                     <CardContent>
                         <p className="text-sm text-muted-foreground capitalize">
-                            {client.activity_level?.replace('_', ' ') || "Moderado"}
+                            {client.activity_level ? (activityTranslations[client.activity_level] || client.activity_level.replace(/_/g, ' ')) : "Moderado"}
                         </p>
                     </CardContent>
                 </Card>
