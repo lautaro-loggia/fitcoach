@@ -75,7 +75,7 @@ export function DietCard({ diet, onEdit, onDelete }: DietCardProps) {
                     {ingredients.slice(0, 3).map((ing: any, i: number) => (
                         <div key={i} className="text-xs flex justify-between">
                             <span>{ing.name}</span>
-                            <span className="text-muted-foreground">{ing.grams}g</span>
+                            <span className="text-muted-foreground">{ing.grams || ing.quantity_grams}g</span>
                         </div>
                     ))}
                     {ingredients.length > 3 && (

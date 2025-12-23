@@ -57,7 +57,12 @@ export function AssignDietDialog({ clientId }: AssignDietDialogProps) {
             if (!recipe) return
 
             submitData.name = customName || recipe.name
-            submitData.ingredients = recipe.ingredients || []
+            // Fallback to ingredients_data if ingredients is empty (handling schema variations)
+            const sourceIngredients = (recipe.ingredients && recipe.ingredients.length > 0)
+                ? recipe.ingredients
+                : (recipe.ingredients_data || [])
+
+            submitData.ingredients = sourceIngredients
             submitData.recipeId = recipe.id
         }
 

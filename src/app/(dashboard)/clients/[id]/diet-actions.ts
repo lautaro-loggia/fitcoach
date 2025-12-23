@@ -39,7 +39,9 @@ export async function assignDietAction(data: {
     const calculateMacros = (ingredients: any[]) => {
         let cals = 0, p = 0, c = 0, f = 0
         ingredients.forEach(i => {
-            const ratio = (i.grams || 100) / 100
+            // Normalize grams: check grams or quantity_grams
+            const g = i.grams || i.quantity_grams || 100
+            const ratio = g / 100
             cals += (i.kcal_100g || 0) * ratio
             p += (i.protein_100g || 0) * ratio
             c += (i.carbs_100g || 0) * ratio
@@ -91,7 +93,9 @@ export async function updateAssignedDietAction(data: {
     const calculateMacros = (ingredients: any[]) => {
         let cals = 0, p = 0, c = 0, f = 0
         ingredients.forEach(i => {
-            const ratio = (i.grams || 100) / 100
+            // Normalize grams: check grams or quantity_grams
+            const g = i.grams || i.quantity_grams || 100
+            const ratio = g / 100
             cals += (i.kcal_100g || 0) * ratio
             p += (i.protein_100g || 0) * ratio
             c += (i.carbs_100g || 0) * ratio
