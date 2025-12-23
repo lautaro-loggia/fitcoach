@@ -25,7 +25,7 @@ const navigation = [
     { name: 'Inicio', href: '/', icon: LayoutDashboard },
     { name: 'Mis asesorados', href: '/clients', icon: Users },
     { name: 'Recetas', href: '/recipes', icon: Utensils },
-    { name: 'Entrenamientos', href: '/workouts', icon: Dumbbell },
+    { name: 'Planes de entrenamiento', href: '/workouts', icon: Dumbbell },
     { name: 'Pagos', href: '/payments', icon: CreditCard },
     { name: 'Ajustes', href: '/settings', icon: Settings },
 ]
@@ -49,30 +49,33 @@ export function Sidebar() {
             )}
         >
             <div className={cn(
-                "flex h-16 items-center border-b border-sidebar-border px-4",
-                collapsed ? "justify-center" : "justify-between"
+                "flex h-16 items-center px-4",
+                collapsed ? "justify-center" : "justify-start"
             )}>
                 {!collapsed && (
-                    <div className="flex items-center justify-start px-2">
+                    <div className="flex items-center justify-start px-2 w-full">
                         <Image src="/orbit_logo.png" alt="Orbit" width={120} height={40} className="h-8 w-auto object-contain" priority />
                     </div>
                 )}
                 {collapsed && (
                     <div className="h-8 w-8 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold">O</div>
                 )}
+            </div>
 
-                {/* This toggle could be moved to top right of sidebar or outside */}
+            {/* Separator - only visible when not collapsed or always? Styling shows line. */}
+            <div className="px-4 mb-2">
+                <div className="border-b border-sidebar-border" />
             </div>
 
             {/* Toggle Button Container - floating or fixed position inside */}
             <div className="flex justify-end px-2 py-2">
-                <Button variant="ghost" size="icon" onClick={toggleSidebar} className="h-6 w-6">
+                <Button variant="ghost" size="icon" onClick={toggleSidebar} className="h-6 w-6 text-muted-foreground hover:text-primary">
                     {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
                 </Button>
             </div>
 
 
-            <div className="flex-1 flex flex-col gap-1 p-2 overflow-y-auto">
+            <div className="flex-1 flex flex-col gap-1 px-3 overflow-y-auto">
                 {navigation.map((item) => {
                     const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))
                     return (
@@ -80,15 +83,15 @@ export function Sidebar() {
                             key={item.name}
                             href={item.href}
                             className={cn(
-                                "flex items-center rounded-md py-2 text-sm font-medium transition-colors",
+                                "flex items-center rounded-lg py-2.5 text-sm font-medium transition-colors",
                                 collapsed ? "justify-center px-2" : "px-3 gap-3",
                                 isActive
-                                    ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                                    ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
+                                    : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                             )}
                             title={collapsed ? item.name : undefined}
                         >
-                            <item.icon className={cn("h-4 w-4", !collapsed && "mr-1")} />
+                            <item.icon className={cn("h-5 w-5", !collapsed && "mr-1")} />
                             {!collapsed && <span>{item.name}</span>}
                         </Link>
                     )
