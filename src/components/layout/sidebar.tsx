@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
-import { useTransition, useState } from 'react'
 import { cn } from '@/lib/utils'
 import {
     Users,
@@ -15,7 +14,6 @@ import {
     LogOut,
     PanelLeftClose,
     PanelLeftOpen,
-    Loader2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
@@ -34,20 +32,11 @@ export function Sidebar() {
     const pathname = usePathname()
     const router = useRouter()
     const { collapsed, toggleSidebar } = useSidebar()
-    const [isPending, startTransition] = useTransition()
-    const [pendingHref, setPendingHref] = useState<string | null>(null)
 
     const handleSignOut = async () => {
         const supabase = createClient()
         await supabase.auth.signOut()
         router.push('/login')
-    }
-
-    const handleNavigation = (href: string) => {
-        setPendingHref(href)
-        startTransition(() => {
-            router.push(href)
-        })
     }
 
     return (
@@ -71,45 +60,38 @@ export function Sidebar() {
                 )}
             </div>
 
-            {/* Separator - only visible when not collapsed or always? Styling shows line. */}
+            {/* Separator */}
             <div className="px-4 mb-2">
                 <div className="border-b border-sidebar-border" />
             </div>
 
-            {/* Toggle Button Container - floating or fixed position inside */}
+            {/* Toggle Button Container */}
             <div className="flex justify-end px-2 py-2">
                 <Button variant="ghost" size="icon" onClick={toggleSidebar} className="h-6 w-6 text-muted-foreground hover:text-primary">
                     {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
                 </Button>
             </div>
 
-
             <div className="flex-1 flex flex-col gap-1 px-3 overflow-y-auto">
                 {navigation.map((item) => {
                     const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))
-                    const isLoading = isPending && pendingHref === item.href
                     return (
-                        <button
+                        <Link
                             key={item.name}
-                            onClick={() => handleNavigation(item.href)}
+                            href={item.href}
+                            prefetch={true}
                             className={cn(
                                 "flex items-center rounded-lg py-2.5 text-sm font-medium transition-colors w-full text-left",
                                 collapsed ? "justify-center px-2" : "px-3 gap-3",
                                 isActive
                                     ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
-                                    : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                                isLoading && "opacity-70"
+                                    : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                             )}
                             title={collapsed ? item.name : undefined}
-                            disabled={isLoading}
                         >
-                            {isLoading ? (
-                                <Loader2 className={cn("h-5 w-5 animate-spin", !collapsed && "mr-1")} />
-                            ) : (
-                                <item.icon className={cn("h-5 w-5", !collapsed && "mr-1")} />
-                            )}
+                            <item.icon className={cn("h-5 w-5", !collapsed && "mr-1")} />
                             {!collapsed && <span>{item.name}</span>}
-                        </button>
+                        </Link>
                     )
                 })}
             </div>
