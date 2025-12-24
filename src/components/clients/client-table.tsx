@@ -1,7 +1,8 @@
 'use client'
 
-import Link from 'next/link'
-import { MoreHorizontal, FileText, Trash } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { useTransition, useState } from 'react'
+import { MoreHorizontal, FileText, Trash, UserCog, Loader2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -39,20 +40,15 @@ interface ClientTableProps {
 }
 
 export function ClientTable({ clients }: ClientTableProps) {
+    const router = useRouter()
+    const [isPending, startTransition] = useTransition()
+    const [navigatingId, setNavigatingId] = useState<string | null>(null)
 
     // Helper to calculate next check-in
-    // Spec: "Check-in se calcula automáticamente."
-    // Usually based on frequency (default weekly) + last check-in date.
-    // If no check-in, maybe "Start date"? Or "Pending"?
-    // For MVP: Last check-in + 7 days.
     const getNextCheckin = (client: Client) => {
-        // Stub logic. Real logic needs frequency setting.
-        // If no check-ins, show "Pendiente".
         if (!client.checkins || client.checkins.length === 0) {
             return "Pendiente (Inicio)"
         }
-        // Accessing the last one (assuming ordered or we find max)
-        // Supabase query should order them.
         const lastCheckin = new Date(client.checkins[0].date)
         const nextCheckin = new Date(lastCheckin)
         nextCheckin.setDate(nextCheckin.getDate() + 7)
@@ -60,11 +56,31 @@ export function ClientTable({ clients }: ClientTableProps) {
         return format(nextCheckin, 'dd/MM/yyyy', { locale: es })
     }
 
+    const handleRowClick = (id: string) => {
+        setNavigatingId(id)
+        startTransition(() => {
+            router.push(`/clients/${id}`)
+        })
+    }
+
+    const handleEditProfile = (e: React.MouseEvent, id: string) => {
+        e.stopPropagation()
+        setNavigatingId(id)
+        startTransition(() => {
+            router.push(`/clients/${id}?tab=settings`)
+        })
+    }
+
     return (
-        <div className="rounded-md border">
+        <div className="rounded-md border relative">
+            {isPending && !navigatingId && (
+                <div className="absolute inset-0 bg-background/50 backdrop-blur-[1px] z-10 flex items-center justify-center rounded-md">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+            )}
             <Table>
                 <TableHeader>
-                    <TableRow>
+                    <TableRow className="hover:bg-transparent cursor-default">
                         <TableHead className="w-[80px]">Avatar</TableHead>
                         <TableHead>Nombre</TableHead>
                         <TableHead>Estado</TableHead>
@@ -75,14 +91,18 @@ export function ClientTable({ clients }: ClientTableProps) {
                 </TableHeader>
                 <TableBody>
                     {clients.length === 0 ? (
-                        <TableRow>
+                        <TableRow className="hover:bg-transparent cursor-default">
                             <TableCell colSpan={6} className="h-24 text-center">
                                 No hay asesorados cargados.
                             </TableCell>
                         </TableRow>
                     ) : (
                         clients.map((client) => (
-                            <TableRow key={client.id}>
+                            <TableRow
+                                key={client.id}
+                                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                                onClick={() => handleRowClick(client.id)}
+                            >
                                 <TableCell>
                                     <Avatar>
                                         <AvatarImage src={`https://avatar.vercel.sh/${client.id}.png`} alt={client.full_name} />
@@ -90,9 +110,12 @@ export function ClientTable({ clients }: ClientTableProps) {
                                     </Avatar>
                                 </TableCell>
                                 <TableCell className="font-medium">
-                                    <Link href={`/clients/${client.id}`} className="hover:underline">
+                                    <div className="flex items-center gap-2">
                                         {client.full_name}
-                                    </Link>
+                                        {isPending && navigatingId === client.id && (
+                                            <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                                        )}
+                                    </div>
                                 </TableCell>
                                 <TableCell>
                                     <Badge variant={client.status === 'active' ? 'default' : 'secondary'}>
@@ -100,7 +123,6 @@ export function ClientTable({ clients }: ClientTableProps) {
                                     </Badge>
                                 </TableCell>
                                 <TableCell>
-                                    {/* Translate goal codes to readable text */}
                                     {client.goal_specific === 'lose_fat' && 'Bajar grasa'}
                                     {client.goal_specific === 'gain_muscle' && 'Ganar musculo'}
                                     {client.goal_specific === 'recomp' && 'Recomposición'}
@@ -109,21 +131,28 @@ export function ClientTable({ clients }: ClientTableProps) {
                                 <TableCell>{getNextCheckin(client)}</TableCell>
                                 <TableCell className="text-right">
                                     <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
+                                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                                             <Button variant="ghost" className="h-8 w-8 p-0">
                                                 <span className="sr-only">Abrir menú</span>
                                                 <MoreHorizontal className="h-4 w-4" />
                                             </Button>
                                         </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
+                                        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                                             <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                                            <DropdownMenuItem asChild>
-                                                <Link href={`/clients/${client.id}`}>
-                                                    <FileText className="mr-2 h-4 w-4" /> Ver perfil
-                                                </Link>
+                                            <DropdownMenuItem onClick={() => handleRowClick(client.id)}>
+                                                <FileText className="mr-2 h-4 w-4" /> Ver perfil
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={(e) => handleEditProfile(e, client.id)}>
+                                                <UserCog className="mr-2 h-4 w-4" /> Editar perfil
                                             </DropdownMenuItem>
                                             <DropdownMenuSeparator />
-                                            <DropdownMenuItem className="text-destructive">
+                                            <DropdownMenuItem
+                                                className="text-destructive"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    // Add delete logic call here if exists
+                                                }}
+                                            >
                                                 <Trash className="mr-2 h-4 w-4" /> Eliminar
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>

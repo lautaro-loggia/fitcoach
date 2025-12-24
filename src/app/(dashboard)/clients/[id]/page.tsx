@@ -11,9 +11,16 @@ import { TrainingTab } from '@/components/clients/tabs/training-tab'
 import { DietTab } from '@/components/clients/tabs/diet-tab'
 import { SettingsTab } from '@/components/clients/tabs/settings-tab'
 
-export default async function ClientNotesPage({ params }: { params: { id: string } }) {
-    // Await params as required in newer Next.js versions (though in 13/14 it might be synchronous, awaiting is safer for 15+)
+export default async function ClientNotesPage({
+    params,
+    searchParams
+}: {
+    params: Promise<{ id: string }>,
+    searchParams: Promise<{ tab?: string }>
+}) {
     const { id } = await params
+    const { tab } = await searchParams
+    const defaultTab = tab || "profile"
 
     const supabase = await createClient()
 
@@ -31,7 +38,7 @@ export default async function ClientNotesPage({ params }: { params: { id: string
         <div className="space-y-6">
             <ProfileHeader client={client} />
 
-            <Tabs defaultValue="profile" className="w-full space-y-4">
+            <Tabs defaultValue={defaultTab} className="w-full space-y-4">
                 <TabsList>
                     <TabsTrigger value="profile">Perfil</TabsTrigger>
                     <TabsTrigger value="checkin">Check-in</TabsTrigger>
