@@ -487,8 +487,13 @@ export function RecipeEditor({ recipe }: RecipeEditorProps) {
                                             fat: (ing.fat_100g || 0) * factor,
                                         } : null
 
-                                        // Ingredient from CSV (no ingredient_code, readonly)
-                                        if (!ing.ingredient_code) {
+                                        // Check if ingredient_code exists in database
+                                        const existsInDB = ing.ingredient_code && availableIngredients.some(
+                                            avail => avail.id === ing.ingredient_code
+                                        )
+
+                                        // Ingredient from CSV (no valid ingredient_code, readonly)
+                                        if (!existsInDB) {
                                             return (
                                                 <div
                                                     key={index}
