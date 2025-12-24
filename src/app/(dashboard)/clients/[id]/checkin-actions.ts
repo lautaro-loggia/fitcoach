@@ -12,6 +12,7 @@ export async function createCheckinAction(data: {
     measurements: any // { chest, waist, hips, etc }
     observations?: string
     photos?: string[]
+    nextCheckinDate?: string
 }) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -20,7 +21,8 @@ export async function createCheckinAction(data: {
         return { error: 'No autorizado' }
     }
 
-    const { error } = await supabase.from('checkins').insert({
+    // Insert checkin record
+    const { error: checkinError } = await supabase.from('checkins').insert({
         trainer_id: user.id,
         client_id: data.clientId,
         date: data.date,
@@ -32,12 +34,26 @@ export async function createCheckinAction(data: {
         photos: data.photos || []
     })
 
-    if (error) {
-        console.error('Error creating checkin:', error)
+    if (checkinError) {
+        console.error('Error creating checkin:', checkinError)
         return { error: 'Error al registrar check-in' }
     }
 
+    // Update client's next checkin date if provided
+    if (data.nextCheckinDate) {
+        const { error: clientError } = await supabase
+            .from('clients')
+            .update({ next_checkin_date: data.nextCheckinDate })
+            .eq('id', data.clientId)
+
+        if (clientError) {
+            console.error('Error updating next checkin date:', clientError)
+            // We don't return error here because the checkin was already created successfully
+        }
+    }
+
     revalidatePath(`/clients/${data.clientId}`)
+    revalidatePath('/clients') // To update the table in the dashboard
     return { success: true }
 }
 

@@ -19,6 +19,11 @@ export function AddCheckinDialog({ clientId }: AddCheckinDialogProps) {
     const [open, setOpen] = useState(false)
     const [loading, setLoading] = useState(false)
     const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+    const [nextCheckinDate, setNextCheckinDate] = useState(() => {
+        const next = new Date()
+        next.setDate(next.getDate() + 7)
+        return next.toISOString().split('T')[0]
+    })
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     // Basic
@@ -112,7 +117,8 @@ export function AddCheckinDialog({ clientId }: AddCheckinDialogProps) {
                 thigh: parseNum(thigh),
                 calves: parseNum(calves)
             },
-            photos: uploadedPhotoUrls
+            photos: uploadedPhotoUrls,
+            nextCheckinDate: nextCheckinDate
         })
 
         if (result.error) {
@@ -149,8 +155,12 @@ export function AddCheckinDialog({ clientId }: AddCheckinDialogProps) {
                 <div className="grid gap-6 py-4">
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="date">Fecha</Label>
+                            <Label htmlFor="date">Fecha de hoy</Label>
                             <Input id="date" type="date" value={date} onChange={e => setDate(e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="next_checkin">Próximo Check-in</Label>
+                            <Input id="next_checkin" type="date" className="border-orange-200 focus-visible:ring-orange-500" value={nextCheckinDate} onChange={e => setNextCheckinDate(e.target.value)} />
                         </div>
                     </div>
 

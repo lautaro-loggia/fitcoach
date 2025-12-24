@@ -31,6 +31,7 @@ interface Client {
     full_name: string
     status: 'active' | 'inactive'
     goal_specific: string | null
+    next_checkin_date?: string | null
     // For check-in calculation
     checkins?: { date: string }[]
 }
@@ -46,9 +47,17 @@ export function ClientTable({ clients }: ClientTableProps) {
 
     // Helper to calculate next check-in
     const getNextCheckin = (client: Client) => {
+        // 1. If we have a manually set next_checkin_date, use it.
+        if (client.next_checkin_date) {
+            return format(new Date(client.next_checkin_date), 'dd/MM/yyyy', { locale: es })
+        }
+
+        // 2. Fallback to automatic calculation if no check-ins.
         if (!client.checkins || client.checkins.length === 0) {
             return "Pendiente (Inicio)"
         }
+
+        // 3. Fallback to last check-in + 7 days.
         const lastCheckin = new Date(client.checkins[0].date)
         const nextCheckin = new Date(lastCheckin)
         nextCheckin.setDate(nextCheckin.getDate() + 7)
