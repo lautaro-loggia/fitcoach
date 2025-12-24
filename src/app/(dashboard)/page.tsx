@@ -28,7 +28,7 @@ export default async function DashboardPage() {
     }
 
     const greeting = getGreeting()
-    const userName = profile?.full_name || 'Entrenador'
+    const userName = profile?.full_name?.split(' ')[0] || 'Entrenador'
 
     // 1. Active Clients
     const { count: activeClientsCount } = await supabase
