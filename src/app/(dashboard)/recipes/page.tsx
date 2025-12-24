@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { AddRecipeDialog } from '@/components/recipes/add-recipe-dialog'
 import { RecipeCard } from '@/components/recipes/recipe-card'
@@ -13,8 +13,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
-import { Search, Filter, X, Utensils } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
+import { Search, Filter, X, Utensils, ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface Recipe {
     id: string
@@ -30,9 +29,13 @@ interface Recipe {
     macros_fat_g: number | null
 }
 
+const RECIPES_PER_PAGE = 20
+
 export default function RecipesPage() {
     const [recipes, setRecipes] = useState<Recipe[]>([])
     const [loading, setLoading] = useState(true)
+    const [totalCount, setTotalCount] = useState(0)
+    const [currentPage, setCurrentPage] = useState(1)
 
     // Filters
     const [searchQuery, setSearchQuery] = useState('')
@@ -41,83 +44,92 @@ export default function RecipesPage() {
     const [maxCalories, setMaxCalories] = useState('')
     const [minProtein, setMinProtein] = useState('')
 
-    // Load recipes on mount
+    // Debounce search
+    const [debouncedSearch, setDebouncedSearch] = useState('')
+
     useEffect(() => {
-        async function loadRecipes() {
-            const supabase = createClient()
-            const { data } = await supabase
-                .from('recipes')
-                .select('*')
-                .order('created_at', { ascending: false })
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchQuery)
+            setCurrentPage(1) // Reset to page 1 on search
+        }, 300)
+        return () => clearTimeout(timer)
+    }, [searchQuery])
 
-            if (data) setRecipes(data)
-            setLoading(false)
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1)
+    }, [mealTypeFilter, sortBy, maxCalories, minProtein])
+
+    // Load recipes with pagination
+    const loadRecipes = useCallback(async () => {
+        setLoading(true)
+        const supabase = createClient()
+
+        // Calculate offset
+        const from = (currentPage - 1) * RECIPES_PER_PAGE
+        const to = from + RECIPES_PER_PAGE - 1
+
+        // Build query
+        let query = supabase
+            .from('recipes')
+            .select('*', { count: 'exact' })
+
+        // Apply search filter
+        if (debouncedSearch) {
+            query = query.ilike('name', `%${debouncedSearch}%`)
         }
-        loadRecipes()
-    }, [])
 
-    // Filter and sort recipes
-    const filteredRecipes = useMemo(() => {
-        let filtered = recipes
-
-        // Search by name
-        if (searchQuery) {
-            filtered = filtered.filter(recipe =>
-                recipe.name.toLowerCase().includes(searchQuery.toLowerCase())
-            )
-        }
-
-        // Filter by meal type
+        // Apply meal type filter
         if (mealTypeFilter !== 'all') {
-            filtered = filtered.filter(recipe => recipe.meal_type === mealTypeFilter)
+            query = query.eq('meal_type', mealTypeFilter)
         }
 
-        // Filter by max calories
+        // Apply max calories filter (server-side approximation)
+        // Note: For exact per-serving filter, we'd need a computed column or RPC
         if (maxCalories) {
             const max = parseFloat(maxCalories)
-            filtered = filtered.filter(recipe => {
-                const calories = recipe.macros_calories || 0
-                const perServing = calories / (recipe.servings || 1)
-                return perServing <= max
-            })
+            query = query.lte('macros_calories', max * 4) // Approximate for 4 servings max
         }
 
-        // Filter by min protein
+        // Apply min protein filter
         if (minProtein) {
             const min = parseFloat(minProtein)
-            filtered = filtered.filter(recipe => {
-                const protein = recipe.macros_protein_g || 0
-                const perServing = protein / (recipe.servings || 1)
-                return perServing >= min
-            })
+            query = query.gte('macros_protein_g', min)
         }
 
-        // Sort
+        // Apply sorting
         if (sortBy === 'name') {
-            filtered = [...filtered].sort((a, b) => a.name.localeCompare(b.name))
+            query = query.order('name', { ascending: true })
         } else if (sortBy === 'calories-asc') {
-            filtered = [...filtered].sort((a, b) => {
-                const aCalories = (a.macros_calories || 0) / (a.servings || 1)
-                const bCalories = (b.macros_calories || 0) / (b.servings || 1)
-                return aCalories - bCalories
-            })
+            query = query.order('macros_calories', { ascending: true, nullsFirst: false })
         } else if (sortBy === 'calories-desc') {
-            filtered = [...filtered].sort((a, b) => {
-                const aCalories = (a.macros_calories || 0) / (a.servings || 1)
-                const bCalories = (b.macros_calories || 0) / (b.servings || 1)
-                return bCalories - aCalories
-            })
+            query = query.order('macros_calories', { ascending: false, nullsFirst: false })
         } else if (sortBy === 'protein') {
-            filtered = [...filtered].sort((a, b) => {
-                const aProtein = (a.macros_protein_g || 0) / (a.servings || 1)
-                const bProtein = (b.macros_protein_g || 0) / (b.servings || 1)
-                return bProtein - aProtein
-            })
+            query = query.order('macros_protein_g', { ascending: false, nullsFirst: false })
+        } else {
+            query = query.order('created_at', { ascending: false })
         }
 
-        return filtered
-    }, [recipes, searchQuery, mealTypeFilter, sortBy, maxCalories, minProtein])
+        // Apply pagination
+        query = query.range(from, to)
 
+        const { data, count, error } = await query
+
+        if (error) {
+            console.error('Error loading recipes:', error)
+        } else {
+            setRecipes(data || [])
+            setTotalCount(count || 0)
+        }
+
+        setLoading(false)
+    }, [currentPage, debouncedSearch, mealTypeFilter, sortBy, maxCalories, minProtein])
+
+    useEffect(() => {
+        loadRecipes()
+    }, [loadRecipes])
+
+    const totalPages = Math.ceil(totalCount / RECIPES_PER_PAGE)
     const hasActiveFilters = mealTypeFilter !== 'all' || maxCalories || minProtein || sortBy !== 'recent'
 
     const clearFilters = () => {
@@ -125,6 +137,34 @@ export default function RecipesPage() {
         setMaxCalories('')
         setMinProtein('')
         setSortBy('recent')
+        setSearchQuery('')
+    }
+
+    const goToPage = (page: number) => {
+        if (page >= 1 && page <= totalPages) {
+            setCurrentPage(page)
+            window.scrollTo({ top: 0, behavior: 'smooth' })
+        }
+    }
+
+    // Generate page numbers to display
+    const getPageNumbers = () => {
+        const pages: (number | string)[] = []
+        const maxVisible = 5
+
+        if (totalPages <= maxVisible) {
+            for (let i = 1; i <= totalPages; i++) pages.push(i)
+        } else {
+            if (currentPage <= 3) {
+                pages.push(1, 2, 3, 4, '...', totalPages)
+            } else if (currentPage >= totalPages - 2) {
+                pages.push(1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages)
+            } else {
+                pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages)
+            }
+        }
+
+        return pages
     }
 
     return (
@@ -205,7 +245,7 @@ export default function RecipesPage() {
                     </Select>
 
                     {/* Clear Filters */}
-                    {hasActiveFilters && (
+                    {(hasActiveFilters || searchQuery) && (
                         <Button
                             variant="ghost"
                             size="sm"
@@ -222,8 +262,9 @@ export default function RecipesPage() {
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Utensils className="h-4 w-4" />
                     <span>
-                        {filteredRecipes.length} {filteredRecipes.length === 1 ? 'receta' : 'recetas'}
-                        {searchQuery || hasActiveFilters ? ` encontrada${filteredRecipes.length === 1 ? '' : 's'}` : ''}
+                        {totalCount} {totalCount === 1 ? 'receta' : 'recetas'}
+                        {searchQuery || hasActiveFilters ? ` encontrada${totalCount === 1 ? '' : 's'}` : ''}
+                        {totalPages > 1 && ` · Página ${currentPage} de ${totalPages}`}
                     </span>
                 </div>
             </div>
@@ -236,13 +277,55 @@ export default function RecipesPage() {
                         <p className="text-sm text-muted-foreground">Cargando recetas...</p>
                     </div>
                 </div>
-            ) : filteredRecipes.length > 0 ? (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {filteredRecipes.map((recipe) => (
-                        <RecipeCard key={recipe.id} recipe={recipe} />
-                    ))}
-                </div>
-            ) : recipes.length === 0 ? (
+            ) : recipes.length > 0 ? (
+                <>
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                        {recipes.map((recipe) => (
+                            <RecipeCard key={recipe.id} recipe={recipe} />
+                        ))}
+                    </div>
+
+                    {/* Pagination Controls */}
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-center gap-2 pt-6">
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => goToPage(currentPage - 1)}
+                                disabled={currentPage === 1}
+                            >
+                                <ChevronLeft className="h-4 w-4" />
+                            </Button>
+
+                            {getPageNumbers().map((page, index) => (
+                                typeof page === 'number' ? (
+                                    <Button
+                                        key={index}
+                                        variant={currentPage === page ? 'default' : 'outline'}
+                                        size="icon"
+                                        onClick={() => goToPage(page)}
+                                    >
+                                        {page}
+                                    </Button>
+                                ) : (
+                                    <span key={index} className="px-2 text-muted-foreground">
+                                        {page}
+                                    </span>
+                                )
+                            ))}
+
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => goToPage(currentPage + 1)}
+                                disabled={currentPage === totalPages}
+                            >
+                                <ChevronRight className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    )}
+                </>
+            ) : totalCount === 0 && !searchQuery && !hasActiveFilters ? (
                 <div className="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed rounded-lg">
                     <Utensils className="h-12 w-12 text-muted-foreground mb-4" />
                     <h3 className="text-lg font-semibold">No hay recetas aún</h3>
