@@ -47,7 +47,7 @@ export async function signup(formData: FormData) {
         return { error: 'Las contraseñas no coinciden' }
     }
 
-    const { error, data } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {

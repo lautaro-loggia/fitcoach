@@ -1,6 +1,6 @@
 
 import { StatsCard } from '@/components/dashboard/stats-cards'
-import { Activity, Users, FileText, Utensils, AlertCircle, Dumbbell, CreditCard } from 'lucide-react'
+import { Users, Utensils, Dumbbell, CreditCard } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { createClient } from '@/lib/supabase/server'
 import { formatDistanceToNow } from 'date-fns'
@@ -127,7 +127,7 @@ export default async function DashboardPage() {
                                                 {checkin.clients?.full_name || 'Cliente'} actualizó su estado
                                             </p>
                                             <p className="text-xs text-muted-foreground">
-                                                {formatDistanceToNow(new Date(checkin.date || Date.now()), { addSuffix: true, locale: es })}
+                                                {formatDistanceToNow(new Date(checkin.date), { addSuffix: true, locale: es })}
                                             </p>
                                         </div>
                                         {checkin.weight && (
