@@ -96,9 +96,6 @@ export function RecipeEditor({ recipe }: RecipeEditorProps) {
         ? recipe.ingredients
         : (Array.isArray(recipe.ingredients_data) ? recipe.ingredients_data : [])
 
-    console.log('Recipe ingredients:', recipe.ingredients)
-    console.log('Initial ingredients:', initialIngredients)
-
     const [recipeIngredients, setRecipeIngredients] = useState<RecipeIngredient[]>(initialIngredients)
 
     // Available ingredients from DB
