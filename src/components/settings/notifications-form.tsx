@@ -61,14 +61,6 @@ export function NotificationsForm({ userId }: NotificationsFormProps) {
         }
     }
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-        )
-    }
-
     return (
         <Card>
             <CardHeader>

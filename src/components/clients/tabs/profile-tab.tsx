@@ -110,8 +110,8 @@ export function ProfileTab({ client }: ProfileTabProps) {
     const previousWeight = checkins.length > 1 ? checkins[checkins.length - 2].weight : client.initial_weight
     const weightDiff = currentWeight - previousWeight
 
-    const currentFat = checkins.length > 0 ? checkins[checkins.length - 1].body_fat : null
-    const previousFat = checkins.length > 1 ? checkins[checkins.length - 2].body_fat : null
+    const currentFat = checkins.length > 0 ? checkins[checkins.length - 1].body_fat : client.initial_body_fat
+    const previousFat = checkins.length > 1 ? checkins[checkins.length - 2].body_fat : client.initial_body_fat
     const fatDiff = (currentFat && previousFat) ? currentFat - previousFat : 0
 
 

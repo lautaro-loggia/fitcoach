@@ -13,6 +13,11 @@ export interface ClientWithPayment {
     payment_status: string
     next_due_date: string | null
     last_paid_at: string | null
+    plan_id: string | null
+    plan: {
+        name: string
+        price_monthly: number
+    } | null
     status: string
 }
 
@@ -31,7 +36,7 @@ export interface PaymentStats {
     paidClients: number
     pendingClients: number
     overdueClients: number
-    estimatedMonthlyIncome: number
+    paidMonthlyIncome: number
 }
 
 // Get all clients with payment info
@@ -43,13 +48,61 @@ export async function getClientsWithPayments() {
 
     const { data, error } = await supabase
         .from('clients')
-        .select('*')
+        .select(`
+            *,
+            plan:plans(name, price_monthly)
+        `)
         .eq('trainer_id', user.id)
         .is('deleted_at', null)
         .order('full_name')
 
     if (error) throw error
     return data as ClientWithPayment[]
+}
+
+// OPTIMIZED: Get all payment data in a single call
+export async function getAllPaymentData() {
+    const supabase = await createClient()
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
+
+    // Single query to get all clients with plans
+    const { data: clients, error } = await supabase
+        .from('clients')
+        .select(`
+            *,
+            plan:plans(*)
+        `)
+        .eq('trainer_id', user.id)
+        .is('deleted_at', null)
+        .order('full_name')
+
+    if (error) throw error
+
+    const clientsWithPayments = clients as ClientWithPayment[]
+
+    // Calculate stats from the same data
+    const activeClients = clients?.filter(c => c.status === 'active').length || 0
+    const paidClients = clients?.filter(c => c.payment_status === 'paid').length || 0
+    const pendingClients = clients?.filter(c => c.payment_status === 'pending').length || 0
+    const overdueClients = clients?.filter(c => c.payment_status === 'overdue').length || 0
+    const paidMonthlyIncome = clients
+        ?.filter(c => c.payment_status === 'paid')
+        .reduce((sum, c) => sum + (c.price_monthly || 0), 0) || 0
+
+    const stats: PaymentStats = {
+        activeClients,
+        paidClients,
+        pendingClients,
+        overdueClients,
+        paidMonthlyIncome
+    }
+
+    return {
+        clients: clientsWithPayments,
+        stats
+    }
 }
 
 // Get payment statistics
@@ -72,8 +125,8 @@ export async function getPaymentStats(): Promise<PaymentStats> {
     const pendingClients = clients?.filter(c => c.payment_status === 'pending').length || 0
     const overdueClients = clients?.filter(c => c.payment_status === 'overdue').length || 0
 
-    const estimatedMonthlyIncome = clients
-        ?.filter(c => c.status === 'active')
+    const paidMonthlyIncome = clients
+        ?.filter(c => c.payment_status === 'paid')
         .reduce((sum, c) => sum + (c.price_monthly || 0), 0) || 0
 
     return {
@@ -81,7 +134,7 @@ export async function getPaymentStats(): Promise<PaymentStats> {
         paidClients,
         pendingClients,
         overdueClients,
-        estimatedMonthlyIncome
+        paidMonthlyIncome
     }
 }
 
@@ -92,65 +145,84 @@ export async function registerPayment(data: {
     amount: number
     method: string
     note?: string
+    planId?: string
 }) {
-    const supabase = await createClient()
+    try {
+        const supabase = await createClient()
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Not authenticated')
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return { error: 'No estás autenticado' }
 
-    // Insert payment
-    const { error: paymentError } = await supabase
-        .from('payments')
-        .insert({
-            trainer_id: user.id,
-            client_id: data.clientId,
-            paid_at: data.paidAt,
-            amount: data.amount,
-            method: data.method,
-            note: data.note || null
-        })
+        // Insert payment
+        const { error: paymentError } = await supabase
+            .from('payments')
+            .insert({
+                trainer_id: user.id,
+                client_id: data.clientId,
+                paid_at: data.paidAt,
+                amount: data.amount,
+                method: data.method,
+                note: data.note || null
+            })
 
-    if (paymentError) throw paymentError
+        if (paymentError) {
+            console.error('Payment insert error:', paymentError)
+            return { error: `Error al insertar pago: ${paymentError.message}` }
+        }
 
-    // Get client to calculate next due date
-    const { data: client, error: clientError } = await supabase
-        .from('clients')
-        .select('billing_frequency')
-        .eq('id', data.clientId)
-        .single()
+        // Get client to calculate next due date
+        const { data: client, error: clientError } = await supabase
+            .from('clients')
+            .select('billing_frequency')
+            .eq('id', data.clientId)
+            .single()
 
-    if (clientError) throw clientError
+        if (clientError) {
+            console.error('Client fetch error:', clientError)
+            return { error: `Error al obtener cliente: ${clientError.message}` }
+        }
 
-    // Calculate next due date
-    const paidDate = new Date(data.paidAt)
-    let nextDueDate: Date
+        // Calculate next due date
+        // Parse date as local time to avoid timezone issues
+        const [year, month, day] = data.paidAt.split('-').map(Number)
+        const paidDate = new Date(year, month - 1, day)
+        let nextDueDate: Date
 
-    switch (client.billing_frequency) {
-        case 'weekly':
-            nextDueDate = new Date(paidDate)
-            nextDueDate.setDate(paidDate.getDate() + 7)
-            break
-        case 'monthly':
-        default:
-            nextDueDate = new Date(paidDate)
-            nextDueDate.setMonth(paidDate.getMonth() + 1)
-            break
+        switch (client.billing_frequency) {
+            case 'weekly':
+                nextDueDate = new Date(paidDate)
+                nextDueDate.setDate(paidDate.getDate() + 7)
+                break
+            case 'monthly':
+            default:
+                nextDueDate = new Date(paidDate)
+                nextDueDate.setMonth(paidDate.getMonth() + 1)
+                break
+        }
+
+        // Update client
+        const { error: updateError } = await supabase
+            .from('clients')
+            .update({
+                last_paid_at: data.paidAt,
+                next_due_date: `${nextDueDate.getFullYear()}-${String(nextDueDate.getMonth() + 1).padStart(2, '0')}-${String(nextDueDate.getDate()).padStart(2, '0')}`,
+                payment_status: 'paid',
+                plan_id: data.planId || null,
+                price_monthly: data.amount
+            })
+            .eq('id', data.clientId)
+
+        if (updateError) {
+            console.error('Client update error:', updateError)
+            return { error: `Error al actualizar cliente: ${updateError.message}` }
+        }
+
+        revalidatePath('/pagos')
+        return { success: true }
+    } catch (error) {
+        console.error('Unexpected error in registerPayment:', error)
+        return { error: 'Error inesperado al registrar el pago' }
     }
-
-    // Update client
-    const { error: updateError } = await supabase
-        .from('clients')
-        .update({
-            last_paid_at: data.paidAt,
-            next_due_date: nextDueDate.toISOString().split('T')[0],
-            payment_status: 'paid'
-        })
-        .eq('id', data.clientId)
-
-    if (updateError) throw updateError
-
-    revalidatePath('/pagos')
-    return { success: true }
 }
 
 // Get payments for a client
@@ -178,15 +250,46 @@ export async function updatePaymentStatuses() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Not authenticated')
 
-    const today = new Date().toISOString().split('T')[0]
-
-    // Update overdue clients
-    await supabase
+    // Get all clients to update their statuses
+    const { data: clients, error } = await supabase
         .from('clients')
-        .update({ payment_status: 'overdue' })
+        .select('id, next_due_date, payment_status')
         .eq('trainer_id', user.id)
-        .lt('next_due_date', today)
-        .neq('payment_status', 'overdue')
+        .is('deleted_at', null)
+
+    if (error || !clients) return
+
+    const today = new Date()
+    const PENDING_DAYS_THRESHOLD = 7
+
+    // Update each client's status based on their due date
+    for (const client of clients) {
+        if (!client.next_due_date) continue
+
+        const dueDate = new Date(client.next_due_date)
+        const daysUntilDue = Math.floor((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+
+        let newStatus: string
+
+        if (daysUntilDue < 0) {
+            // Vencido
+            newStatus = 'overdue'
+        } else if (daysUntilDue <= PENDING_DAYS_THRESHOLD) {
+            // Pendiente (vence en 7 días o menos)
+            newStatus = 'pending'
+        } else {
+            // Pagado (vence en más de 7 días)
+            newStatus = 'paid'
+        }
+
+        // Solo actualizar si el estado cambió
+        if (client.payment_status !== newStatus) {
+            await supabase
+                .from('clients')
+                .update({ payment_status: newStatus })
+                .eq('id', client.id)
+        }
+    }
 
     revalidatePath('/pagos')
 }
@@ -233,4 +336,159 @@ export async function sendBulkReminders(clientIds: string[]) {
         success: true,
         message: `Recordatorios enviados a ${successCount} de ${clientIds.length} clientes`
     }
+}
+
+// ==================== PLAN ACTIONS ====================
+
+export interface Plan {
+    id: string
+    trainer_id: string
+    name: string
+    price_monthly: number
+    description: string | null
+    created_at: string
+    updated_at: string
+}
+
+// Get all plans for the authenticated trainer
+export async function getPlans(): Promise<Plan[]> {
+    const supabase = await createClient()
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
+
+    const { data, error } = await supabase
+        .from('plans')
+        .select('*')
+        .eq('trainer_id', user.id)
+        .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data as Plan[]
+}
+
+// Create a new plan
+export async function createPlan(plan: {
+    name: string
+    price_monthly: number
+    description?: string
+}) {
+    try {
+        const supabase = await createClient()
+
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return { error: 'No estás autenticado' }
+
+        const { error } = await supabase
+            .from('plans')
+            .insert({
+                trainer_id: user.id,
+                name: plan.name,
+                price_monthly: plan.price_monthly,
+                description: plan.description || null
+            })
+
+        if (error) {
+            console.error('Create plan error:', error)
+            return { error: `Error al crear el plan: ${error.message}` }
+        }
+
+        revalidatePath('/pagos')
+        return { success: true }
+    } catch (error) {
+        console.error('Create plan error:', error)
+        return { error: 'No se pudo crear el plan' }
+    }
+}
+
+// Update an existing plan
+export async function updatePlan(planId: string, updates: {
+    name?: string
+    price_monthly?: number
+    description?: string
+}) {
+    try {
+        const supabase = await createClient()
+
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return { error: 'No estás autenticado' }
+
+        const { error } = await supabase
+            .from('plans')
+            .update(updates)
+            .eq('id', planId)
+            .eq('trainer_id', user.id)
+
+        if (error) {
+            console.error('Update plan error:', error)
+            return { error: `Error al actualizar el plan: ${error.message}` }
+        }
+
+        revalidatePath('/pagos')
+        return { success: true }
+    } catch (error) {
+        console.error('Update plan error:', error)
+        return { error: 'No se pudo actualizar el plan' }
+    }
+}
+
+// Delete a plan
+export async function deletePlan(planId: string) {
+    try {
+        const supabase = await createClient()
+
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return { error: 'No estás autenticado' }
+
+        // Check if any clients are using this plan
+        const { data: clients, error: checkError } = await supabase
+            .from('clients')
+            .select('id')
+            .eq('plan_id', planId)
+            .limit(1)
+
+        if (checkError) {
+            console.error('Check clients error:', checkError)
+            return { error: 'Error al verificar clientes asociados' }
+        }
+
+        if (clients && clients.length > 0) {
+            return { error: 'No se puede eliminar un plan que tiene clientes asignados' }
+        }
+
+        const { error } = await supabase
+            .from('plans')
+            .delete()
+            .eq('id', planId)
+            .eq('trainer_id', user.id)
+
+        if (error) {
+            console.error('Delete plan error:', error)
+            return { error: `Error al eliminar el plan: ${error.message}` }
+        }
+
+        revalidatePath('/pagos')
+        return { success: true }
+    } catch (error) {
+        console.error('Delete plan error:', error)
+        return { error: 'No se pudo eliminar el plan' }
+    }
+}
+
+// Get client count for a plan
+export async function getClientCountByPlan(planId: string): Promise<number> {
+    const supabase = await createClient()
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
+
+    const { count, error } = await supabase
+        .from('clients')
+        .select('*', { count: 'exact', head: true })
+        .eq('plan_id', planId)
+        .eq('trainer_id', user.id)
+        .is('deleted_at', null)
+
+    if (error) throw error
+    return count || 0
 }

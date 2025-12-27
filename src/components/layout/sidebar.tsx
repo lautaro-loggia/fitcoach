@@ -24,7 +24,7 @@ const navigation = [
     { name: 'Mis asesorados', href: '/clients', icon: Users },
     { name: 'Recetas', href: '/recipes', icon: Utensils },
     { name: 'Planes de entrenamiento', href: '/workouts', icon: Dumbbell },
-    { name: 'Pagos', href: '/pagos', icon: CreditCard },
+    { name: 'Pagos y Planes', href: '/pagos', icon: CreditCard },
     { name: 'Ajustes', href: '/settings', icon: Settings },
 ]
 

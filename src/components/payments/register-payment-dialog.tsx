@@ -14,8 +14,9 @@ import {
     SelectValue,
 } from '@/components/ui/select'
 import { Loader2 } from 'lucide-react'
-import { registerPayment, type ClientWithPayment } from '@/app/(dashboard)/pagos/actions'
+import { registerPayment, getPlans, type ClientWithPayment, type Plan } from '@/app/(dashboard)/pagos/actions'
 import { toast } from 'sonner'
+import { useEffect } from 'react'
 
 interface RegisterPaymentDialogProps {
     client: ClientWithPayment
@@ -35,6 +36,38 @@ export function RegisterPaymentDialog({
     const [amount, setAmount] = useState(client.price_monthly?.toString() || '')
     const [method, setMethod] = useState<string>('bank_transfer')
     const [note, setNote] = useState('')
+    const [plans, setPlans] = useState<Plan[]>([])
+    const [selectedPlanId, setSelectedPlanId] = useState<string>(client.plan_id || 'none')
+
+    useEffect(() => {
+        async function loadPlans() {
+            try {
+                const plansData = await getPlans()
+                setPlans(plansData)
+            } catch (error) {
+                console.error('Error loading plans:', error)
+            }
+        }
+        loadPlans()
+    }, [])
+
+    // Update selected plan when client changes or dialog opens
+    useEffect(() => {
+        if (open) {
+            setSelectedPlanId(client.plan_id || 'none')
+            setAmount(client.price_monthly?.toString() || '')
+        }
+    }, [open, client.plan_id, client.price_monthly])
+
+    function handlePlanChange(planId: string) {
+        setSelectedPlanId(planId)
+        if (planId !== 'none') {
+            const plan = plans.find(p => p.id === planId)
+            if (plan) {
+                setAmount(plan.price_monthly.toString())
+            }
+        }
+    }
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
@@ -46,13 +79,20 @@ export function RegisterPaymentDialog({
 
         try {
             setLoading(true)
-            await registerPayment({
+            const result = await registerPayment({
                 clientId: client.id,
                 paidAt,
                 amount: parseFloat(amount),
                 method,
                 note: note || undefined,
+                planId: selectedPlanId !== 'none' ? selectedPlanId : undefined,
             })
+
+            if (result.error) {
+                toast.error('No se pudo registrar el pago')
+                console.error('Payment registration error:', result.error)
+                return
+            }
 
             toast.success(`Pago de ${client.full_name} registrado exitosamente`)
 
@@ -65,7 +105,7 @@ export function RegisterPaymentDialog({
             setMethod('bank_transfer')
             setNote('')
         } catch (error) {
-            console.error('Error registering payment:', error)
+            console.error('Unexpected error:', error)
             toast.error('No se pudo registrar el pago')
         } finally {
             setLoading(false)
@@ -95,6 +135,26 @@ export function RegisterPaymentDialog({
                     </div>
 
                     <div className="space-y-2">
+                        <Label htmlFor="plan">Plan (opcional)</Label>
+                        <Select value={selectedPlanId} onValueChange={handlePlanChange}>
+                            <SelectTrigger id="plan">
+                                <SelectValue placeholder="Personalizado" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="none">Personalizado</SelectItem>
+                                {plans.map((plan) => (
+                                    <SelectItem key={plan.id} value={plan.id}>
+                                        {plan.name} - ${plan.price_monthly.toLocaleString('es-AR')}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground">
+                            Selecciona un plan para autocompletar el monto
+                        </p>
+                    </div>
+
+                    <div className="space-y-2">
                         <Label htmlFor="amount">Monto *</Label>
                         <Input
                             id="amount"
@@ -105,7 +165,14 @@ export function RegisterPaymentDialog({
                             onChange={(e) => setAmount(e.target.value)}
                             placeholder="0.00"
                             required
+                            readOnly={selectedPlanId !== 'none'}
+                            className={selectedPlanId !== 'none' ? 'bg-muted cursor-not-allowed' : ''}
                         />
+                        <p className="text-xs text-muted-foreground">
+                            {selectedPlanId !== 'none'
+                                ? 'Monto del plan seleccionado'
+                                : 'Ingresá el monto manualmente'}
+                        </p>
                     </div>
 
                     <div className="space-y-2">

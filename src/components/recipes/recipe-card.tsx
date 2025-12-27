@@ -6,6 +6,12 @@ import Image from 'next/image'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { Utensils, Copy, ExternalLink, Loader2, Clock, Users } from 'lucide-react'
 import { duplicateRecipeAction } from '@/app/(dashboard)/recipes/actions'
 
@@ -158,7 +164,16 @@ export function RecipeCard({ recipe }: RecipeCardProps) {
             </div>
 
             <CardHeader className="pb-2">
-                <h3 className="font-semibold text-lg line-clamp-1">{recipe.name}</h3>
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <h3 className="font-semibold text-lg line-clamp-2 cursor-default">{recipe.name}</h3>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs">
+                            <p>{recipe.name}</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
                 <div className="flex items-center gap-3 text-sm text-muted-foreground">
                     {recipe.prep_time_min && (
                         <span className="flex items-center gap-1">
