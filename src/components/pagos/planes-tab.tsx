@@ -159,6 +159,28 @@ export function PlanesTab() {
                                     </p>
                                 )}
 
+                                <div className="space-y-1 mb-3">
+                                    <div className="text-xs flex items-center gap-2">
+                                        <span className="text-muted-foreground">Rutina:</span>
+                                        <span className="font-medium">
+                                            {plan.routine_frequency === 'weekly' ? 'Semanal' :
+                                                plan.routine_frequency === 'biweekly' ? 'Quincenal' : 'Mensual'}
+                                        </span>
+                                    </div>
+                                    <div className="text-xs flex items-center gap-2">
+                                        <span className="text-muted-foreground">Llamadas 1:1:</span>
+                                        <span className="font-medium">
+                                            {plan.calls_frequency === 'weekly' ? 'Semanal' :
+                                                plan.calls_frequency === 'monthly' ? 'Mensual' : 'Ninguna'}
+                                        </span>
+                                    </div>
+                                    {plan.includes_nutrition && (
+                                        <div className="text-xs flex items-center gap-2 text-green-600 dark:text-green-400">
+                                            <span className="font-medium">Incluye Plan Nutricional</span>
+                                        </div>
+                                    )}
+                                </div>
+
                                 <Badge variant="secondary" className="mt-2">
                                     <Users className="h-3 w-3 mr-1" />
                                     {clientCounts[plan.id] || 0} asesorado{clientCounts[plan.id] !== 1 ? 's' : ''}

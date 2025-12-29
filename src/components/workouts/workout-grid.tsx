@@ -7,6 +7,7 @@ import { AssignWorkoutToClientsDialog } from "./assign-workout-to-clients-dialog
 import { deleteWorkoutAction } from "@/app/(dashboard)/workouts/actions"
 import { useRouter } from "next/navigation"
 import { Dumbbell } from "lucide-react"
+import { WorkoutDialog } from "./add-workout-dialog"
 
 interface WorkoutGridProps {
     workouts: any[]
@@ -18,6 +19,7 @@ export function WorkoutGrid({ workouts }: WorkoutGridProps) {
     // State for dialogs
     const [detailWorkout, setDetailWorkout] = useState<any | null>(null)
     const [assignWorkout, setAssignWorkout] = useState<any | null>(null)
+    const [editingWorkout, setEditingWorkout] = useState<any | null>(null)
 
     const handleDelete = async (id: string) => {
         if (confirm("¿Estás seguro de eliminar esta rutina? Se perderá la plantilla (no afectará a las ya asignadas).")) {
@@ -26,8 +28,12 @@ export function WorkoutGrid({ workouts }: WorkoutGridProps) {
         }
     }
 
-    const handleEdit = (id: string) => {
-        router.push(`/workouts/${id}`)
+    /* 
+       Previously navigated to detail page. 
+       Now opens the edit dialog.
+    */
+    const handleEdit = (workout: any) => {
+        setEditingWorkout(workout)
     }
 
     if (!workouts || workouts.length === 0) {
@@ -48,7 +54,7 @@ export function WorkoutGrid({ workouts }: WorkoutGridProps) {
                         key={workout.id}
                         workout={workout}
                         onClick={() => setDetailWorkout(workout)}
-                        onEdit={() => handleEdit(workout.id)}
+                        onEdit={() => handleEdit(workout)} // Pass object instead of ID
                         onDelete={() => handleDelete(workout.id)}
                         onAssign={() => setAssignWorkout(workout)}
                     />
@@ -68,6 +74,15 @@ export function WorkoutGrid({ workouts }: WorkoutGridProps) {
                 onOpenChange={(open) => !open && setAssignWorkout(null)}
                 workout={assignWorkout}
             />
+
+            {editingWorkout && (
+                <WorkoutDialog
+                    existingWorkout={editingWorkout}
+                    open={true}
+                    onOpenChange={(open) => !open && setEditingWorkout(null)}
+                    trigger={<span className="hidden" />} // Hidden trigger as it's controlled
+                />
+            )}
         </>
     )
 }

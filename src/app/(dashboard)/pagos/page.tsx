@@ -35,6 +35,7 @@ import {
     Mail,
     Plus,
     Loader2,
+    RefreshCw,
 } from 'lucide-react'
 import {
     getClientsWithPayments,
@@ -47,6 +48,7 @@ import {
     type PaymentStats,
 } from './actions'
 import { RegisterPaymentDialog } from '@/components/payments/register-payment-dialog'
+import { ChangePlanDialog } from '@/components/payments/change-plan-dialog'
 import { toast } from 'sonner'
 import { formatCurrency } from '@/lib/utils'
 
@@ -60,6 +62,8 @@ export default function PagosPage() {
     const [sortBy, setSortBy] = useState<string>('due_date')
     const [selectedClient, setSelectedClient] = useState<ClientWithPayment | null>(null)
     const [registerDialogOpen, setRegisterDialogOpen] = useState(false)
+    const [changePlanDialogOpen, setChangePlanDialogOpen] = useState(false)
+    const [clientToChangePlan, setClientToChangePlan] = useState<ClientWithPayment | null>(null)
     const [sendingReminder, setSendingReminder] = useState<string | null>(null)
     const [activeTab, setActiveTab] = useState('pagos')
 
@@ -418,6 +422,16 @@ export default function PagosPage() {
                                                                 <Button
                                                                     size="sm"
                                                                     variant="outline"
+                                                                    onClick={() => {
+                                                                        setClientToChangePlan(client)
+                                                                        setChangePlanDialogOpen(true)
+                                                                    }}
+                                                                >
+                                                                    <RefreshCw className="h-4 w-4" />
+                                                                </Button>
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="outline"
                                                                     onClick={() => handleSendReminder(client.id)}
                                                                     disabled={sendingReminder === client.id}
                                                                 >
@@ -479,6 +493,16 @@ export default function PagosPage() {
                                                     <Button
                                                         size="sm"
                                                         variant="outline"
+                                                        onClick={() => {
+                                                            setClientToChangePlan(client)
+                                                            setChangePlanDialogOpen(true)
+                                                        }}
+                                                    >
+                                                        <RefreshCw className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
                                                         onClick={() => handleSendReminder(client.id)}
                                                         disabled={sendingReminder === client.id}
                                                     >
@@ -503,6 +527,16 @@ export default function PagosPage() {
                             client={selectedClient}
                             open={registerDialogOpen}
                             onOpenChange={setRegisterDialogOpen}
+                            onSuccess={loadData}
+                        />
+                    )}
+
+                    {/* Change Plan Dialog */}
+                    {clientToChangePlan && (
+                        <ChangePlanDialog
+                            client={clientToChangePlan}
+                            open={changePlanDialogOpen}
+                            onOpenChange={setChangePlanDialogOpen}
                             onSuccess={loadData}
                         />
                     )}

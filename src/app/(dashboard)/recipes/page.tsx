@@ -44,6 +44,20 @@ export default function RecipesPage() {
     const [maxCalories, setMaxCalories] = useState('')
     const [minProtein, setMinProtein] = useState('')
 
+    const [isAdmin, setIsAdmin] = useState(false)
+
+    // Check admin status
+    useEffect(() => {
+        const checkUser = async () => {
+            const supabase = createClient()
+            const { data: { user } } = await supabase.auth.getUser()
+            if (user?.email === 'lauloggia@gmail.com') {
+                setIsAdmin(true)
+            }
+        }
+        checkUser()
+    }, [])
+
     // Debounce search
     const [debouncedSearch, setDebouncedSearch] = useState('')
 
@@ -281,7 +295,7 @@ export default function RecipesPage() {
                 <>
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                         {recipes.map((recipe) => (
-                            <RecipeCard key={recipe.id} recipe={recipe} />
+                            <RecipeCard key={recipe.id} recipe={recipe} isAdmin={isAdmin} />
                         ))}
                     </div>
 

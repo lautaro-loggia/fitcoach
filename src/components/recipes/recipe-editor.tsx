@@ -38,6 +38,7 @@ import {
     Utensils,
     Clock,
     Users,
+    AlertTriangle,
 } from 'lucide-react'
 import Link from 'next/link'
 import {
@@ -74,14 +75,22 @@ interface RecipeEditorProps {
         macros_protein_g?: number | null
         macros_carbs_g?: number | null
         macros_fat_g?: number | null
+        trainer_id?: string
     }
+    userId?: string
+    isAdmin?: boolean
 }
 
-export function RecipeEditor({ recipe }: RecipeEditorProps) {
+export function RecipeEditor({ recipe, userId, isAdmin = false }: RecipeEditorProps) {
     const router = useRouter()
     const [isSaving, setIsSaving] = useState(false)
     const [isDuplicating, setIsDuplicating] = useState(false)
     const [isDeleting, setIsDeleting] = useState(false)
+    const [isUploading, setIsUploading] = useState(false)
+
+    // Check ownership or admin status
+    const isOwner = recipe.trainer_id === userId
+    const canEdit = isOwner || isAdmin
 
     // Form state
     const [name, setName] = useState(recipe.name)
@@ -215,13 +224,13 @@ export function RecipeEditor({ recipe }: RecipeEditorProps) {
             prep_time_min: prepTime,
             instructions,
             ingredients: recipeIngredients,
-            image_url: imageUrl || undefined,
+            image_url: imageUrl || null,
         })
 
         if (result.error) {
             alert(result.error)
         } else {
-            router.refresh()
+            router.push('/recipes')
         }
         setIsSaving(false)
     }
@@ -253,6 +262,7 @@ export function RecipeEditor({ recipe }: RecipeEditorProps) {
     // Image upload
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files?.[0]) return
+        setIsUploading(true)
         const file = e.target.files[0]
 
         const supabase = createClient()
@@ -260,24 +270,42 @@ export function RecipeEditor({ recipe }: RecipeEditorProps) {
         const fileName = `recipes/${recipe.id}/${Date.now()}.${fileExt}`
 
         const { error: uploadError } = await supabase.storage
-            .from('progress-photos')
+            .from('recipe-images')
             .upload(fileName, file)
 
         if (uploadError) {
             console.error('Upload error:', uploadError)
-            alert('Error al subir la imagen')
+            alert(`Error al subir la imagen: ${uploadError.message}`)
+            setIsUploading(false)
             return
         }
 
         const { data: { publicUrl } } = supabase.storage
-            .from('progress-photos')
+            .from('recipe-images')
             .getPublicUrl(fileName)
 
         setImageUrl(publicUrl)
+        setIsUploading(false)
     }
 
     return (
         <div className="space-y-6">
+            {!canEdit && (
+                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-md">
+                    <div className="flex">
+                        <div className="flex-shrink-0">
+                            <AlertTriangle className="h-5 w-5 text-yellow-400" aria-hidden="true" />
+                        </div>
+                        <div className="ml-3">
+                            <p className="text-sm text-yellow-700">
+                                Estás viendo una receta base o de otro usuario.<br />
+                                Para editarla, debés <strong>duplicarla</strong> primero.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -308,15 +336,15 @@ export function RecipeEditor({ recipe }: RecipeEditorProps) {
                     </Button>
                     <Button
                         onClick={handleSave}
-                        disabled={isSaving}
+                        disabled={isSaving || isUploading || !canEdit}
                         className="bg-primary"
                     >
-                        {isSaving ? (
+                        {isSaving || isUploading ? (
                             <Loader2 className="h-4 w-4 animate-spin mr-2" />
                         ) : (
                             <Save className="h-4 w-4 mr-2" />
                         )}
-                        Guardar cambios
+                        {isUploading ? 'Subiendo...' : 'Guardar cambios'}
                     </Button>
                 </div>
             </div>
@@ -343,8 +371,11 @@ export function RecipeEditor({ recipe }: RecipeEditorProps) {
                                                 src={imageUrl}
                                                 alt="Recipe"
                                                 fill
+                                                sizes="128px"
                                                 className="object-cover"
                                             />
+                                        ) : isUploading ? (
+                                            <Loader2 className="h-8 w-8 text-muted-foreground animate-spin" />
                                         ) : (
                                             <Camera className="h-8 w-8 text-muted-foreground" />
                                         )}
@@ -356,24 +387,29 @@ export function RecipeEditor({ recipe }: RecipeEditorProps) {
                                             onChange={handleImageUpload}
                                             className="hidden"
                                             id="recipe-image"
+                                            disabled={!canEdit}
                                         />
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => document.getElementById('recipe-image')?.click()}
-                                        >
-                                            <Camera className="h-4 w-4 mr-2" />
-                                            {imageUrl ? 'Cambiar' : 'Subir imagen'}
-                                        </Button>
-                                        {imageUrl && (
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => setImageUrl('')}
-                                            >
-                                                <X className="h-4 w-4 mr-2" />
-                                                Quitar
-                                            </Button>
+                                        {canEdit && (
+                                            <>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => document.getElementById('recipe-image')?.click()}
+                                                >
+                                                    <Camera className="h-4 w-4 mr-2" />
+                                                    {imageUrl ? 'Cambiar' : 'Subir imagen'}
+                                                </Button>
+                                                {imageUrl && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => setImageUrl('')}
+                                                    >
+                                                        <X className="h-4 w-4 mr-2" />
+                                                        Quitar
+                                                    </Button>
+                                                )}
+                                            </>
                                         )}
                                     </div>
                                 </div>
@@ -660,46 +696,48 @@ export function RecipeEditor({ recipe }: RecipeEditorProps) {
                     </Card>
 
                     {/* Danger Zone */}
-                    <Card className="border-destructive/50">
-                        <CardHeader>
-                            <CardTitle className="text-destructive">Zona de peligro</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button
-                                        variant="destructive"
-                                        className="w-full"
-                                        disabled={isDeleting}
-                                    >
-                                        {isDeleting ? (
-                                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                        ) : (
-                                            <Trash2 className="h-4 w-4 mr-2" />
-                                        )}
-                                        Eliminar receta
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>¿Eliminar esta receta?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            Esta acción no se puede deshacer. La receta será eliminada permanentemente.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                        <AlertDialogAction
-                                            onClick={handleDelete}
-                                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    {canEdit && (
+                        <Card className="border-destructive/50">
+                            <CardHeader>
+                                <CardTitle className="text-destructive">Zona de peligro</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button
+                                            variant="destructive"
+                                            className="w-full"
+                                            disabled={isDeleting}
                                         >
-                                            Eliminar
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </CardContent>
-                    </Card>
+                                            {isDeleting ? (
+                                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                            ) : (
+                                                <Trash2 className="h-4 w-4 mr-2" />
+                                            )}
+                                            Eliminar receta
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>¿Eliminar esta receta?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                Esta acción no se puede deshacer. La receta será eliminada permanentemente.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                            <AlertDialogAction
+                                                onClick={handleDelete}
+                                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                            >
+                                                Eliminar
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </CardContent>
+                        </Card>
+                    )}
                 </div>
             </div>
         </div>

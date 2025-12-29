@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { updateClientAction, deleteClientAction } from "@/app/(dashboard)/clients/actions"
 import { Loader2, Save, Trash2, AlertTriangle } from "lucide-react"
+import { AllergenSelector } from "../allergen-selector"
 
 export function SettingsTab({ client }: { client: any }) {
     const router = useRouter()
@@ -226,6 +227,24 @@ export function SettingsTab({ client }: { client: any }) {
                     </div>
                 </div>
             </form>
+
+            <div className="mt-8 border-t pt-8">
+                <AllergenSelector
+                    initialAllergens={client.allergens || []}
+                    initialPreference={client.dietary_preference || 'sin_restricciones'}
+                    onSave={async (allergens, preference) => {
+                        const result = await updateClientAction(client.id, {
+                            allergens,
+                            dietary_preference: preference
+                        })
+                        if (result?.error) {
+                            setMessage({ type: 'error', text: result.error })
+                        } else {
+                            setMessage({ type: 'success', text: "Restricciones alimentarias actualizadas." })
+                        }
+                    }}
+                />
+            </div>
 
             <div className="border-t pt-6 mt-8">
                 <Card className="border-destructive/50 bg-destructive/5">

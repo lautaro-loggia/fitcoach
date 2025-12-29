@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { AddWorkoutDialog } from '@/components/workouts/add-workout-dialog'
+import { WorkoutDialog } from '@/components/workouts/add-workout-dialog'
 import { WorkoutGrid } from '@/components/workouts/workout-grid'
 
 export default async function WorkoutsPage() {
@@ -19,7 +19,7 @@ export default async function WorkoutsPage() {
                         Diseñá tus rutinas para asignarlas a los clientes.
                     </p>
                 </div>
-                <AddWorkoutDialog />
+                <WorkoutDialog />
             </div>
 
             <WorkoutGrid workouts={workouts || []} />

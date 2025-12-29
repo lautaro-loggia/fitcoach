@@ -346,6 +346,9 @@ export interface Plan {
     name: string
     price_monthly: number
     description: string | null
+    routine_frequency: 'weekly' | 'biweekly' | 'monthly' | null
+    calls_frequency: 'none' | 'monthly' | 'weekly' | null
+    includes_nutrition: boolean
     created_at: string
     updated_at: string
 }
@@ -372,6 +375,9 @@ export async function createPlan(plan: {
     name: string
     price_monthly: number
     description?: string
+    routine_frequency: 'weekly' | 'biweekly' | 'monthly'
+    calls_frequency: 'none' | 'monthly' | 'weekly'
+    includes_nutrition: boolean
 }) {
     try {
         const supabase = await createClient()
@@ -385,7 +391,10 @@ export async function createPlan(plan: {
                 trainer_id: user.id,
                 name: plan.name,
                 price_monthly: plan.price_monthly,
-                description: plan.description || null
+                description: plan.description || null,
+                routine_frequency: plan.routine_frequency,
+                calls_frequency: plan.calls_frequency,
+                includes_nutrition: plan.includes_nutrition
             })
 
         if (error) {
@@ -406,6 +415,10 @@ export async function updatePlan(planId: string, updates: {
     name?: string
     price_monthly?: number
     description?: string
+    routine_frequency?: 'weekly' | 'biweekly' | 'monthly'
+    calls_frequency?: 'none' | 'monthly' | 'weekly'
+    includes_nutrition?: boolean
+    notifyClients?: boolean
 }) {
     try {
         const supabase = await createClient()
@@ -413,15 +426,63 @@ export async function updatePlan(planId: string, updates: {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return { error: 'No estás autenticado' }
 
+        // Remove notifyClients from updates before sending to DB as it's not a column
+        // Destructure to separate notifyClients from the rest of the updates
+        const { notifyClients, ...dbUpdates } = updates
+
+        // Update the plan
         const { error } = await supabase
             .from('plans')
-            .update(updates)
+            .update(dbUpdates)
             .eq('id', planId)
             .eq('trainer_id', user.id)
 
         if (error) {
             console.error('Update plan error:', error)
             return { error: `Error al actualizar el plan: ${error.message}` }
+        }
+
+        // If price was updated, update all clients with this plan
+        if (updates.price_monthly !== undefined) {
+            // First get the clients to notify them if needed
+            let clientsToNotify: any[] = []
+
+            if (notifyClients) {
+                const { data: clients } = await supabase
+                    .from('clients')
+                    .select('id, full_name, email')
+                    .eq('plan_id', planId)
+                    .eq('trainer_id', user.id)
+                    .is('deleted_at', null)
+
+                clientsToNotify = clients || []
+            }
+
+            // Update prices
+            const { error: clientsError } = await supabase
+                .from('clients')
+                .update({ price_monthly: updates.price_monthly })
+                .eq('plan_id', planId)
+                .eq('trainer_id', user.id)
+
+            if (clientsError) {
+                console.error('Error updating clients prices:', clientsError)
+            } else if (notifyClients && clientsToNotify.length > 0) {
+                // Determine currency format
+                const formattedPrice = new Intl.NumberFormat('es-AR', {
+                    style: 'currency',
+                    currency: 'ARS',
+                    minimumFractionDigits: 0
+                }).format(updates.price_monthly)
+
+                // Simulate sending emails
+                for (const client of clientsToNotify) {
+                    if (client.email) {
+                        // In a real implementation effectively call an email service here
+                        console.log(`[EMAIL SIMULATION] Sending price update email to ${client.email}: "Hola ${client.full_name}, el precio de tu plan ha sido actualizado a ${formattedPrice}."`)
+                    }
+                }
+            }
         }
 
         revalidatePath('/pagos')
@@ -431,6 +492,8 @@ export async function updatePlan(planId: string, updates: {
         return { error: 'No se pudo actualizar el plan' }
     }
 }
+
+
 
 // Delete a plan
 export async function deletePlan(planId: string) {
@@ -491,4 +554,51 @@ export async function getClientCountByPlan(planId: string): Promise<number> {
 
     if (error) throw error
     return count || 0
+}
+
+// Change a client's plan
+export async function changeClientPlan(data: {
+    clientId: string
+    planId: string
+}) {
+    try {
+        const supabase = await createClient()
+
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return { error: 'No estás autenticado' }
+
+        // Get the plan details
+        const { data: plan, error: planError } = await supabase
+            .from('plans')
+            .select('price_monthly')
+            .eq('id', data.planId)
+            .eq('trainer_id', user.id)
+            .single()
+
+        if (planError) {
+            console.error('Plan fetch error:', planError)
+            return { error: 'Error al obtener el plan' }
+        }
+
+        // Update the client's plan and price
+        const { error: updateError } = await supabase
+            .from('clients')
+            .update({
+                plan_id: data.planId,
+                price_monthly: plan.price_monthly
+            })
+            .eq('id', data.clientId)
+            .eq('trainer_id', user.id)
+
+        if (updateError) {
+            console.error('Client update error:', updateError)
+            return { error: `Error al actualizar el cliente: ${updateError.message}` }
+        }
+
+        revalidatePath('/pagos')
+        return { success: true }
+    } catch (error) {
+        console.error('Unexpected error in changeClientPlan:', error)
+        return { error: 'Error inesperado al cambiar el plan' }
+    }
 }

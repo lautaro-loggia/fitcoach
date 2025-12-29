@@ -103,20 +103,15 @@ async function seedRecipesFromCSV() {
     // Skip header
     const dataLines = lines.slice(1)
 
-    console.log(`Found ${dataLines.length} recipes in CSV\n`)
+    console.log(`Found ${dataLines.length} lines in CSV. Parsing and deduplicating...`)
 
-    let imported = 0
-    let skipped = 0
-    let errors = 0
+    // Deduplicate in memory, keeping highest protein
+    const distinctRecipes = new Map<string, any>()
+    let parsedCount = 0
 
     for (const line of dataLines) {
         const fields = parseCSVLine(line)
-
-        if (fields.length < 12) {
-            console.log(`⏭️  Skipping invalid line (not enough fields)`)
-            errors++
-            continue
-        }
+        if (fields.length < 12) continue
 
         const [
             recipe_id,
@@ -133,18 +128,61 @@ async function seedRecipesFromCSV() {
             instructions,
         ] = fields
 
-        try {
-            console.log(`📝 Processing: ${name}`)
+        const cleanName = name.replace(/^"|"$/g, '').trim()
+        const protein = parseFloat(protein_g_per_serving) || 0
+        const calories = parseFloat(kcal_per_serving) || 0
 
-            // Check if already exists
+        const recipeData = {
+            recipe_id,
+            name: cleanName,
+            meal_type,
+            servings,
+            prep_time_min,
+            ingredients,
+            kcal_per_serving,
+            protein_g_per_serving,
+            carbs_g_per_serving,
+            fat_g_per_serving,
+            fiber_g_per_serving,
+            instructions,
+            protein,    // for comparison
+            calories    // for comparison
+        }
+
+        if (distinctRecipes.has(cleanName)) {
+            const existing = distinctRecipes.get(cleanName)
+            // Keep the one with HIGHER protein. If tie, LOWER calories.
+            if (protein > existing.protein || (protein === existing.protein && calories < existing.calories)) {
+                distinctRecipes.set(cleanName, recipeData)
+            }
+        } else {
+            distinctRecipes.set(cleanName, recipeData)
+        }
+        parsedCount++
+    }
+
+    console.log(`Parsed ${parsedCount} entries.`)
+    console.log(`Unique recipes to import: ${distinctRecipes.size} (Filtered duplicates favoring high protein)\n`)
+
+    let imported = 0
+    let skipped = 0
+    let errors = 0
+
+    // Process the deduplicated list
+    for (const recipe of distinctRecipes.values()) {
+        try {
+            console.log(`📝 Processing: ${recipe.name}`)
+
+            // Check if already exists (by NAME now, to be safe)
             const { data: existing } = await supabase
                 .from('recipes')
                 .select('id')
-                .eq('recipe_code', recipe_id)
-                .single()
+                .eq('name', recipe.name)
+                .limit(1)
+                .maybeSingle()
 
             if (existing) {
-                console.log('   ⏭️  Already exists, skipping')
+                console.log('   ⏭️  Already exists (by name), skipping')
                 skipped++
                 continue
             }
@@ -152,7 +190,7 @@ async function seedRecipesFromCSV() {
             // Parse ingredients JSON
             let ingredientsArray = []
             try {
-                ingredientsArray = JSON.parse(ingredients.replace(/^"|"$/g, ''))
+                ingredientsArray = JSON.parse(recipe.ingredients.replace(/^"|"$/g, ''))
             } catch (e) {
                 console.log('   ⚠️  Warning: Could not parse ingredients JSON')
             }
@@ -160,17 +198,17 @@ async function seedRecipesFromCSV() {
             // Insert recipe
             const { error: recipeError } = await supabase.from('recipes').insert({
                 trainer_id: trainerId,
-                recipe_code: recipe_id,
-                name: name.replace(/^"|"$/g, ''),
-                meal_type: meal_type,
-                servings: parseInt(servings) || 1,
-                prep_time_min: parseInt(prep_time_min) || 0,
-                instructions: instructions.replace(/^"|"$/g, ''),
+                recipe_code: recipe.recipe_id, // Keeping the ID of the winner version
+                name: recipe.name,
+                meal_type: recipe.meal_type,
+                servings: parseInt(recipe.servings) || 1,
+                prep_time_min: parseInt(recipe.prep_time_min) || 0,
+                instructions: recipe.instructions.replace(/^"|"$/g, ''),
                 ingredients: ingredientsArray,
-                macros_calories: parseFloat(kcal_per_serving) || 0,
-                macros_protein_g: parseFloat(protein_g_per_serving) || 0,
-                macros_carbs_g: parseFloat(carbs_g_per_serving) || 0,
-                macros_fat_g: parseFloat(fat_g_per_serving) || 0,
+                macros_calories: parseFloat(recipe.kcal_per_serving) || 0,
+                macros_protein_g: parseFloat(recipe.protein_g_per_serving) || 0,
+                macros_carbs_g: parseFloat(recipe.carbs_g_per_serving) || 0,
+                macros_fat_g: parseFloat(recipe.fat_g_per_serving) || 0,
                 is_base_template: true,
             })
 

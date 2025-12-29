@@ -6,6 +6,9 @@ export default async function RecipeDetailPage({ params }: { params: Promise<{ i
     const { id } = await params
     const supabase = await createClient()
 
+    const { data: { user } } = await supabase.auth.getUser()
+    const isAdmin = user?.email === 'lauloggia@gmail.com'
+
     const { data: recipe, error } = await supabase
         .from('recipes')
         .select('*')
@@ -16,5 +19,5 @@ export default async function RecipeDetailPage({ params }: { params: Promise<{ i
         notFound()
     }
 
-    return <RecipeEditor recipe={recipe} />
+    return <RecipeEditor recipe={recipe} userId={user?.id} isAdmin={isAdmin} />
 }

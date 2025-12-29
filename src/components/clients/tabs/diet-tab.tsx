@@ -3,8 +3,10 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { AssignDietDialog } from '../assign-diet-dialog'
+import { updateClientAction } from '@/app/(dashboard)/clients/actions'
 import { deleteAssignedDietAction } from '@/app/(dashboard)/clients/[id]/diet-actions'
 import { DietCard } from '../diet-card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export function DietTab({ client }: { client: any }) {
     const [diets, setDiets] = useState<any[]>([])
@@ -39,11 +41,39 @@ export function DietTab({ client }: { client: any }) {
         }
     }
 
+    // Prepare read-only data
+    const preferenceLabel = client.dietary_preference
+        ? client.dietary_preference.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())
+        : "Sin restricciones"
+
+    const allergensLabel = (client.allergens && client.allergens.length > 0)
+        ? client.allergens.map((a: string) => a.charAt(0).toUpperCase() + a.slice(1)).join(", ")
+        : "Ninguno"
+
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
+            <div className="grid gap-4 md:grid-cols-2">
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-base font-bold">Preferencia de dieta</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-sm text-muted-foreground">{preferenceLabel}</p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-base font-bold">Alergenos</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-sm text-muted-foreground">{allergensLabel}</p>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <div className="flex justify-between items-center pt-4 border-t">
                 <h3 className="font-bold text-lg">Plan de Alimentación</h3>
-                <AssignDietDialog clientId={client.id} />
+                <AssignDietDialog client={client} />
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

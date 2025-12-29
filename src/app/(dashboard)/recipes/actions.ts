@@ -22,7 +22,7 @@ export interface RecipeData {
     prep_time_min: number
     instructions: string
     ingredients: RecipeIngredient[]
-    image_url?: string
+    image_url?: string | null
 }
 
 export async function createRecipeAction(data: RecipeData) {
@@ -76,6 +76,7 @@ export async function updateRecipeAction(recipeId: string, data: Partial<RecipeD
     }
 
     const updateData: Record<string, any> = {}
+    console.log('Update Recipe Payload:', JSON.stringify(data, null, 2))
 
     if (data.name !== undefined) updateData.name = data.name.trim()
     if (data.meal_type !== undefined) updateData.meal_type = data.meal_type
@@ -83,17 +84,27 @@ export async function updateRecipeAction(recipeId: string, data: Partial<RecipeD
     if (data.prep_time_min !== undefined) updateData.prep_time_min = data.prep_time_min
     if (data.instructions !== undefined) updateData.instructions = data.instructions
     if (data.ingredients !== undefined) updateData.ingredients = data.ingredients
-    if (data.image_url !== undefined) updateData.image_url = data.image_url
+    if (data.image_url !== undefined) {
+        console.log('Updating recipe image_url to:', data.image_url)
+        updateData.image_url = data.image_url
+    }
 
-    const { error } = await supabase
-        .from('recipes')
-        .update(updateData)
-        .eq('id', recipeId)
-        .eq('trainer_id', user.id) // Security: Only update own recipes
+    let query = supabase.from('recipes').update(updateData).eq('id', recipeId)
+
+    // Admin bypass: lauloggia@gmail.com can edit any recipe
+    if (user.email !== 'lauloggia@gmail.com') {
+        query = query.eq('trainer_id', user.id)
+    }
+
+    const { data: updatedData, error } = await query.select()
 
     if (error) {
         console.error('Error updating recipe:', error)
         return { error: `Error al actualizar la receta: ${error.message}` }
+    }
+
+    if (!updatedData || updatedData.length === 0) {
+        return { error: 'No se pudo actualizar la receta. Verifique que sea el propietario.' }
     }
 
     revalidatePath('/recipes')
@@ -194,4 +205,80 @@ export async function getIngredientsAction() {
     }
 
     return { ingredients: ingredients || [] }
+}
+
+export async function bulkAssignRecipeAction(data: {
+    recipeId: string
+    clientIds: string[]
+    mealName: string | null
+}) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { error: 'No autorizado' }
+    }
+
+    if (!data.clientIds.length) {
+        return { error: 'Seleccioná al menos un alumno' }
+    }
+
+    // 1. Fetch the recipe to get ingredients and macros
+    const { data: recipe, error: recipeError } = await supabase
+        .from('recipes')
+        .select('*')
+        .eq('id', data.recipeId)
+        .single()
+
+    if (recipeError || !recipe) {
+        return { error: 'Receta no encontrada' }
+    }
+
+    // 2. Prepare diet data
+    // Use stored macros or calculate? Recipe should have storing macros.
+    // We'll trust stored macros for now, or fallback to 0.
+    // The `data` column in assigned_diets expects { ingredients, macros }
+
+    const ingredients = recipe.ingredients || []
+
+    // Simple macro object for the assigned diet JSON
+    const macros = {
+        total_calories: recipe.macros_calories || 0,
+        total_proteins: recipe.macros_protein_g || 0,
+        total_carbs: recipe.macros_carbs_g || 0,
+        total_fats: recipe.macros_fat_g || 0
+    }
+
+    const dietJsonData = {
+        ingredients,
+        macros
+    }
+
+    // 3. Insert specific diet entries for each client
+    const timestamp = new Date().toISOString()
+    const inserts = data.clientIds.map(clientId => ({
+        trainer_id: user.id,
+        client_id: clientId,
+        name: data.mealName || recipe.name, // Use custom name or recipe name (e.g. "Breakfast")
+        origin_template_id: recipe.id,
+        is_customized: false,
+        data: dietJsonData,
+        // created_at: timestamp, // Managed by default?
+    }))
+
+    const { error: insertError } = await supabase
+        .from('assigned_diets')
+        .insert(inserts)
+
+    if (insertError) {
+        console.error('Error assigning recipes:', insertError)
+        return { error: 'Hubo un error al asignar las comidas.' }
+    }
+
+    // Revalidate relevant client paths?
+    // Hard to revalidate individual client pages from here without knowing paths, 
+    // but typically we'd revalidate /clients/[id] when visited.
+    // We can just return success.    
+
+    return { success: true }
 }
