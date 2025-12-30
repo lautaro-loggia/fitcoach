@@ -164,7 +164,7 @@ export function AssignRecipeDialog({ open, onOpenChange, recipeId, recipeName }:
                     <Button
                         onClick={handleAssign}
                         disabled={selectedClientIds.length === 0 || assigning}
-                        className="bg-orange-600 hover:bg-orange-700"
+                        className="bg-primary hover:bg-primary/90"
                     >
                         {assigning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Asignar ({selectedClientIds.length})

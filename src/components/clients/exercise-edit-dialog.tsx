@@ -123,7 +123,7 @@ export function ExerciseEditDialog({
 
                 <DialogFooter className="flex sm:justify-between gap-2">
                     <Button variant="outline" onClick={onClose}>Cerrar</Button>
-                    <Button onClick={handleSave} className="bg-orange-600 hover:bg-orange-700 text-white">Guadar</Button>
+                    <Button onClick={handleSave} className="bg-primary hover:bg-primary/90 text-white">Guadar</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

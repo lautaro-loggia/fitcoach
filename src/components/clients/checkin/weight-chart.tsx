@@ -1,7 +1,7 @@
 "use client"
 
 import { Card, CardContent } from "@/components/ui/card"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 
@@ -24,7 +24,13 @@ export function WeightChart({ data, target, unit }: WeightChartProps) {
                 <div className="h-[300px] w-full">
                     {data.length > 0 ? (
                         <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={formattedData} margin={{ top: 20, right: 20, bottom: 0, left: -20 }}>
+                            <AreaChart data={formattedData} margin={{ top: 20, right: 20, bottom: 0, left: -20 }}>
+                                <defs>
+                                    <linearGradient id="colorWeight" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#5254D9" stopOpacity={0.3} />
+                                        <stop offset="95%" stopColor="#5254D9" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
                                 <XAxis
                                     dataKey="displayDate"
@@ -41,7 +47,7 @@ export function WeightChart({ data, target, unit }: WeightChartProps) {
                                     tickCount={6}
                                 />
                                 <Tooltip
-                                    cursor={{ stroke: '#ea580c', strokeWidth: 1, strokeDasharray: '4 4' }}
+                                    cursor={{ stroke: '#5254D9', strokeWidth: 1, strokeDasharray: '4 4' }}
                                     contentStyle={{
                                         borderRadius: '8px',
                                         border: 'none',
@@ -55,17 +61,19 @@ export function WeightChart({ data, target, unit }: WeightChartProps) {
                                     formatter={(value) => [`${value} ${unit}`, '']}
                                 />
                                 {target && (
-                                    <ReferenceLine y={target} stroke="#ea580c" strokeDasharray="3 3" opacity={0.5} />
+                                    <ReferenceLine y={target} stroke="#5254D9" strokeDasharray="3 3" opacity={0.5} />
                                 )}
-                                <Line
+                                <Area
                                     type="monotone"
                                     dataKey="value"
-                                    stroke="#ea580c"
+                                    stroke="#5254D9"
+                                    fillOpacity={1}
+                                    fill="url(#colorWeight)"
                                     strokeWidth={3}
-                                    dot={{ fill: '#ea580c', r: 4, strokeWidth: 2, stroke: '#fff' }}
+                                    dot={{ fill: '#5254D9', r: 4, strokeWidth: 2, stroke: '#fff' }}
                                     activeDot={{ r: 7, strokeWidth: 0 }}
                                 />
-                            </LineChart>
+                            </AreaChart>
                         </ResponsiveContainer>
                     ) : (
                         <div className="h-full flex flex-col items-center justify-center text-muted-foreground bg-muted/20 rounded-lg">

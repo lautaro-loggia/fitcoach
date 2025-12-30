@@ -51,7 +51,7 @@ function SidebarContent({ collapsed, onNavigate }: { collapsed: boolean; onNavig
             )}>
                 {!collapsed && (
                     <div className="flex items-center justify-start px-2 w-full">
-                        <Image src="/orbit_logo_v2.png" alt="Orbit" width={120} height={40} className="h-8 w-auto object-contain" priority />
+                        <Image src="/orbit_logo_black.png" alt="Orbit" width={120} height={40} className="h-8 w-auto object-contain" priority />
                     </div>
                 )}
                 {collapsed && (
@@ -93,7 +93,7 @@ function SidebarContent({ collapsed, onNavigate }: { collapsed: boolean; onNavig
                 <Button
                     variant="ghost"
                     className={cn(
-                        "w-full text-sidebar-foreground hover:bg-sidebar-accent hover:text-destructive",
+                        "w-full text-sidebar-foreground hover:bg-sidebar-accent hover:text-primary",
                         collapsed ? "justify-center px-0" : "justify-start"
                     )}
                     onClick={handleSignOut}
@@ -120,7 +120,7 @@ export function Sidebar() {
                 )}
             >
                 {/* Toggle Button Container - Desktop only */}
-                <div className="flex justify-end px-2 py-2 mt-16">
+                <div className="flex justify-end px-2 py-2 mt-2">
                     <Button variant="ghost" size="icon" onClick={toggleSidebar} className="h-6 w-6 text-muted-foreground hover:text-primary">
                         {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
                     </Button>

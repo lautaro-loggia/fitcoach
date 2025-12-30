@@ -116,7 +116,7 @@ export function AllergenSelector({ initialAllergens, initialPreference, onSave }
                     <Button
                         onClick={handleSave}
                         disabled={loading || !isModified}
-                        className={isModified ? "bg-orange-600 hover:bg-orange-700" : ""}
+                        className={isModified ? "bg-primary hover:bg-primary/90" : ""}
                         variant={isModified ? "default" : "outline"}
                     >
                         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Eye, Plus, ArrowDown, ArrowUp, ImageIcon, TrendingDown, TrendingUp } from 'lucide-react'
-import { BarChart, Bar, LineChart, Line, XAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts'
+import { BarChart, Bar, AreaChart, Area, XAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts'
 import { format, subMonths } from 'date-fns'
 import { es } from 'date-fns/locale'
 import Image from 'next/image'
@@ -203,7 +203,7 @@ export function ProfileTab({ client }: ProfileTabProps) {
                                         {weightData.map((entry, index) => (
                                             <Cell
                                                 key={`cell-${index}`}
-                                                fill={index === weightData.length - 1 ? '#ea580c' : '#e4e4e7'}
+                                                fill={index === weightData.length - 1 ? '#5254D9' : '#B2B3F5'}
                                             />
                                         ))}
                                     </Bar>
@@ -238,7 +238,13 @@ export function ProfileTab({ client }: ProfileTabProps) {
                         </div>
                         <div className="h-[150px] w-full mt-auto">
                             <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={bodyFatData}>
+                                <AreaChart data={bodyFatData}>
+                                    <defs>
+                                        <linearGradient id="colorFat" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#5254D9" stopOpacity={0.3} />
+                                            <stop offset="95%" stopColor="#5254D9" stopOpacity={0} />
+                                        </linearGradient>
+                                    </defs>
                                     <XAxis
                                         dataKey="name"
                                         axisLine={false}
@@ -246,14 +252,15 @@ export function ProfileTab({ client }: ProfileTabProps) {
                                         tick={{ fontSize: 10, fill: '#888' }}
                                     />
                                     <RechartsTooltip contentStyle={{ borderRadius: '8px', border: 'none' }} />
-                                    <Line
+                                    <Area
                                         type="monotone"
                                         dataKey="fat"
-                                        stroke="#ea580c"
+                                        stroke="#5254D9"
+                                        fillOpacity={1}
+                                        fill="url(#colorFat)"
                                         strokeWidth={3}
-                                        dot={false}
                                     />
-                                </LineChart>
+                                </AreaChart>
                             </ResponsiveContainer>
                         </div>
                     </CardContent>

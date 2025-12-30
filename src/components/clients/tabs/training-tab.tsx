@@ -86,7 +86,7 @@ export function TrainingTab({ client }: TrainingTabProps) {
                 <div className="flex items-center gap-2 w-full sm:w-auto">
                     <Button
                         variant={viewMode === 'calendar' ? 'default' : 'outline'}
-                        className={cn(viewMode === 'calendar' ? "bg-orange-600 hover:bg-orange-700" : "")}
+                        className={cn(viewMode === 'calendar' ? "bg-primary hover:bg-primary/90" : "")}
                         onClick={() => setViewMode(viewMode === 'list' ? 'calendar' : 'list')}
                     >
                         <CalendarIcon className="mr-2 h-4 w-4" />

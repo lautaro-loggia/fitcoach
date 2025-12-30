@@ -635,8 +635,8 @@ export function RecipeEditor({ recipe, userId, isAdmin = false }: RecipeEditorPr
                         </CardHeader>
                         <CardContent className="space-y-4">
                             {/* Big calories */}
-                            <div className="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-                                <p className="text-4xl font-bold text-orange-600 dark:text-orange-400">
+                            <div className="text-center p-4 bg-muted dark:bg-muted/20 rounded-lg">
+                                <p className="text-4xl font-bold text-primary dark:text-primary">
                                     {Math.round(macrosPerServing.kcal)}
                                 </p>
                                 <p className="text-sm text-muted-foreground">kcal por porción</p>

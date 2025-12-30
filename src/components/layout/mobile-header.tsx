@@ -20,7 +20,7 @@ export function MobileHeader() {
                 <span className="sr-only">Abrir menú</span>
             </Button>
             <Image
-                src="/orbit_logo_v2.png"
+                src="/orbit_logo_black.png"
                 alt="Orbit"
                 width={100}
                 height={32}

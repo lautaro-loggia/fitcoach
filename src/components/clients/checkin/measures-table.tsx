@@ -68,16 +68,16 @@ export function MeasuresTable({ checkins, selectedMetric, onSelect }: MeasuresTa
                                     onClick={() => onSelect(row.key)}
                                     className={cn(
                                         "grid grid-cols-12 px-6 py-4 items-center border-b border-border/40 last:border-0 cursor-pointer transition-colors",
-                                        isSelected ? "bg-orange-50/80 hover:bg-orange-100/80" : "hover:bg-muted/20"
+                                        isSelected ? "bg-muted/80 hover:bg-muted/80" : "hover:bg-muted/20"
                                     )}
                                 >
-                                    <div className={cn("col-span-5 font-medium", isSelected && "text-orange-700")}>
+                                    <div className={cn("col-span-5 font-medium", isSelected && "text-primary")}>
                                         {row.label}
                                     </div>
-                                    <div className={cn("col-span-3 text-right font-semibold pr-4", isSelected && "text-orange-700")}>
+                                    <div className={cn("col-span-3 text-right font-semibold pr-4", isSelected && "text-primary")}>
                                         {row.value !== "—" ? `${row.value}${row.unit} ` : "—"}
                                     </div>
-                                    <div className={cn("col-span-4 text-right text-muted-foreground", isSelected && "text-orange-700/80")}>
+                                    <div className={cn("col-span-4 text-right text-muted-foreground", isSelected && "text-primary/80")}>
                                         {formatDate(row.date)}
                                     </div>
                                 </div>

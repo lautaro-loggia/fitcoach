@@ -234,8 +234,8 @@ export function AddRecipeDialog() {
                     <div className="border-t pt-4">
                         <p className="text-sm text-muted-foreground mb-2">Por porción ({servings} {servings === 1 ? 'porción' : 'porciones'})</p>
                         <div className="grid grid-cols-4 gap-4">
-                            <div className="text-center p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-                                <p className="text-xl font-bold text-orange-600 dark:text-orange-400">{Math.round(macrosPerServing.kcal)}</p>
+                            <div className="text-center p-3 bg-muted dark:bg-muted/20 rounded-lg">
+                                <p className="text-xl font-bold text-primary dark:text-primary">{Math.round(macrosPerServing.kcal)}</p>
                                 <p className="text-xs text-muted-foreground">kcal</p>
                             </div>
                             <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">

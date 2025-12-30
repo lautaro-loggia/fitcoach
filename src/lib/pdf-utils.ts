@@ -58,7 +58,7 @@ export function generateWorkoutPDF({ workout, client }: GeneratePDFOptions) {
         head: [['Detalle', 'Repes', 'Peso', 'Descanso', 'Notas']],
         body: tableBody,
         theme: 'grid',
-        headStyles: { fillColor: [234, 88, 12] } // Orange-600
+        headStyles: { fillColor: [14, 14, 14] } // Primary Black
     })
 
     // Add notes if they exist

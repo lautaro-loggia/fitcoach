@@ -145,13 +145,13 @@ export function CalendarView({ workouts, onUpdateWorkout }: CalendarViewProps) {
 
                             <div className="space-y-2">
                                 {dailyWorkouts.map(workout => (
-                                    <Card key={workout.id} className="p-2 shadow-sm border-l-4 border-l-orange-500 overflow-hidden">
-                                        <p className="text-xs font-bold text-orange-600 truncate mb-1">{workout.name}</p>
+                                    <Card key={workout.id} className="p-2 shadow-sm border-l-4 border-l-violet-primary overflow-hidden">
+                                        <p className="text-xs font-bold text-primary truncate mb-1">{workout.name}</p>
                                         <div className="space-y-1">
                                             {Array.isArray(workout.structure) && workout.structure.slice(0, 3).map((ex: any, i: number) => (
                                                 <div
                                                     key={i}
-                                                    className="text-[10px] bg-muted/50 p-1 rounded cursor-pointer hover:bg-orange-100 transition-colors truncate"
+                                                    className="text-[10px] bg-muted/50 p-1 rounded cursor-pointer hover:bg-muted transition-colors truncate"
                                                     onClick={() => handleExerciseClick(workout, ex, i)}
                                                 >
                                                     <span className="font-semibold">x{ex.sets}</span> {ex.name}

@@ -27,7 +27,7 @@ export function DietCard({ diet, onEdit, onDelete }: DietCardProps) {
             <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
                 <div className="space-y-1">
                     <CardTitle className="text-base font-bold flex items-center gap-2">
-                        <Utensils className="h-4 w-4 text-orange-600" />
+                        <Utensils className="h-4 w-4 text-primary" />
                         {diet.name}
                     </CardTitle>
                     <div className="text-xs text-muted-foreground">

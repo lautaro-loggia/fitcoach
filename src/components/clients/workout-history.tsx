@@ -83,11 +83,11 @@ export function WorkoutHistory({ clientId }: WorkoutHistoryProps) {
                                     <div className="flex items-center gap-3">
                                         <div className={cn(
                                             "h-10 w-10 rounded-full flex items-center justify-center",
-                                            session.status === 'completed' ? "bg-green-500/20" : "bg-orange-500/20"
+                                            session.status === 'completed' ? "bg-green-500/20" : "bg-primary/20"
                                         )}>
                                             <Dumbbell className={cn(
                                                 "h-5 w-5",
-                                                session.status === 'completed' ? "text-green-600" : "text-orange-600"
+                                                session.status === 'completed' ? "text-green-600" : "text-primary"
                                             )} />
                                         </div>
                                         <div>

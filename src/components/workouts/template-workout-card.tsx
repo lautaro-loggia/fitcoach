@@ -20,7 +20,7 @@ export function TemplateWorkoutCard({ workout, onClick, onEdit, onDelete, onAssi
 
     return (
         <Card
-            className="h-full group hover:border-orange-500/50 hover:shadow-md transition-all cursor-pointer relative"
+            className="h-full group hover:border-violet-primary/50 hover:shadow-md transition-all cursor-pointer relative"
             onClick={onClick}
         >
             <div className="absolute top-4 right-4 z-10" onClick={(e) => e.stopPropagation()}>
@@ -46,11 +46,11 @@ export function TemplateWorkoutCard({ workout, onClick, onEdit, onDelete, onAssi
 
             <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
-                    <div className="p-2 bg-orange-100/50 rounded-lg text-orange-600 mb-3">
+                    <div className="p-2 bg-muted/50 rounded-lg text-primary mb-3">
                         <Dumbbell className="h-6 w-6" />
                     </div>
                 </div>
-                <CardTitle className="text-lg font-bold group-hover:text-orange-700 transition-colors pr-8">
+                <CardTitle className="text-lg font-bold group-hover:text-primary transition-colors pr-8">
                     {workout.name}
                 </CardTitle>
                 {workout.description && (
@@ -68,7 +68,7 @@ export function TemplateWorkoutCard({ workout, onClick, onEdit, onDelete, onAssi
                     <ul className="text-sm text-foreground/80 space-y-1">
                         {exercises.slice(0, 3).map((ex: any, i: number) => (
                             <li key={i} className="truncate flex items-center gap-2">
-                                <span className="w-1 h-1 rounded-full bg-orange-400 shrink-0" />
+                                <span className="w-1 h-1 rounded-full bg-violet-primary shrink-0" />
                                 {ex.name}
                             </li>
                         ))}

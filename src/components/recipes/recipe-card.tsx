@@ -147,8 +147,8 @@ export function RecipeCard({ recipe, isAdmin, onSelect, isSelected }: RecipeCard
         <>
             <Card
                 className={`group overflow-hidden rounded-2xl border bg-card text-card-foreground shadow-sm transition-all cursor-pointer p-4 pb-4 ${isSelected
-                    ? 'border-orange-500 ring-2 ring-orange-500 ring-offset-2'
-                    : 'hover:shadow-md hover:border-orange-200'
+                    ? 'border-primary ring-2 ring-primary ring-offset-2'
+                    : 'hover:shadow-md hover:border-border'
                     }`}
                 onClick={handleCardClick}
             >
@@ -163,8 +163,8 @@ export function RecipeCard({ recipe, isAdmin, onSelect, isSelected }: RecipeCard
                             className="object-cover transition-transform duration-300 group-hover:scale-105"
                         />
                     ) : (
-                        <div className="flex h-full items-center justify-center bg-orange-50/50">
-                            <Utensils className="h-12 w-12 text-orange-200" />
+                        <div className="flex h-full items-center justify-center bg-muted/50">
+                            <Utensils className="h-12 w-12 text-muted-foreground/50" />
                         </div>
                     )}
 
@@ -252,7 +252,7 @@ export function RecipeCard({ recipe, isAdmin, onSelect, isSelected }: RecipeCard
                             )}
 
                             <Button
-                                className="h-11 w-11 rounded-xl bg-[#E85D04] hover:bg-[#E85D04]/90 text-white shadow-sm p-0 shrink-0"
+                                className="h-11 w-11 rounded-xl bg-primary hover:bg-primary/90 text-white shadow-sm p-0 shrink-0"
                                 onClick={(e) => {
                                     e.stopPropagation()
                                     setShowAssignDialog(true)

@@ -216,7 +216,7 @@ export function WorkoutDialog({
                                                             <Button
                                                                 variant="ghost"
                                                                 size="icon"
-                                                                className="h-8 w-8 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                                                                className="h-8 w-8 text-primary hover:text-primary hover:bg-muted"
                                                                 onClick={() => setEditingExerciseIndex(index)}
                                                             >
                                                                 <Pencil className="h-4 w-4" />
@@ -349,7 +349,7 @@ function ExerciseForm({
                                 <p>No encontrado.</p>
                                 <Button
                                     variant="ghost"
-                                    className="h-auto p-0 text-orange-600 font-medium hover:text-orange-700 hover:bg-transparent"
+                                    className="h-auto p-0 text-primary font-medium hover:text-primary hover:bg-transparent"
                                     onClick={() => {
                                     }}
                                 >
@@ -459,7 +459,7 @@ function ExerciseForm({
                 <Button
                     onClick={handleSubmit}
                     disabled={!name}
-                    className="bg-orange-600 hover:bg-orange-700 text-white"
+                    className="bg-primary hover:bg-primary/90 text-white"
                 >
                     {initialData ? 'Guardar cambios' : 'Agregar ejercicio'}
                 </Button>

@@ -143,7 +143,7 @@ export function AddCheckinDialog({ clientId }: AddCheckinDialogProps) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button className="bg-orange-600 hover:bg-orange-700 text-white">
+                <Button className="bg-primary hover:bg-primary/90 text-white">
                     <Plus className="mr-2 h-4 w-4" /> Nuevo Check-in
                 </Button>
             </DialogTrigger>
@@ -160,7 +160,7 @@ export function AddCheckinDialog({ clientId }: AddCheckinDialogProps) {
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="next_checkin">Próximo Check-in</Label>
-                            <Input id="next_checkin" type="date" className="border-orange-200 focus-visible:ring-orange-500" value={nextCheckinDate} onChange={e => setNextCheckinDate(e.target.value)} />
+                            <Input id="next_checkin" type="date" className="border-border focus-visible:ring-primary" value={nextCheckinDate} onChange={e => setNextCheckinDate(e.target.value)} />
                         </div>
                     </div>
 
@@ -209,7 +209,7 @@ export function AddCheckinDialog({ clientId }: AddCheckinDialogProps) {
 
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 pb-2 border-b">
-                            <Scale className="h-5 w-5 text-orange-600" />
+                            <Scale className="h-5 w-5 text-primary" />
                             <h4 className="font-semibold text-sm">Composición Corporal</h4>
                         </div>
                         <div className="grid grid-cols-3 gap-4">
@@ -230,7 +230,7 @@ export function AddCheckinDialog({ clientId }: AddCheckinDialogProps) {
 
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 pb-2 border-b">
-                            <Ruler className="h-5 w-5 text-orange-600" />
+                            <Ruler className="h-5 w-5 text-primary" />
                             <h4 className="font-semibold text-sm">Medidas (cm)</h4>
                         </div>
                         <div className="grid grid-cols-3 gap-4">
@@ -273,7 +273,7 @@ export function AddCheckinDialog({ clientId }: AddCheckinDialogProps) {
                     <div className="flex justify-end gap-3 pt-4">
                         <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
                         <Button
-                            className="bg-orange-600 hover:bg-orange-700"
+                            className="bg-primary hover:bg-primary/90"
                             onClick={handleSave}
                             disabled={loading || !weight}
                         >

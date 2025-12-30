@@ -195,7 +195,7 @@ export function AssignWorkoutDialog({
         <Dialog open={isOpen} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 {trigger ? trigger : (
-                    <Button className="bg-orange-600 hover:bg-orange-700 text-white">
+                    <Button className="bg-primary hover:bg-primary/90 text-white">
                         <Plus className="mr-2 h-4 w-4" /> Asignar Rutina
                     </Button>
                 )}
@@ -299,7 +299,7 @@ export function AssignWorkoutDialog({
                                                 size="sm"
                                                 onClick={() => toggleDay(day)}
                                                 className={cn(
-                                                    scheduledDays.includes(day) ? "bg-orange-600 hover:bg-orange-700 text-white" : ""
+                                                    scheduledDays.includes(day) ? "bg-primary hover:bg-primary/90 text-white" : ""
                                                 )}
                                             >
                                                 {day}
@@ -342,7 +342,7 @@ export function AssignWorkoutDialog({
                                                                     <Button
                                                                         variant="ghost"
                                                                         size="icon"
-                                                                        className="h-8 w-8 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                                                                        className="h-8 w-8 text-primary hover:text-primary hover:bg-muted"
                                                                         onClick={() => setEditingExerciseIndex(index)}
                                                                     >
                                                                         <Pencil className="h-4 w-4" />
@@ -386,7 +386,7 @@ export function AssignWorkoutDialog({
 
                                 <div className="flex justify-end gap-3 pt-4 border-t">
                                     <Button variant="outline" onClick={() => setOpen(false)}>Cerrar</Button>
-                                    <Button onClick={handleSave} disabled={loading || !workoutName || !validUntil} className="bg-orange-600 hover:bg-orange-700 text-white">
+                                    <Button onClick={handleSave} disabled={loading || !workoutName || !validUntil} className="bg-primary hover:bg-primary/90 text-white">
                                         {loading ? 'Guardando...' : (existingWorkout ? 'Guardar rutina' : 'Guardar rutina')}
                                     </Button>
                                 </div>
@@ -482,7 +482,7 @@ function ExerciseForm({
                                 <p>No encontrado.</p>
                                 <Button
                                     variant="ghost"
-                                    className="h-auto p-0 text-orange-600 font-medium hover:text-orange-700 hover:bg-transparent"
+                                    className="h-auto p-0 text-primary font-medium hover:text-primary hover:bg-transparent"
                                     onClick={() => {
                                         // TODO: We could capture the search input term if we want to allow 
                                         // automatic creation of new exercises, but CommandInput encapsulates it.
@@ -575,7 +575,7 @@ function ExerciseForm({
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                className="h-8 w-8 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                                                className="h-8 w-8 text-primary hover:text-primary hover:bg-muted"
                                             >
                                                 <Pencil className="h-4 w-4" />
                                             </Button>
@@ -610,7 +610,7 @@ function ExerciseForm({
                 <Button
                     onClick={handleSubmit}
                     disabled={!name}
-                    className="bg-orange-600 hover:bg-orange-700 text-white"
+                    className="bg-primary hover:bg-primary/90 text-white"
                 >
                     {initialData ? 'Guardar cambios' : 'Agregar ejercicio'}
                 </Button>

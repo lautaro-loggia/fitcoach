@@ -8,7 +8,7 @@ export default function LoginPage() {
             <div className="flex flex-col items-center justify-center p-8 bg-background">
                 <div className="w-full max-w-sm mb-10">
                     <div className="flex items-center justify-center mb-8">
-                        <Image src="/orbit_logo_v2.png" alt="Orbit" width={180} height={60} className="h-12 w-auto object-contain" priority />
+                        <Image src="/orbit_logo_black.png" alt="Orbit" width={180} height={60} className="h-12 w-auto object-contain" priority />
                     </div>
                     <LoginForm />
                 </div>

@@ -115,7 +115,7 @@ export function AssignDietDialog({ client }: AssignDietDialogProps) {
         <>
             <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger asChild>
-                    <Button className="bg-orange-600 hover:bg-orange-700 text-white">
+                    <Button className="bg-primary hover:bg-primary/90 text-white">
                         <Plus className="mr-2 h-4 w-4" /> Asignar Comida
                     </Button>
                 </DialogTrigger>
@@ -163,7 +163,7 @@ export function AssignDietDialog({ client }: AssignDietDialogProps) {
                         <div className="flex-1 overflow-y-auto pr-2">
                             {loading ? (
                                 <div className="flex flex-col items-center justify-center h-40">
-                                    <Loader2 className="h-8 w-8 animate-spin text-orange-600" />
+                                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
                                     <p className="text-muted-foreground mt-2">Cargando recetas...</p>
                                 </div>
                             ) : (
@@ -196,7 +196,7 @@ export function AssignDietDialog({ client }: AssignDietDialogProps) {
                             </div>
                             <Button
                                 onClick={() => validateAndSubmit(false)}
-                                className="bg-orange-600 hover:bg-orange-700 w-32"
+                                className="bg-primary hover:bg-primary/90 w-32"
                                 disabled={loading}
                             >
                                 {loading ? 'Asignando...' : 'Asignar'}

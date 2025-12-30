@@ -186,7 +186,7 @@ export function ExerciseCheckinMobile({
                                 <Dumbbell className="h-6 w-6 text-muted-foreground" />
                             </div>
                             <div>
-                                <h1 className="text-lg font-bold text-blue-500">{exercise.name}</h1>
+                                <h1 className="text-lg font-bold text-primary">{exercise.name}</h1>
                                 <p className="text-xs text-muted-foreground">{clientName}</p>
                             </div>
                         </div>

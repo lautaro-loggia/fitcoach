@@ -38,7 +38,7 @@ export function WorkoutCard({ workout, onEdit, onDelete, onView, onDownload }: W
         <Card className="relative hover:shadow-md transition-shadow">
             <CardHeader className="p-4 pb-2">
                 <div className="flex justify-between items-start">
-                    <span className="text-xs font-medium text-orange-600 truncate max-w-[80%]">
+                    <span className="text-xs font-medium text-primary truncate max-w-[80%]">
                         {checkDateString}
                     </span>
                     <DropdownMenu>

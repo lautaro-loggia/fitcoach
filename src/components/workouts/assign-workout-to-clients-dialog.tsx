@@ -136,7 +136,7 @@ export function AssignWorkoutToClientsDialog({ open, onOpenChange, workout }: As
                         <Button
                             onClick={handleAssign}
                             disabled={assigning || selectedClients.length === 0}
-                            className="bg-orange-600 hover:bg-orange-700 text-white"
+                            className="bg-primary hover:bg-primary/90 text-white"
                         >
                             {assigning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Asignar
