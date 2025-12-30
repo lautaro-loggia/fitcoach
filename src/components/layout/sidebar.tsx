@@ -18,10 +18,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
 import { useSidebar } from './sidebar-context'
-import {
-    Sheet,
-    SheetContent,
-} from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 
 const navigation = [
     { name: 'Inicio', href: '/', icon: Home },
@@ -134,6 +131,7 @@ export function Sidebar() {
             {/* Mobile Sidebar - Sheet */}
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
                 <SheetContent side="left" className="w-64 p-0 bg-sidebar">
+                    <SheetTitle className="sr-only">Menú de navegación</SheetTitle>
                     <SidebarContent collapsed={false} onNavigate={() => setMobileOpen(false)} />
                 </SheetContent>
             </Sheet>

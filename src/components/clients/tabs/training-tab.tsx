@@ -11,6 +11,7 @@ import { CalendarView } from '../calendar-view'
 import { cn } from '@/lib/utils'
 import { WorkoutDetailDialog } from '../workout-detail-dialog'
 import { generateWorkoutPDF } from '@/lib/pdf-utils'
+import { WorkoutHistory } from '../workout-history'
 
 interface TrainingTabProps {
     client: any
@@ -155,6 +156,11 @@ export function TrainingTab({ client }: TrainingTabProps) {
                     client={client}
                 />
             )}
+
+            {/* Workout History Section */}
+            <div className="mt-8">
+                <WorkoutHistory clientId={client.id} />
+            </div>
         </div>
     )
 

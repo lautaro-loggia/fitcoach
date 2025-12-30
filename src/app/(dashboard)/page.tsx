@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { createClient } from '@/lib/supabase/server'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { SessionStartButton } from '@/components/workout-session/session-start-button'
 
 export default async function DashboardPage() {
     const supabase = await createClient()
@@ -154,8 +155,11 @@ export default async function DashboardPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
-                            {/* Placeholder for shortcuts since alerts logic is complex to infer just from counts */}
-                            <div className="p-4 border rounded-md bg-muted/20 text-sm text-muted-foreground text-center">
+                            {/* Session Start - Mobile Only */}
+                            <SessionStartButton />
+
+                            {/* Placeholder for shortcuts */}
+                            <div className="p-4 border rounded-md bg-muted/20 text-sm text-muted-foreground text-center hidden md:block">
                                 Próximamente: Alertas de vencimiento de planes.
                             </div>
                         </div>
