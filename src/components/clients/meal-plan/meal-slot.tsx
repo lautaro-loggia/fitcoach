@@ -13,10 +13,12 @@ interface MealSlotProps {
     meal: any
     dayName: string
     clientId: string
+    clientAllergens?: string[]
+    clientPreference?: string
     onUpdate: () => void
 }
 
-export function MealSlot({ meal, dayName, clientId, onUpdate }: MealSlotProps) {
+export function MealSlot({ meal, dayName, clientId, clientAllergens, clientPreference, onUpdate }: MealSlotProps) {
     const isSkipped = meal.is_skipped
 
     const handleAddDish = async (data: any) => {
@@ -48,6 +50,8 @@ export function MealSlot({ meal, dayName, clientId, onUpdate }: MealSlotProps) {
                         <AddDishDialog
                             mealId={meal.id}
                             contextLabel={`${dayName} · ${meal.name}`}
+                            clientAllergens={clientAllergens}
+                            clientPreference={clientPreference}
                             onConfirm={handleAddDish}
                         />
                     )}
