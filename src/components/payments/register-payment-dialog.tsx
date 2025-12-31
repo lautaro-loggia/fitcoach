@@ -55,9 +55,20 @@ export function RegisterPaymentDialog({
     useEffect(() => {
         if (open) {
             setSelectedPlanId(client.plan_id || 'none')
+
+            // Try to find current price from fetched plans first to ensure fresh data
+            if (client.plan_id && plans.length > 0) {
+                const currentPlan = plans.find(p => p.id === client.plan_id)
+                if (currentPlan) {
+                    setAmount(currentPlan.price_monthly.toString())
+                    return
+                }
+            }
+
+            // Fallback to client's stored price
             setAmount(client.price_monthly?.toString() || '')
         }
-    }, [open, client.plan_id, client.price_monthly])
+    }, [open, client.plan_id, client.price_monthly, plans])
 
     function handlePlanChange(planId: string) {
         setSelectedPlanId(planId)
@@ -131,12 +142,13 @@ export function RegisterPaymentDialog({
                             value={paidAt}
                             onChange={(e) => setPaidAt(e.target.value)}
                             required
+                            disabled={loading}
                         />
                     </div>
 
                     <div className="space-y-2">
                         <Label htmlFor="plan">Plan (opcional)</Label>
-                        <Select value={selectedPlanId} onValueChange={handlePlanChange}>
+                        <Select value={selectedPlanId} onValueChange={handlePlanChange} disabled={loading}>
                             <SelectTrigger id="plan">
                                 <SelectValue placeholder="Personalizado" />
                             </SelectTrigger>
@@ -166,6 +178,7 @@ export function RegisterPaymentDialog({
                             placeholder="0.00"
                             required
                             readOnly={selectedPlanId !== 'none'}
+                            disabled={loading}
                             className={selectedPlanId !== 'none' ? 'bg-muted cursor-not-allowed' : ''}
                         />
                         <p className="text-xs text-muted-foreground">
@@ -177,7 +190,7 @@ export function RegisterPaymentDialog({
 
                     <div className="space-y-2">
                         <Label htmlFor="method">Método de pago *</Label>
-                        <Select value={method} onValueChange={setMethod} required>
+                        <Select value={method} onValueChange={setMethod} required disabled={loading}>
                             <SelectTrigger id="method">
                                 <SelectValue placeholder="Selecciona un método" />
                             </SelectTrigger>
@@ -198,6 +211,7 @@ export function RegisterPaymentDialog({
                             onChange={(e) => setNote(e.target.value)}
                             placeholder="Agrega una nota sobre este pago..."
                             rows={3}
+                            disabled={loading}
                         />
                     </div>
 

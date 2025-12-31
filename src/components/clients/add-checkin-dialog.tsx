@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,10 +13,20 @@ import Image from "next/image"
 
 interface AddCheckinDialogProps {
     clientId: string
+    autoOpen?: boolean
 }
 
-export function AddCheckinDialog({ clientId }: AddCheckinDialogProps) {
-    const [open, setOpen] = useState(false)
+export function AddCheckinDialog({ clientId, autoOpen }: AddCheckinDialogProps) {
+    const [open, setOpen] = useState(autoOpen || false)
+
+    useEffect(() => {
+        if (autoOpen) {
+            // Small delay to ensure component is fully mounted and ready
+            const t = setTimeout(() => setOpen(true), 100)
+            return () => clearTimeout(t)
+        }
+    }, [autoOpen])
+
     const [loading, setLoading] = useState(false)
     const [date, setDate] = useState(new Date().toISOString().split('T')[0])
     const [nextCheckinDate, setNextCheckinDate] = useState(() => {

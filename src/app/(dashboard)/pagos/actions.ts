@@ -602,3 +602,168 @@ export async function changeClientPlan(data: {
         return { error: 'Error inesperado al cambiar el plan' }
     }
 }
+// ==================== HISTORY ACTIONS ====================
+
+export interface PaymentWithClient extends Payment {
+    client: {
+        full_name: string
+        plan: {
+            name: string
+        } | null
+    } | null
+}
+
+export async function getAllPayments(): Promise<PaymentWithClient[]> {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
+
+    const { data, error } = await supabase
+        .from('payments')
+        .select(`
+            *,
+            client:clients(
+                full_name,
+                plan:plans(name)
+            )
+        `)
+        .eq('trainer_id', user.id)
+        .order('paid_at', { ascending: false })
+
+    if (error) throw error
+    return data as PaymentWithClient[]
+}
+
+export async function updatePayment(paymentId: string, data: {
+    amount?: number
+    method?: string
+    note?: string
+    paidAt?: string
+}) {
+    try {
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return { error: 'Not authenticated' }
+
+        const updates: any = {}
+        if (data.amount !== undefined) updates.amount = data.amount
+        if (data.method !== undefined) updates.method = data.method
+        if (data.note !== undefined) updates.note = data.note
+        if (data.paidAt !== undefined) updates.paid_at = data.paidAt
+
+        const { error } = await supabase
+            .from('payments')
+            .update(updates)
+            .eq('id', paymentId)
+            .eq('trainer_id', user.id)
+
+        if (error) {
+            console.error('Update payment error:', error)
+            return { error: 'Error al actualizar el pago' }
+        }
+
+        revalidatePath('/pagos')
+        revalidatePath('/')
+        return { success: true }
+    } catch (error) {
+        console.error('Update payment error:', error)
+        return { error: 'Error inesperado' }
+    }
+}
+
+export async function deletePayment(paymentId: string) {
+    try {
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return { error: 'Not authenticated' }
+
+        const { error } = await supabase
+            .from('payments')
+            .delete()
+            .eq('id', paymentId)
+            .eq('trainer_id', user.id)
+
+        if (error) {
+            console.error('Delete payment error:', error)
+            return { error: 'Error al eliminar el pago' }
+        }
+
+        revalidatePath('/pagos')
+        revalidatePath('/') // Update dashboard income stats
+        return { success: true }
+    } catch (error) {
+        console.error('Delete payment error:', error)
+        return { error: 'Error inesperado' }
+    }
+}
+
+export interface IncomeData {
+    month: string
+    amount: number
+}
+
+
+export async function getIncomeHistory(startDate?: Date, endDate?: Date): Promise<IncomeData[]> {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return []
+
+    // Default to last 6 months if no dates provided
+    let fromDate: Date
+    let toDate: Date
+
+    if (startDate && endDate) {
+        fromDate = startDate
+        toDate = endDate
+    } else {
+        fromDate = new Date()
+        fromDate.setMonth(fromDate.getMonth() - 5)
+        fromDate.setDate(1)
+        toDate = new Date()
+    }
+
+    const { data: payments } = await supabase
+        .from('payments')
+        .select('amount, paid_at')
+        .eq('trainer_id', user.id)
+        .gte('paid_at', fromDate.toISOString().split('T')[0])
+        .lte('paid_at', toDate.toISOString().split('T')[0])
+        .order('paid_at', { ascending: true })
+
+    if (!payments) return []
+
+    const monthNames = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+
+    // Generate filtered results grouped by month
+    // We'll iterate from fromDate to toDate month by month
+    const buckets: { month: string; fullDate: Date; amount: number }[] = []
+
+    const current = new Date(fromDate)
+    current.setDate(1) // Start at first of month to avoid skipping if today is 31st and next month is Feb
+
+    while (current <= toDate || (current.getMonth() === toDate.getMonth() && current.getFullYear() === toDate.getFullYear())) {
+        buckets.push({
+            month: monthNames[current.getMonth()],
+            fullDate: new Date(current),
+            amount: 0
+        })
+        current.setMonth(current.getMonth() + 1)
+    }
+
+    payments.forEach(payment => {
+        const date = new Date(payment.paid_at + 'T12:00:00')
+        const match = buckets.find(b =>
+            b.fullDate.getMonth() === date.getMonth() &&
+            b.fullDate.getFullYear() === date.getFullYear()
+        )
+        if (match) {
+            match.amount += Number(payment.amount)
+        }
+    })
+
+    return buckets.map(b => ({
+        month: b.month.charAt(0).toUpperCase() + b.month.slice(1),
+        amount: b.amount
+    }))
+}

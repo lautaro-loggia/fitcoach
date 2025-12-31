@@ -1,5 +1,4 @@
 'use client'
-
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -9,6 +8,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PlanesTab } from '@/components/pagos/planes-tab'
+import { HistoryTab } from '@/components/pagos/history-tab'
+import { StatsTab } from '@/components/pagos/stats-tab'
 import {
     Select,
     SelectContent,
@@ -44,8 +45,10 @@ import {
     updatePaymentStatuses,
     sendPaymentReminder,
     sendBulkReminders,
+    getIncomeHistory,
     type ClientWithPayment,
     type PaymentStats,
+    type IncomeData,
 } from './actions'
 import { RegisterPaymentDialog } from '@/components/payments/register-payment-dialog'
 import { ChangePlanDialog } from '@/components/payments/change-plan-dialog'
@@ -56,6 +59,7 @@ export default function PagosPage() {
     const router = useRouter()
     const [clients, setClients] = useState<ClientWithPayment[]>([])
     const [stats, setStats] = useState<PaymentStats | null>(null)
+    const [history, setHistory] = useState<IncomeData[]>([])
     const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState('')
     const [statusFilter, setStatusFilter] = useState<string>('all')
@@ -65,23 +69,26 @@ export default function PagosPage() {
     const [changePlanDialogOpen, setChangePlanDialogOpen] = useState(false)
     const [clientToChangePlan, setClientToChangePlan] = useState<ClientWithPayment | null>(null)
     const [sendingReminder, setSendingReminder] = useState<string | null>(null)
-    const [activeTab, setActiveTab] = useState('pagos')
+    const [activeTab, setActiveTab] = useState('stats')
 
     useEffect(() => {
         loadData()
     }, [])
-
     async function loadData() {
         console.log('[Pagos] loadData called')
         try {
             setLoading(true)
 
-            // Single optimized call instead of 3 separate ones
-            await updatePaymentStatuses()
-            const data = await getAllPaymentData()
+            // Optimized parallel call
+            const [updateRes, data, historyData] = await Promise.all([
+                updatePaymentStatuses(),
+                getAllPaymentData(),
+                getIncomeHistory()
+            ])
 
             setClients(data.clients)
             setStats(data.stats)
+            setHistory(historyData)
         } catch (error) {
             console.error('Error loading data:', error)
             toast.error('No se pudieron cargar los datos')
@@ -228,29 +235,37 @@ export default function PagosPage() {
                 </div>
             </div>
 
-            {/* Tabs */}
-            <Tabs defaultValue="pagos" className="w-full space-y-6" onValueChange={setActiveTab}>
+            <Tabs defaultValue="stats" className="w-full space-y-6" onValueChange={setActiveTab}>
                 <TabsList>
+                    <TabsTrigger value="stats">Estadísticas</TabsTrigger>
                     <TabsTrigger value="pagos">Pagos</TabsTrigger>
                     <TabsTrigger value="planes">Planes</TabsTrigger>
+                    <TabsTrigger value="history">Historial de Registros</TabsTrigger>
                 </TabsList>
+
+                <TabsContent value="stats">
+                    {activeTab === 'stats' && <StatsTab history={history} />}
+                </TabsContent>
 
                 <TabsContent value="pagos" className="space-y-6">
 
                     {/* KPI Cards */}
-                    <div className="grid gap-4 grid-cols-2 md:grid-cols-5">
-                        {/* Ingresos cobrados */}
-                        <Card>
+                    <div className="grid gap-4 grid-cols-2 md:grid-cols-4 lg:grid-cols-5">
+                        {/* Ingresos del Mes */}
+                        <Card className="col-span-2 md:col-span-2 lg:col-span-1 border-primary/20 bg-primary/5">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">
-                                    Ingresos cobrados
+                                <CardTitle className="text-sm font-medium text-primary">
+                                    Ingresos del Mes
                                 </CardTitle>
-                                <DollarSign className="h-4 w-4 text-green-600" />
+                                <DollarSign className="h-4 w-4 text-primary" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">
+                                <div className="text-2xl font-bold text-primary">
                                     {formatCurrency(stats?.paidMonthlyIncome || 0)}
                                 </div>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Total cobrado este mes
+                                </p>
                             </CardContent>
                         </Card>
 
@@ -267,7 +282,7 @@ export default function PagosPage() {
                             </CardContent>
                         </Card>
 
-                        {/* Pagos al día - Mini card */}
+                        {/* Pagos al día */}
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium">
@@ -280,7 +295,7 @@ export default function PagosPage() {
                             </CardContent>
                         </Card>
 
-                        {/* Pagos pendientes - Mini card */}
+                        {/* Pagos pendientes */}
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium">
@@ -293,7 +308,7 @@ export default function PagosPage() {
                             </CardContent>
                         </Card>
 
-                        {/* Pagos vencidos - Mini card */}
+                        {/* Pagos vencidos */}
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium">
@@ -306,6 +321,8 @@ export default function PagosPage() {
                             </CardContent>
                         </Card>
                     </div>
+
+
 
 
                     {/* Clients Table */}
@@ -545,7 +562,11 @@ export default function PagosPage() {
                 <TabsContent value="planes">
                     {activeTab === 'planes' && <PlanesTab />}
                 </TabsContent>
+
+                <TabsContent value="history">
+                    {activeTab === 'history' && <HistoryTab />}
+                </TabsContent>
             </Tabs>
-        </div>
+        </div >
     )
 }

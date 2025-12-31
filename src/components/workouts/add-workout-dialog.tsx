@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -31,6 +31,13 @@ export function WorkoutDialog({
 }: WorkoutDialogProps) {
     const [internalOpen, setInternalOpen] = useState(false)
     const router = useRouter()
+    const searchParams = useSearchParams()
+
+    useEffect(() => {
+        if (searchParams.get('new') === 'true' && !existingWorkout) {
+            setInternalOpen(true)
+        }
+    }, [searchParams, existingWorkout])
 
     // Derived state for open status
     const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen

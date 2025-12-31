@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
     Dialog,
     DialogContent,
@@ -27,6 +27,13 @@ export function AddClientDialog() {
     const [open, setOpen] = useState(false)
     const [loading, setLoading] = useState(false)
     const router = useRouter()
+    const searchParams = useSearchParams()
+
+    useEffect(() => {
+        if (searchParams.get('new') === 'true') {
+            setOpen(true)
+        }
+    }, [searchParams])
 
     // State for Select fields (since Radix Select doesn't support name attribute in forms)
     const [gender, setGender] = useState('')

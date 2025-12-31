@@ -1,11 +1,13 @@
 
 import { StatsCard } from '@/components/dashboard/stats-cards'
-import { Users, Utensils, Dumbbell, CreditCard } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Users, AlertCircle, UserPlus, Activity, ArrowRight, UserCheck, Dumbbell } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { formatDistanceToNow } from 'date-fns'
-import { es } from 'date-fns/locale'
-import { SessionStartButton } from '@/components/workout-session/session-start-button'
+import { getDashboardStats, getUpcomingPayments } from '@/lib/actions/dashboard'
+import { UpcomingPayments } from '@/components/dashboard/upcoming-payments'
+import { Button } from '@/components/ui/button'
+import Link from 'next/link'
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card'
+import { ClientSelectorDialog } from '@/components/dashboard/client-selector-dialog'
 
 export default async function DashboardPage() {
     const supabase = await createClient()
@@ -31,66 +33,45 @@ export default async function DashboardPage() {
     const greeting = getGreeting()
     const userName = profile?.full_name?.split(' ')[0] || 'Entrenador'
 
-    // 1. Active Clients
-    const { count: activeClientsCount } = await supabase
-        .from('clients')
-        .select('*', { count: 'exact', head: true })
-        .eq('trainer_id', user.id)
-        .eq('status', 'active')
+    // Fetch all dashboard data
+    const [stats, upcomingPayments] = await Promise.all([
+        getDashboardStats(),
+        getUpcomingPayments()
+    ])
 
-    // 2. Assigned Workouts
-    const { count: activeWorkoutsCount } = await supabase
-        .from('assigned_workouts')
-        .select('*', { count: 'exact', head: true })
-        .eq('trainer_id', user.id)
-
-    // 3. Assigned Diets
-    const { count: activeDietsCount } = await supabase
-        .from('assigned_diets')
-        .select('*', { count: 'exact', head: true })
-        .eq('trainer_id', user.id)
-
-    // 4. Pending Payments
-    const { count: pendingPaymentsCount } = await supabase
-        .from('payments')
-        .select('*', { count: 'exact', head: true })
-        .eq('trainer_id', user.id)
-        .eq('status', 'pending')
-
-    const stats = [
+    const statCards = [
         {
-            title: "Asesorados activos",
-            value: activeClientsCount?.toString() || "0",
-            description: "En seguimiento",
+            title: "Asesorados Activos",
+            value: stats.activeClients.toString(),
+            description: "Total clientes activos",
             icon: Users,
         },
         {
-            title: "Rutinas asignadas",
-            value: activeWorkoutsCount?.toString() || "0",
-            description: "Planes activos",
-            icon: Dumbbell,
+            title: "Pagos Vencidos",
+            value: stats.pendingPaymentsCount.toString(),
+            description: "Requieren atención inmediata",
+            icon: AlertCircle,
+            alert: stats.pendingPaymentsCount > 0,
+            variant: "destructive"
         },
         {
-            title: "Dietas asignadas",
-            value: activeDietsCount?.toString() || "0",
-            description: "Planes nutricionales",
-            icon: Utensils,
+            title: "Check-ins Pendientes",
+            value: stats.pendingCheckinsCount.toString(),
+            description: "Deben reportarse hoy",
+            icon: Activity,
+            alert: stats.pendingCheckinsCount > 0,
         },
+        // New Clients (Already implemented in backend now)
         {
-            title: "Pagos pendientes",
-            value: pendingPaymentsCount?.toString() || "0",
-            description: "Por cobrar",
-            icon: CreditCard,
+            title: "Nuevos este mes",
+            value: stats.newClientsCount.toString(),
+            description: "Clientes registrados",
+            icon: UserPlus,
         },
     ]
 
-    // Fetch Recent Activity (Latest Checkins)
-    const { data: recentCheckins } = await supabase
-        .from('checkins')
-        .select('id, date, weight, clients(full_name)')
-        .eq('trainer_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(5)
+    const overduePayments = upcomingPayments.filter(p => p.status === 'overdue')
+    const futurePayments = upcomingPayments.filter(p => p.status === 'pending')
 
     return (
         <div className="space-y-6 md:space-y-8">
@@ -99,72 +80,83 @@ export default async function DashboardPage() {
                     {greeting}, <span className="text-primary">{userName}</span>
                 </h2>
                 <p className="text-muted-foreground text-sm md:text-base">
-                    Aquí tenés un resumen de tu actividad hoy.
+                    Aquí tienes el resumen de tu actividad con los asesorados.
                 </p>
             </div>
 
+            {/* Quick Actions Container */}
+            <Card>
+                <CardHeader className="px-4 py-3 border-b border-border">
+                    <CardTitle className="text-base font-medium">Accesos Rápidos</CardTitle>
+                </CardHeader>
+                <CardContent className="p-4">
+                    <div className="flex flex-col md:flex-row gap-3">
+                        {/* Nuevo Asesorado */}
+                        <Link href="/clients?new=true" className="flex-1 w-full">
+                            <Button variant="outline" className="w-full h-auto py-3 justify-start gap-3 border-dashed hover:border-solid hover:bg-muted/50 group">
+                                <div className="p-2 rounded-full bg-blue-50 text-blue-500 group-hover:bg-blue-100 transition-colors">
+                                    <UserPlus className="h-4 w-4" />
+                                </div>
+                                <div className="text-left">
+                                    <span className="font-medium block">Nuevo Asesorado</span>
+                                    <span className="text-xs text-muted-foreground hidden sm:block">Registrar cliente</span>
+                                </div>
+                            </Button>
+                        </Link>
+
+                        {/* Crear Rutina */}
+                        <Link href="/workouts?new=true" className="flex-1 w-full">
+                            <Button variant="outline" className="w-full h-auto py-3 justify-start gap-3 border-dashed hover:border-solid hover:bg-muted/50 group">
+                                <div className="p-2 rounded-full bg-purple-50 text-purple-500 group-hover:bg-purple-100 transition-colors">
+                                    <Dumbbell className="h-4 w-4" />
+                                </div>
+                                <div className="text-left">
+                                    <span className="font-medium block">Crear Rutina</span>
+                                    <span className="text-xs text-muted-foreground hidden sm:block">Nueva planificación</span>
+                                </div>
+                            </Button>
+                        </Link>
+
+                        {/* Registrar Check-in */}
+                        <div className="flex-1 w-full">
+                            <ClientSelectorDialog>
+                                <Button variant="outline" className="w-full h-auto py-3 justify-start gap-3 border-dashed hover:border-solid hover:bg-muted/50 group">
+                                    <div className="p-2 rounded-full bg-green-50 text-green-500 group-hover:bg-green-100 transition-colors">
+                                        <UserCheck className="h-4 w-4" />
+                                    </div>
+                                    <div className="text-left">
+                                        <span className="font-medium block">Registrar Check-in</span>
+                                        <span className="text-xs text-muted-foreground hidden sm:block">Actualizar progreso</span>
+                                    </div>
+                                </Button>
+                            </ClientSelectorDialog>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
             <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-                {stats.map((stat, index) => (
+                {statCards.map((stat, index) => (
                     <StatsCard key={index} {...stat} />
                 ))}
             </div>
 
-            <div className="flex flex-col gap-4 lg:grid lg:grid-cols-7">
-                {/* Activity Feed */}
-                <Card className="lg:col-span-4">
-                    <CardHeader>
-                        <CardTitle>Actividad Reciente</CardTitle>
-                        <CardDescription>
-                            Últimos check-ins recibidos.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
-                            {recentCheckins && recentCheckins.length > 0 ? (
-                                recentCheckins.map((checkin: any) => (
-                                    <div key={checkin.id} className="flex items-center">
-                                        <div className="space-y-1">
-                                            <p className="text-sm font-medium leading-none">
-                                                {checkin.clients?.full_name || 'Cliente'} actualizó su estado
-                                            </p>
-                                            <p className="text-xs text-muted-foreground">
-                                                {formatDistanceToNow(new Date(checkin.date), { addSuffix: true, locale: es })}
-                                            </p>
-                                        </div>
-                                        {checkin.weight && (
-                                            <div className="ml-auto font-medium text-sm">
-                                                {checkin.weight} kg
-                                            </div>
-                                        )}
-                                    </div>
-                                ))
-                            ) : (
-                                <p className="text-sm text-muted-foreground">No hay actividad reciente.</p>
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
+            <div className="space-y-6">
+                {/* Overdue Payments */}
+                {overduePayments.length > 0 && (
+                    <UpcomingPayments
+                        clients={overduePayments}
+                        title="Pagos Vencidos"
+                        description="Requieren atención inmediata"
+                        cardClassName="border-red-200"
+                    />
+                )}
 
-                {/* Alerts / Tasks */}
-                <Card className="lg:col-span-3">
-                    <CardHeader>
-                        <CardTitle>Accesos Rápidos</CardTitle>
-                        <CardDescription>
-                            Acciones frecuentes.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
-                            {/* Session Start - Mobile Only */}
-                            <SessionStartButton />
-
-                            {/* Placeholder for shortcuts */}
-                            <div className="p-4 border rounded-md bg-muted/20 text-sm text-muted-foreground text-center hidden md:block">
-                                Próximamente: Alertas de vencimiento de planes.
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                {/* Upcoming Payments */}
+                <UpcomingPayments
+                    clients={futurePayments}
+                    title="Vencimientos Próximos"
+                />
             </div>
         </div>
     )

@@ -9,6 +9,7 @@ import { WeightSummary } from '@/components/clients/checkin/weight-summary'
 import { WeightChart } from '@/components/clients/checkin/weight-chart'
 import { HistoryTable } from '@/components/clients/checkin/history-table'
 import { EditTargetDialog } from '@/components/clients/checkin/edit-target-dialog'
+import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 
 export const METRICS_CONFIG: Record<string, { label: string, unit: string }> = {
     weight: { label: 'Peso', unit: 'kg' },
@@ -26,9 +27,23 @@ export function CheckinTab({ client }: { client: any }) {
     const [checkins, setCheckins] = useState<any[]>([])
     const [selectedMetric, setSelectedMetric] = useState<string>('weight')
 
+    // Navigation hooks for auto-open feature
+    const searchParams = useSearchParams()
+    const router = useRouter()
+    const pathname = usePathname()
+
+    // Determine if we should auto-open based on URL search params
+    const shouldAutoOpen = searchParams.get('action') === 'new'
+
+    // Effect to clear the 'action' param after opening so it doesn't persist across refreshes
     useEffect(() => {
-        fetchCheckins()
-    }, [client.id])
+        if (shouldAutoOpen) {
+            const params = new URLSearchParams(searchParams.toString())
+            params.delete('action')
+            // Using replace to avoid adding to history stack
+            router.replace(`${pathname}?${params.toString()}`)
+        }
+    }, [shouldAutoOpen, searchParams, pathname, router])
 
     const fetchCheckins = async () => {
         try {
@@ -48,11 +63,6 @@ export function CheckinTab({ client }: { client: any }) {
     const [isEditTargetOpen, setIsEditTargetOpen] = useState(false)
     const [localTargets, setLocalTargets] = useState<Record<string, number>>({})
 
-    // Initial load of targets from client prop if available, or fetch freshly
-    // Ideally we should sync this. For now let's assume client prop has it or we rely on revalidate.
-    // But since 'targets' is new, we might need to fetch it in fetchCheckins or a new fetchClient.
-    // Let's create a fetchClientDetails function to cover ourselves.
-
     const fetchClientDetails = async () => {
         const supabase = createClient()
         const { data } = await supabase
@@ -62,7 +72,6 @@ export function CheckinTab({ client }: { client: any }) {
             .single()
 
         if (data) {
-            // Merge all into a unified structure for easier access
             const merged = { ...data.targets, weight: data.target_weight, body_fat: data.target_fat }
             setLocalTargets(merged)
         }
@@ -74,7 +83,6 @@ export function CheckinTab({ client }: { client: any }) {
     }, [client.id])
 
 
-    // Helper to get series data for selected metric
     const getMetricData = (key: string) => {
         return checkins.map(c => {
             let val = null
@@ -96,12 +104,11 @@ export function CheckinTab({ client }: { client: any }) {
         const result = await updateClientTargetAction(client.id, selectedMetric, value)
 
         if (result.success) {
-            // Optimistic update or refetch
             setLocalTargets(prev => ({
                 ...prev,
                 [selectedMetric]: value
             }))
-            fetchClientDetails() // Ensure sync
+            fetchClientDetails()
         }
     }
 
@@ -111,17 +118,18 @@ export function CheckinTab({ client }: { client: any }) {
     const startVal = metricData.length > 0 ? metricData[0].value : null
     const currentVal = metricData.length > 0 ? metricData[metricData.length - 1].value : null
 
-    // Target logic: unified lookup
     const targetVal = localTargets[selectedMetric] || null
 
     return (
         <div className="max-w-[1400px] mx-auto space-y-6">
             <div className="flex justify-end mb-2">
-                <AddCheckinDialog clientId={client.id} />
+                <AddCheckinDialog
+                    clientId={client.id}
+                    autoOpen={shouldAutoOpen}
+                />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                {/* Left Column (40%) */}
                 <div className="lg:col-span-5">
                     <MeasuresTable
                         checkins={checkins}
@@ -130,7 +138,6 @@ export function CheckinTab({ client }: { client: any }) {
                     />
                 </div>
 
-                {/* Right Column (60%) */}
                 <div className="lg:col-span-7 flex flex-col">
                     <WeightSummary
                         current={currentVal}
@@ -142,13 +149,13 @@ export function CheckinTab({ client }: { client: any }) {
                     />
 
                     <WeightChart
-                        data={metricData} // Pass normalized {date, value}
+                        data={metricData}
                         target={targetVal}
                         unit={metricConfig.unit}
                     />
 
                     <HistoryTable
-                        data={metricData} // Pass normalized
+                        data={metricData}
                         unit={metricConfig.unit}
                     />
                 </div>
