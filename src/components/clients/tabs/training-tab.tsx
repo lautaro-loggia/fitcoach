@@ -113,6 +113,7 @@ export function TrainingTab({ client }: TrainingTabProps) {
 
                     <AssignWorkoutDialog
                         clientId={client.id}
+                        clientName={client.full_name}
                         onOpenChange={(open) => {
                             if (!open) fetchAssignedWorkouts()
                         }}
@@ -157,6 +158,7 @@ export function TrainingTab({ client }: TrainingTabProps) {
             {editingWorkout && (
                 <AssignWorkoutDialog
                     clientId={client.id}
+                    clientName={client.full_name}
                     existingWorkout={editingWorkout}
                     open={true}
                     onOpenChange={(open) => {
@@ -175,6 +177,10 @@ export function TrainingTab({ client }: TrainingTabProps) {
                     onClose={() => setViewingWorkout(null)}
                     workout={viewingWorkout}
                     client={client}
+                    onEdit={() => {
+                        setViewingWorkout(null)
+                        setEditingWorkout(viewingWorkout)
+                    }}
                 />
             )}
 

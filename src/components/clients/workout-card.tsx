@@ -36,46 +36,66 @@ export function WorkoutCard({ workout, onEdit, onDelete, onView, onDownload, onS
         : "Sin fecha de revisión"
 
     return (
-        <Card className="relative hover:shadow-md transition-shadow flex flex-col h-full">
-            <CardHeader className="p-4 pb-2">
-                <div className="flex justify-between items-start">
-                    <span className="text-xs font-medium text-primary truncate max-w-[80%]">
+        <Card
+            className="relative hover:shadow transition-all cursor-pointer group flex flex-col h-full"
+            onClick={onView}
+        >
+            <CardHeader className="p-5 space-y-0 flex-1">
+                <div className="flex justify-between items-start mb-2">
+                    <CardTitle className="text-lg font-bold pr-8 leading-tight">
+                        {workout.name}
+                    </CardTitle>
+
+                    <div className="absolute top-3 right-2" onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={onView}>
+                                    <Eye className="mr-2 h-4 w-4" /> Ver detalle
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={onDownload}>
+                                    <Download className="mr-2 h-4 w-4" /> Descargar PDF
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={onEdit}>
+                                    <Edit2 className="mr-2 h-4 w-4" /> Editar
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={onDelete}>
+                                    <Trash2 className="mr-2 h-4 w-4" /> Eliminar
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                    <div className="flex items-center text-sm text-muted-foreground">
+                        <span className="font-semibold text-foreground bg-secondary/50 px-2 py-0.5 rounded text-xs">
+                            {exerciseCount} {exerciseCount === 1 ? 'ejercicio' : 'ejercicios'}
+                        </span>
+                        <span className="mx-2 text-muted-foreground/40">|</span>
+                        <span className="truncate text-xs font-medium max-w-[180px]" title={scheduledDays}>
+                            {scheduledDays}
+                        </span>
+                    </div>
+
+                    <div className="text-xs text-muted-foreground pt-3 border-t mt-1">
                         {checkDateString}
-                    </span>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-6 w-6 -mr-2">
-                                <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={onView}>
-                                <Eye className="mr-2 h-4 w-4" /> Ver detalle
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={onDownload}>
-                                <Download className="mr-2 h-4 w-4" /> Descargar PDF
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={onEdit}>
-                                <Edit2 className="mr-2 h-4 w-4" /> Editar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={onDelete}>
-                                <Trash2 className="mr-2 h-4 w-4" /> Eliminar
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                    </div>
                 </div>
-                <CardTitle className="text-lg font-bold mt-1 mb-1">{workout.name}</CardTitle>
             </CardHeader>
-            <CardContent className="p-4 pt-0 flex-1">
-                <div className="flex items-center text-sm text-muted-foreground mt-2">
-                    <span className="font-semibold text-foreground mr-1">{exerciseCount} ejercicios</span>
-                    <span className="mx-2">|</span>
-                    <span className="truncate">{scheduledDays}</span>
-                </div>
-            </CardContent>
             {onStart && (
-                <CardFooter className="p-4 pt-0">
-                    <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" onClick={onStart}>
+                <CardFooter className="p-4 pt-0 mt-auto">
+                    <Button
+                        className="w-full bg-[#5254D9] hover:bg-[#4547b8] text-white relative z-10"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onStart();
+                        }}
+                    >
                         <Play className="mr-2 h-4 w-4" /> Comenzar
                     </Button>
                 </CardFooter>

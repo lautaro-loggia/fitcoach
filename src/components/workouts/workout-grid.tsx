@@ -66,6 +66,10 @@ export function WorkoutGrid({ workouts }: WorkoutGridProps) {
                 isOpen={!!detailWorkout}
                 onClose={() => setDetailWorkout(null)}
                 workout={detailWorkout}
+                onEdit={() => {
+                    setDetailWorkout(null)
+                    handleEdit(detailWorkout)
+                }}
             // client={undefined} // No client passed here as it's a template view
             />
 

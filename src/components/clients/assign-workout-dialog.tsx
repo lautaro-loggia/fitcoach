@@ -6,20 +6,21 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus, X, GripVertical, Save, ArrowLeft, Pencil, CalendarIcon, Trash2, Check, ChevronsUpDown, ChevronLeft } from 'lucide-react'
+import { Plus, X, GripVertical, Save, ArrowLeft, Pencil, CalendarIcon, Trash2, Check, ChevronsUpDown, ChevronLeft, Info } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { assignWorkoutAction, updateAssignedWorkoutAction } from '@/app/(dashboard)/clients/[id]/training-actions'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
 import { Textarea } from '@/components/ui/textarea'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command'
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 
 interface AssignWorkoutDialogProps {
     clientId: string
+    clientName?: string
     existingWorkout?: any
     trigger?: React.ReactNode
     open?: boolean
@@ -30,6 +31,7 @@ const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', '
 
 export function AssignWorkoutDialog({
     clientId,
+    clientName,
     existingWorkout,
     trigger,
     open: controlledOpen,
@@ -205,13 +207,19 @@ export function AssignWorkoutDialog({
                 <DialogHeader>
                     <DialogTitle>
                         {isEditingExercise
-                            ? (editingExerciseIndex !== null ? 'Editar ejercicio' : 'Nuevo ejercicio')
+                            ? (editingExerciseIndex !== null ? 'Editar ejercicio' : 'Agregar Ejercicio')
                             : (existingWorkout
                                 ? 'Editar Rutina del Cliente'
                                 : (step === 'select' ? 'Seleccionar Plantilla' : 'Nueva Rutina para Cliente')
                             )
                         }
                     </DialogTitle>
+                    {clientName && (existingWorkout || step === 'edit') && !isEditingExercise && (
+                        <div className="flex items-center gap-2 px-3 py-2 mt-2 rounded-md bg-blue-50 border border-blue-200 text-blue-700 text-sm">
+                            <Info className="h-4 w-4 flex-shrink-0" />
+                            <span>Los cambios en esta rutina solo se aplicarán al perfil de <strong>{clientName}</strong>.</span>
+                        </div>
+                    )}
                 </DialogHeader>
 
                 {isEditingExercise ? (
@@ -309,36 +317,44 @@ export function AssignWorkoutDialog({
                                 </div>
 
                                 <div className="space-y-4">
-                                    <Label>Ejercicios</Label>
-                                    <div className="border rounded-md overflow-hidden bg-background">
+                                    <div className="border rounded-lg overflow-hidden bg-background">
                                         <Table>
                                             <TableHeader>
-                                                <TableRow className="bg-muted/50">
-                                                    <TableHead className="w-[40%]">Nombre del ejercicio</TableHead>
-                                                    <TableHead>Series</TableHead>
-                                                    <TableHead>Repes</TableHead>
-                                                    <TableHead>Peso</TableHead>
-                                                    <TableHead>Descanso</TableHead>
-                                                    <TableHead className="text-right w-[100px]"></TableHead>
+                                                <TableRow className="bg-muted/50 hover:bg-muted/50">
+                                                    <TableHead className="w-[40%] font-bold text-foreground">Ejercicio</TableHead>
+                                                    <TableHead className="text-center font-bold text-foreground">Series</TableHead>
+                                                    <TableHead className="text-center font-bold text-foreground">Repeticiones</TableHead>
+                                                    <TableHead className="text-center font-bold text-foreground">Peso</TableHead>
+                                                    <TableHead className="text-center font-bold text-foreground">Descanso</TableHead>
+                                                    <TableHead className="w-[80px]"></TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
                                                 {exercises.length === 0 ? (
                                                     <TableRow>
-                                                        <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                                                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                                                             No hay ejercicios agregados
                                                         </TableCell>
                                                     </TableRow>
                                                 ) : (
                                                     exercises.map((ex, index) => (
-                                                        <TableRow key={index} className="group">
-                                                            <TableCell className="font-medium">{ex.name}</TableCell>
-                                                            <TableCell>{ex.sets}</TableCell>
-                                                            <TableCell>{ex.reps}</TableCell>
-                                                            <TableCell>{ex.weight}kg</TableCell>
-                                                            <TableCell>{ex.rest} min</TableCell>
-                                                            <TableCell className="text-right">
-                                                                <div className="flex justify-end gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <TableRow key={index} className="group hover:bg-muted/30">
+                                                            <TableCell>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="font-medium">{ex.name}</span>
+                                                                    {ex.muscle_group && (
+                                                                        <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600">
+                                                                            {ex.muscle_group}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </TableCell>
+                                                            <TableCell className="text-center font-semibold">{ex.sets}</TableCell>
+                                                            <TableCell className="text-center">{ex.reps}</TableCell>
+                                                            <TableCell className="text-center">{ex.weight}kg</TableCell>
+                                                            <TableCell className="text-center">{ex.rest} min</TableCell>
+                                                            <TableCell>
+                                                                <div className="flex justify-end gap-1">
                                                                     <Button
                                                                         variant="ghost"
                                                                         size="icon"
@@ -410,6 +426,7 @@ function ExerciseForm({
 }) {
     const [name, setName] = useState(initialData?.name || '')
     const [exerciseId, setExerciseId] = useState(initialData?.exercise_id || '')
+    const [muscleGroup, setMuscleGroup] = useState(initialData?.muscle_group || '')
     const [sets, setSets] = useState<any[]>(
         initialData?.sets_detail || [{ reps: '10', weight: '40', rest: '1' }]
     )
@@ -426,7 +443,7 @@ function ExerciseForm({
         const supabase = createClient()
         const { data } = await supabase
             .from('exercises')
-            .select('id, name')
+            .select('id, name, main_muscle_group')
             .order('name')
 
         if (data) setExercisesList(data)
@@ -453,8 +470,9 @@ function ExerciseForm({
         if (!name) return
 
         onSave({
-            exercise_id: exerciseId || undefined, // Allow custom names even if not in DB (or handle creation logic elsewhere)
+            exercise_id: exerciseId || undefined,
             name: name,
+            muscle_group: muscleGroup || undefined,
             sets_detail: sets
         })
     }
@@ -462,65 +480,63 @@ function ExerciseForm({
     return (
         <div className="space-y-6">
             <div className="space-y-2">
-                <Label>Nombre del ejercicio</Label>
                 <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
                     <PopoverTrigger asChild>
                         <Button
                             variant="outline"
                             role="combobox"
                             aria-expanded={openCombobox}
-                            className="w-full justify-between font-normal text-left"
+                            className={`w-full justify-between font-normal text-left ${!name ? 'text-muted-foreground' : ''}`}
                         >
-                            {name || "Buscar o escribir nombre..."}
+                            {name || "Buscar ejercicio..."}
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-[600px] p-0" align="start">
-                        <Command>
-                            <CommandInput placeholder="Buscar ejercicio..." />
-                            <CommandEmpty className="py-2 px-4 text-sm text-gray-500">
-                                <p>No encontrado.</p>
-                                <Button
-                                    variant="ghost"
-                                    className="h-auto p-0 text-primary font-medium hover:text-primary hover:bg-transparent"
-                                    onClick={() => {
-                                        // TODO: We could capture the search input term if we want to allow 
-                                        // automatic creation of new exercises, but CommandInput encapsulates it.
-                                        // For now, we rely on selecting from list or users must ensure it exists.
-                                        // Wait, the prompt says "Si se requiere añadir un nuevo ejercicio..."
-                                        // If the exercise doesn't exist in DB, maybe they want to type it?
-                                        // The mockup has "Press de banca" typed in.
-                                        // Since we can't easily get the search query from CommandInput with current shadcn version
-                                        // without modifying it, let's assume checking the list is primary. 
-                                        // But I'll add a simple input for "Custom Name" if not found? 
-                                        // Actually, let's just use the Input component if they want to type freely if Combobox is confusing.
-                                        // But for now, let's stick to Combobox for selection.
-                                    }}
-                                >
-                                    No hay ejercicios con ese nombre
-                                </Button>
-                            </CommandEmpty>
-                            <CommandGroup className="max-h-[300px] overflow-y-auto">
-                                {exercisesList.map((ex) => (
-                                    <CommandItem
-                                        key={ex.id}
-                                        value={ex.name}
-                                        onSelect={() => {
-                                            setName(ex.name)
-                                            setExerciseId(ex.id)
-                                            setOpenCombobox(false)
+                    <PopoverContent className="w-[600px] p-0" align="start" style={{ maxHeight: '350px' }}>
+                        <Command className="flex flex-col overflow-hidden">
+                            <CommandInput placeholder="Buscar por nombre o grupo muscular..." />
+                            <CommandList className="flex-1 overflow-y-auto" style={{ maxHeight: '280px' }}>
+                                <CommandEmpty className="py-2 px-4 text-sm text-gray-500">
+                                    <p>No encontrado.</p>
+                                    <Button
+                                        variant="ghost"
+                                        className="h-auto p-0 text-primary font-medium hover:text-primary hover:bg-transparent"
+                                        onClick={() => {
                                         }}
                                     >
-                                        <Check
-                                            className={cn(
-                                                "mr-2 h-4 w-4",
-                                                exerciseId === ex.id ? "opacity-100" : "opacity-0"
-                                            )}
-                                        />
-                                        {ex.name}
-                                    </CommandItem>
-                                ))}
-                            </CommandGroup>
+                                        No hay ejercicios con ese nombre
+                                    </Button>
+                                </CommandEmpty>
+                                <CommandGroup>
+                                    {exercisesList.map((ex) => (
+                                        <CommandItem
+                                            key={ex.id}
+                                            value={`${ex.name} ${ex.main_muscle_group || ''}`}
+                                            onSelect={() => {
+                                                setName(ex.name)
+                                                setExerciseId(ex.id)
+                                                setMuscleGroup(ex.main_muscle_group || '')
+                                                setOpenCombobox(false)
+                                            }}
+                                        >
+                                            <Check
+                                                className={cn(
+                                                    "mr-2 h-4 w-4",
+                                                    exerciseId === ex.id ? "opacity-100" : "opacity-0"
+                                                )}
+                                            />
+                                            <div className="flex items-center justify-between w-full">
+                                                <span>{ex.name}</span>
+                                                {ex.main_muscle_group && (
+                                                    <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600">
+                                                        {ex.main_muscle_group}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </CommandItem>
+                                    ))}
+                                </CommandGroup>
+                            </CommandList>
                         </Command>
                     </PopoverContent>
                 </Popover>
@@ -533,7 +549,7 @@ function ExerciseForm({
                         <TableHeader>
                             <TableRow className="bg-muted/50 hover:bg-muted/50">
                                 <TableHead className="w-[60px]">Series</TableHead>
-                                <TableHead className="text-center">Repes</TableHead>
+                                <TableHead className="text-center">Repeticiones</TableHead>
                                 <TableHead className="text-center">Peso</TableHead>
                                 <TableHead className="text-center">Descanso</TableHead>
                                 <TableHead className="w-[50px]"></TableHead>
@@ -543,27 +559,29 @@ function ExerciseForm({
                             {sets.map((set, index) => (
                                 <TableRow key={index}>
                                     <TableCell className="font-medium text-center">{index + 1}</TableCell>
-                                    <TableCell>
-                                        <Input
-                                            className="h-8 border-0 bg-transparent focus-visible:ring-0 focus-visible:bg-muted/50 p-0 text-center"
-                                            value={set.reps}
-                                            onChange={(e) => updateSet(index, 'reps', e.target.value)}
-                                        />
+                                    <TableCell className="text-center">
+                                        <div className="flex items-center justify-center">
+                                            <Input
+                                                className="h-8 w-16 text-center border rounded-md bg-muted/30"
+                                                value={set.reps}
+                                                onChange={(e) => updateSet(index, 'reps', e.target.value)}
+                                            />
+                                        </div>
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="text-center">
                                         <div className="flex items-center justify-center gap-1">
                                             <Input
-                                                className="h-8 w-12 border-0 bg-transparent focus-visible:ring-0 focus-visible:bg-muted/50 p-0 text-right"
+                                                className="h-8 w-16 text-center border rounded-md bg-muted/30"
                                                 value={set.weight}
                                                 onChange={(e) => updateSet(index, 'weight', e.target.value)}
                                             />
                                             <span className="text-sm text-muted-foreground">kg</span>
                                         </div>
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="text-center">
                                         <div className="flex items-center justify-center gap-1">
                                             <Input
-                                                className="h-8 w-12 border-0 bg-transparent focus-visible:ring-0 focus-visible:bg-muted/50 p-0 text-right"
+                                                className="h-8 w-16 text-center border rounded-md bg-muted/30"
                                                 value={set.rest}
                                                 onChange={(e) => updateSet(index, 'rest', e.target.value)}
                                             />
@@ -571,14 +589,7 @@ function ExerciseForm({
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        <div className="flex justify-end gap-1">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-8 w-8 text-primary hover:text-primary hover:bg-muted"
-                                            >
-                                                <Pencil className="h-4 w-4" />
-                                            </Button>
+                                        <div className="flex justify-end">
                                             <Button
                                                 variant="ghost"
                                                 size="icon"

@@ -346,7 +346,7 @@ export interface Plan {
     name: string
     price_monthly: number
     description: string | null
-    routine_frequency: 'weekly' | 'biweekly' | 'monthly' | null
+    routine_frequency: 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'biannual' | null
     calls_frequency: 'none' | 'monthly' | 'weekly' | null
     includes_nutrition: boolean
     created_at: string
@@ -375,7 +375,7 @@ export async function createPlan(plan: {
     name: string
     price_monthly: number
     description?: string
-    routine_frequency: 'weekly' | 'biweekly' | 'monthly'
+    routine_frequency: 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'biannual'
     calls_frequency: 'none' | 'monthly' | 'weekly'
     includes_nutrition: boolean
 }) {
@@ -415,7 +415,7 @@ export async function updatePlan(planId: string, updates: {
     name?: string
     price_monthly?: number
     description?: string
-    routine_frequency?: 'weekly' | 'biweekly' | 'monthly'
+    routine_frequency?: 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'biannual'
     calls_frequency?: 'none' | 'monthly' | 'weekly'
     includes_nutrition?: boolean
     notifyClients?: boolean

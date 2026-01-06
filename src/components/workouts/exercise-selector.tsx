@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command'
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Check, ChevronsUpDown, Plus, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -97,33 +97,39 @@ export function ExerciseSelector({ onAdd }: ExerciseSelectorProps) {
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-[400px] p-0">
-                        <Command>
-                            <CommandInput placeholder="Buscar por nombre..." />
-                            <CommandEmpty>No se encontraron ejercicios.</CommandEmpty>
-                            <CommandGroup className="max-h-[300px] overflow-y-auto">
-                                {exercises.map((ex) => (
-                                    <CommandItem
-                                        key={ex.id}
-                                        value={ex.name}
-                                        onSelect={() => {
-                                            setSelectedExercise(ex)
-                                            setOpen(false)
-                                        }}
-                                    >
-                                        <Check
-                                            className={cn(
-                                                "mr-2 h-4 w-4",
-                                                selectedExercise?.id === ex.id ? "opacity-100" : "opacity-0"
-                                            )}
-                                        />
-                                        <div className="flex flex-col">
-                                            <span>{ex.name}</span>
-                                            <span className="text-xs text-muted-foreground">{ex.main_muscle_group}</span>
-                                        </div>
-                                    </CommandItem>
-                                ))}
-                            </CommandGroup>
+                    <PopoverContent className="w-[400px] p-0" style={{ maxHeight: '350px' }}>
+                        <Command className="flex flex-col overflow-hidden">
+                            <CommandInput placeholder="Buscar por nombre o grupo muscular..." />
+                            <CommandList className="flex-1 overflow-y-auto" style={{ maxHeight: '280px' }}>
+                                <CommandEmpty>No se encontraron ejercicios.</CommandEmpty>
+                                <CommandGroup>
+                                    {exercises.map((ex) => (
+                                        <CommandItem
+                                            key={ex.id}
+                                            value={`${ex.name} ${ex.main_muscle_group || ''}`}
+                                            onSelect={() => {
+                                                setSelectedExercise(ex)
+                                                setOpen(false)
+                                            }}
+                                        >
+                                            <Check
+                                                className={cn(
+                                                    "mr-2 h-4 w-4",
+                                                    selectedExercise?.id === ex.id ? "opacity-100" : "opacity-0"
+                                                )}
+                                            />
+                                            <div className="flex items-center justify-between w-full">
+                                                <span>{ex.name}</span>
+                                                {ex.main_muscle_group && (
+                                                    <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600">
+                                                        {ex.main_muscle_group}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </CommandItem>
+                                    ))}
+                                </CommandGroup>
+                            </CommandList>
                         </Command>
                     </PopoverContent>
                 </Popover>

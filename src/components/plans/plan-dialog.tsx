@@ -32,7 +32,7 @@ export function PlanDialog({ open, onOpenChange, plan, onSuccess }: PlanDialogPr
     const [description, setDescription] = useState('')
 
     // New fields state
-    const [routineFrequency, setRoutineFrequency] = useState<'weekly' | 'biweekly' | 'monthly'>('monthly')
+    const [routineFrequency, setRoutineFrequency] = useState<'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'biannual'>('monthly')
     const [callsFrequency, setCallsFrequency] = useState<'none' | 'monthly' | 'weekly'>('none')
     const [includesNutrition, setIncludesNutrition] = useState<boolean>(false)
     const [notifyClients, setNotifyClients] = useState<boolean>(false)
@@ -137,10 +137,10 @@ export function PlanDialog({ open, onOpenChange, plan, onSuccess }: PlanDialogPr
                     <DialogTitle>{isEdit ? 'Editar Plan' : 'Crear Nuevo Plan'}</DialogTitle>
                 </DialogHeader>
 
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="space-y-4">
-                        <div>
-                            <Label htmlFor="name">Nombre del plan *</Label>
+                <form onSubmit={handleSubmit} className="space-y-8 py-2">
+                    <div className="flex flex-col gap-6">
+                        <div className="space-y-2.5">
+                            <Label htmlFor="name">Nombre del plan <span className="text-red-500">*</span></Label>
                             <Input
                                 id="name"
                                 value={name}
@@ -151,22 +151,26 @@ export function PlanDialog({ open, onOpenChange, plan, onSuccess }: PlanDialogPr
                             />
                         </div>
 
-                        <div>
-                            <Label htmlFor="price">Precio mensual *</Label>
-                            <Input
-                                id="price"
-                                type="number"
-                                value={priceMonthly}
-                                onChange={(e) => setPriceMonthly(e.target.value)}
-                                placeholder="0.00"
-                                min="0"
-                                step="0.01"
-                                required
-                            />
+                        <div className="space-y-2.5">
+                            <Label htmlFor="price">Precio mensual <span className="text-red-500">*</span></Label>
+                            <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                                <Input
+                                    id="price"
+                                    type="number"
+                                    value={priceMonthly}
+                                    onChange={(e) => setPriceMonthly(e.target.value)}
+                                    placeholder="0"
+                                    min="0"
+                                    step="0.01"
+                                    className="pl-7"
+                                    required
+                                />
+                            </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
+                        <div className="grid grid-cols-2 gap-6">
+                            <div className="space-y-2.5">
                                 <Label>Actualización de rutina</Label>
                                 <Select
                                     value={routineFrequency}
@@ -176,14 +180,14 @@ export function PlanDialog({ open, onOpenChange, plan, onSuccess }: PlanDialogPr
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="weekly">Semanal</SelectItem>
-                                        <SelectItem value="biweekly">Quincenal</SelectItem>
                                         <SelectItem value="monthly">Mensual</SelectItem>
+                                        <SelectItem value="quarterly">Trimestral</SelectItem>
+                                        <SelectItem value="biannual">Semestral</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
 
-                            <div className="space-y-2">
+                            <div className="space-y-2.5">
                                 <Label>Llamadas 1:1</Label>
                                 <Select
                                     value={callsFrequency}
@@ -201,7 +205,7 @@ export function PlanDialog({ open, onOpenChange, plan, onSuccess }: PlanDialogPr
                             </div>
                         </div>
 
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-2 pt-2">
                             <Checkbox
                                 id="nutrition"
                                 checked={includesNutrition}
@@ -239,7 +243,7 @@ export function PlanDialog({ open, onOpenChange, plan, onSuccess }: PlanDialogPr
                             </div>
                         )}
 
-                        <div>
+                        <div className="space-y-2.5">
                             <Label htmlFor="description">Descripción (opcional)</Label>
                             <Textarea
                                 id="description"

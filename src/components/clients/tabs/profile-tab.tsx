@@ -5,13 +5,14 @@ import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Eye, Plus, ArrowDown, ArrowUp, ImageIcon, TrendingDown, TrendingUp } from 'lucide-react'
+import { Eye, Plus, ArrowDown, ArrowUp, ImageIcon, TrendingDown, TrendingUp, Minus } from 'lucide-react'
 import { BarChart, Bar, AreaChart, Area, XAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts'
 import { format, subMonths } from 'date-fns'
 import { es } from 'date-fns/locale'
 import Image from 'next/image'
 import { AddCheckinDialog } from '../add-checkin-dialog'
 import { PhotoComparisonDialog } from '../photo-comparison-dialog'
+import { getWeightProgressColor, getBodyFatProgressColor, progressColorClasses } from '@/lib/utils/progress-colors'
 
 interface ProfileTabProps {
     client: any
@@ -174,22 +175,31 @@ export function ProfileTab({ client }: ProfileTabProps) {
                         )}
                     </CardHeader>
                     <CardContent className="flex-1 flex flex-col">
-                        <div className="flex items-center gap-2 mb-4">
-                            <span className="text-3xl font-bold">{currentWeight ? `${currentWeight} kg` : '-- kg'}</span>
-                            {checkins.length === 0 && currentWeight && (
-                                <Badge variant="outline" className="text-[10px] text-muted-foreground uppercase py-0 px-1.5 h-5">
-                                    Inicial
-                                </Badge>
-                            )}
-                            {weightDiff !== 0 && (
-                                <Badge
-                                    variant="secondary"
-                                    className={`${weightDiff > 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'} mb-1 flex items-center gap-1`}
-                                >
-                                    {Math.abs(weightDiff).toFixed(1)}kg
-                                    {weightDiff > 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
-                                </Badge>
-                            )}
+                        <div className="flex items-end gap-2 mb-4">
+                            <span className="text-3xl font-bold">{currentWeight} kg</span>
+                            {(() => {
+                                const weightColor = getWeightProgressColor(
+                                    weightDiff,
+                                    client.target_weight,
+                                    client.initial_weight,
+                                    client.goal_specific
+                                )
+                                const colorClasses = progressColorClasses[weightColor]
+
+                                if (weightDiff === 0) {
+                                    return null
+                                }
+
+                                return (
+                                    <Badge
+                                        variant="secondary"
+                                        className={`${colorClasses.badge} mb-1 flex items-center gap-1`}
+                                    >
+                                        {Math.abs(weightDiff).toFixed(1)}kg
+                                        {weightDiff > 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+                                    </Badge>
+                                )
+                            })()}
                         </div>
                         <div className="h-[150px] w-full mt-auto">
                             {checkins.length === 0 ? (
@@ -238,22 +248,31 @@ export function ProfileTab({ client }: ProfileTabProps) {
                         )}
                     </CardHeader>
                     <CardContent className="flex-1 flex flex-col">
-                        <div className="flex items-center gap-2 mb-4">
-                            <span className="text-3xl font-bold">{currentFat ? `${currentFat}%` : 'N/A'}</span>
-                            {checkins.length === 0 && currentFat && (
-                                <Badge variant="outline" className="text-[10px] text-muted-foreground uppercase py-0 px-1.5 h-5">
-                                    Inicial
-                                </Badge>
-                            )}
-                            {fatDiff !== 0 && (
-                                <Badge
-                                    variant="secondary"
-                                    className={`${fatDiff > 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'} mb-1 flex items-center gap-1`}
-                                >
-                                    {Math.abs(fatDiff).toFixed(1)}%
-                                    {fatDiff > 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
-                                </Badge>
-                            )}
+                        <div className="flex items-end gap-2 mb-4">
+                            <span className="text-3xl font-bold">{currentFat || '-'}%</span>
+                            {(() => {
+                                const fatColor = getBodyFatProgressColor(
+                                    fatDiff,
+                                    client.target_fat,
+                                    client.initial_body_fat,
+                                    client.goal_specific
+                                )
+                                const colorClasses = progressColorClasses[fatColor]
+
+                                if (fatDiff === 0) {
+                                    return null
+                                }
+
+                                return (
+                                    <Badge
+                                        variant="secondary"
+                                        className={`${colorClasses.badge} mb-1 flex items-center gap-1`}
+                                    >
+                                        {Math.abs(fatDiff).toFixed(1)}%
+                                        {fatDiff > 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+                                    </Badge>
+                                )
+                            })()}
                         </div>
                         <div className="h-[150px] w-full mt-auto">
                             {bodyFatData.length === 0 ? (
@@ -307,21 +326,43 @@ export function ProfileTab({ client }: ProfileTabProps) {
                             {photos.length === 0 && (
                                 <p className="text-xs text-muted-foreground text-center py-8">Sin fotos aún</p>
                             )}
-                            {photos.slice(0, 3).map((photo, i) => (
-                                <div key={i} className="flex gap-3 items-center">
-                                    <div className="relative h-12 w-12 rounded-md overflow-hidden bg-muted flex-shrink-0">
-                                        <Image src={photo.url} alt="Progress" fill className="object-cover" />
+                            {photos.slice(0, 3).map((photo, i, arr) => {
+                                // Calculate weight diff from previous photo (or initial weight)
+                                const prevPhoto = arr[i + 1] // Photos are sorted descending
+                                const prevWeight = prevPhoto?.weight || client.initial_weight
+                                const photoDiff = photo.weight && prevWeight ? photo.weight - prevWeight : 0
+
+                                const photoColor = getWeightProgressColor(
+                                    photoDiff,
+                                    client.target_weight,
+                                    client.initial_weight,
+                                    client.goal_specific
+                                )
+                                const colorClasses = progressColorClasses[photoColor]
+
+                                return (
+                                    <div key={i} className="flex gap-3 items-center">
+                                        <div className="relative h-12 w-12 rounded-md overflow-hidden bg-muted flex-shrink-0">
+                                            <Image src={photo.url} alt="Progress" fill className="object-cover" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-xs text-muted-foreground">{format(new Date(photo.date), "d 'de' MMMM, yyyy", { locale: es })}</p>
+                                            <p className="text-xs font-medium">{photo.weight ? `${photo.weight}kg` : ''}</p>
+                                        </div>
+                                        {photoDiff !== 0 && (
+                                            <Badge variant="secondary" className={`text-[10px] h-5 ${colorClasses.badge}`}>
+                                                {photoDiff > 0 ? '+' : ''}{photoDiff.toFixed(1)}kg
+                                                {photoDiff > 0 ? <ArrowUp className="h-2 w-2 ml-0.5" /> : <ArrowDown className="h-2 w-2 ml-0.5" />}
+                                            </Badge>
+                                        )}
+                                        {photoDiff === 0 && photo.weight && (
+                                            <Badge variant="secondary" className="text-[10px] h-5 bg-gray-100 text-gray-600">
+                                                0kg <Minus className="h-2 w-2 ml-0.5" />
+                                            </Badge>
+                                        )}
                                     </div>
-                                    <div className="flex-1">
-                                        <p className="text-xs text-muted-foreground">{format(new Date(photo.date), "d 'de' MMMM, yyyy", { locale: es })}</p>
-                                        <p className="text-xs font-medium">{photo.weight ? `${photo.weight}kg` : ''}</p>
-                                    </div>
-                                    {/* Mock Diff badge for list */}
-                                    <Badge variant="secondary" className="text-[10px] h-5 bg-red-100 text-red-700">
-                                        -1kg <ArrowDown className="h-2 w-2 ml-0.5" />
-                                    </Badge>
-                                </div>
-                            ))}
+                                )
+                            })}
                         </div>
 
                         <div className="flex gap-2 mt-4 pt-2 border-t">

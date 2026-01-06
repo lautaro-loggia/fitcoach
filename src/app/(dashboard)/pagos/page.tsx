@@ -39,6 +39,16 @@ import {
     RefreshCw,
 } from 'lucide-react'
 import {
+    Bar,
+    BarChart,
+    ResponsiveContainer,
+    XAxis,
+    YAxis,
+    Tooltip,
+    Cell,
+    LabelList
+} from "recharts"
+import {
     getClientsWithPayments,
     getPaymentStats,
     getAllPaymentData,
@@ -69,19 +79,29 @@ export default function PagosPage() {
     const [changePlanDialogOpen, setChangePlanDialogOpen] = useState(false)
     const [clientToChangePlan, setClientToChangePlan] = useState<ClientWithPayment | null>(null)
     const [sendingReminder, setSendingReminder] = useState<string | null>(null)
-    const [activeTab, setActiveTab] = useState('stats')
+    const [activeTab, setActiveTab] = useState('pagos')
 
     useEffect(() => {
         loadData()
     }, [])
+
+    // Refresh data when switching back to Pagos tab
+    useEffect(() => {
+        if (activeTab === 'pagos') {
+            loadData()
+        }
+    }, [activeTab])
     async function loadData() {
         console.log('[Pagos] loadData called')
         try {
             setLoading(true)
 
-            // Optimized parallel call
-            const [updateRes, data, historyData] = await Promise.all([
-                updatePaymentStatuses(),
+            // Trigger status update in background (non-blocking)
+            // This ensures UI loads fast while statuses update eventually
+            updatePaymentStatuses().catch(err => console.error('Background update failed:', err))
+
+            // Load only data needed for initial view
+            const [data, historyData] = await Promise.all([
                 getAllPaymentData(),
                 getIncomeHistory()
             ])
@@ -223,6 +243,12 @@ export default function PagosPage() {
         )
     }
 
+    const statusChartData = [
+        { name: 'Al día', value: stats?.paidClients || 0, color: '#22c55e' },
+        { name: 'Pendientes', value: stats?.pendingClients || 0, color: '#f59e0b' },
+        { name: 'Vencidos', value: stats?.overdueClients || 0, color: '#ef4444' }
+    ]
+
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -235,12 +261,12 @@ export default function PagosPage() {
                 </div>
             </div>
 
-            <Tabs defaultValue="stats" className="w-full space-y-6" onValueChange={setActiveTab}>
+            <Tabs defaultValue="pagos" className="w-full space-y-6" onValueChange={setActiveTab}>
                 <TabsList>
-                    <TabsTrigger value="stats">Estadísticas</TabsTrigger>
                     <TabsTrigger value="pagos">Pagos</TabsTrigger>
                     <TabsTrigger value="planes">Planes</TabsTrigger>
                     <TabsTrigger value="history">Historial de Registros</TabsTrigger>
+                    <TabsTrigger value="stats">Estadísticas</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="stats">
@@ -251,73 +277,70 @@ export default function PagosPage() {
 
                     {/* KPI Cards */}
                     <div className="grid gap-4 grid-cols-2 md:grid-cols-4 lg:grid-cols-5">
-                        {/* Ingresos del Mes */}
-                        <Card className="col-span-2 md:col-span-2 lg:col-span-1 border-primary/20 bg-primary/5">
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium text-primary">
-                                    Ingresos del Mes
-                                </CardTitle>
-                                <DollarSign className="h-4 w-4 text-primary" />
+                        {/* Resumen General */}
+                        <Card className="col-span-2 md:col-span-2 lg:col-span-2 flex flex-col justify-between">
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-sm font-medium">Resumen General</CardTitle>
                             </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold text-primary">
-                                    {formatCurrency(stats?.paidMonthlyIncome || 0)}
+                            <CardContent className="space-y-4">
+                                {/* Ingresos */}
+                                <div className="flex items-center justify-between border-b pb-4">
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">Ingresos Cobrados</p>
+                                        <div className="text-2xl font-bold text-primary">
+                                            {formatCurrency(stats?.paidMonthlyIncome || 0)}
+                                        </div>
+                                    </div>
                                 </div>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                    Total cobrado este mes
-                                </p>
+
+                                {/* Contadores de Clientes */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">Total Asesorados</p>
+                                        <div className="text-xl font-bold">{clients.length}</div>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">Activos</p>
+                                        <div className="text-xl font-bold text-green-600">{stats?.activeClients || 0}</div>
+                                    </div>
+                                </div>
                             </CardContent>
                         </Card>
 
-                        {/* Asesorados activos */}
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        {/* Gráfico de Estado de Pagos */}
+                        <Card className="col-span-2 md:col-span-4 lg:col-span-3">
+                            <CardHeader className="pb-2">
                                 <CardTitle className="text-sm font-medium">
-                                    Asesorados activos
+                                    Estado de Pagos
                                 </CardTitle>
-                                <Users className="h-4 w-4 text-blue-600" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">{stats?.activeClients || 0}</div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Pagos al día */}
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">
-                                    Pagos al día
-                                </CardTitle>
-                                <CheckCircle2 className="h-4 w-4 text-green-500" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">{stats?.paidClients || 0}</div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Pagos pendientes */}
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">
-                                    Pagos pendientes
-                                </CardTitle>
-                                <Clock className="h-4 w-4 text-amber-500" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">{stats?.pendingClients || 0}</div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Pagos vencidos */}
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">
-                                    Pagos vencidos
-                                </CardTitle>
-                                <AlertCircle className="h-4 w-4 text-red-500" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">{stats?.overdueClients || 0}</div>
+                                <div className="h-[120px] w-full">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={statusChartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                                            <XAxis
+                                                dataKey="name"
+                                                stroke="#888888"
+                                                fontSize={12}
+                                                tickLine={false}
+                                                axisLine={false}
+                                            />
+                                            <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={40}>
+                                                <LabelList
+                                                    dataKey="value"
+                                                    position="center"
+                                                    fill="white"
+                                                    fontSize={14}
+                                                    fontWeight="bold"
+                                                    formatter={(value: any) => value > 0 ? value : ''}
+                                                />
+                                                {statusChartData.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                                ))}
+                                            </Bar>
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
                             </CardContent>
                         </Card>
                     </div>
@@ -329,9 +352,7 @@ export default function PagosPage() {
                     <Card>
                         <CardHeader>
                             <div className="flex flex-col gap-4">
-                                <CardTitle>
-                                    {filteredClients.length} {filteredClients.length === 1 ? 'asesorado' : 'asesorados'}
-                                </CardTitle>
+
 
                                 {/* Search + Filters */}
                                 <div className="flex flex-col gap-4 md:flex-row md:items-center">
@@ -398,7 +419,14 @@ export default function PagosPage() {
                                                     >
                                                         <TableCell>
                                                             <div>
-                                                                <div className="font-medium">{client.full_name}</div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="font-medium">{client.full_name}</div>
+                                                                    {client.status === 'active' ? (
+                                                                        <Badge variant="secondary" className="h-5 px-1.5 text-[10px] bg-green-100 text-green-700 hover:bg-green-100 border-green-200">Activo</Badge>
+                                                                    ) : (
+                                                                        <Badge variant="secondary" className="h-5 px-1.5 text-[10px] bg-gray-100 text-gray-500 hover:bg-gray-100 border-gray-200">Inactivo</Badge>
+                                                                    )}
+                                                                </div>
                                                                 <div className="text-sm text-muted-foreground">
                                                                     {client.email || '-'}
                                                                 </div>
@@ -481,9 +509,16 @@ export default function PagosPage() {
                                                 )}
                                             >
                                                 <div className="flex-1 min-w-0">
-                                                    <div className="font-medium truncate">{client.full_name}</div>
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <div className="font-medium truncate">{client.full_name}</div>
+                                                        {client.status === 'active' ? (
+                                                            <Badge variant="secondary" className="h-5 px-1.5 text-[10px] bg-green-100 text-green-700 hover:bg-green-100 border-green-200">Activo</Badge>
+                                                        ) : (
+                                                            <Badge variant="secondary" className="h-5 px-1.5 text-[10px] bg-gray-100 text-gray-500 hover:bg-gray-100 border-gray-200">Inactivo</Badge>
+                                                        )}
+                                                    </div>
                                                     <div className="text-sm text-muted-foreground">
-                                                        {client.plan_name || 'Sin plan'}
+                                                        {client.plan?.name || 'Personalizado'}
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center justify-between">
