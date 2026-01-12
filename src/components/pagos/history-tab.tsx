@@ -93,7 +93,7 @@ export function HistoryTab() {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Historial de Registros</CardTitle>
+                <CardTitle>Historial de pagos</CardTitle>
                 <CardDescription>
                     Visualiza y gestiona todos los pagos registrados manualmente.
                 </CardDescription>

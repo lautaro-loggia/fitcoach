@@ -2,12 +2,13 @@
 import { StatsCard } from '@/components/dashboard/stats-cards'
 import { Users, AlertCircle, UserPlus, Activity, ArrowRight, UserCheck, Dumbbell, Play } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { getDashboardStats, getUpcomingPayments } from '@/lib/actions/dashboard'
+import { getDashboardStats, getUpcomingPayments, getTodayPresentialTrainings } from '@/lib/actions/dashboard'
 import { UpcomingPayments } from '@/components/dashboard/upcoming-payments'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card'
 import { ClientSelectorDialog } from '@/components/dashboard/client-selector-dialog'
+import { PresentialTrainings } from '@/components/dashboard/presential-trainings'
 
 export default async function DashboardPage() {
     const supabase = await createClient()
@@ -34,9 +35,10 @@ export default async function DashboardPage() {
     const userName = profile?.full_name?.split(' ')[0] || 'Entrenador'
 
     // Fetch all dashboard data
-    const [stats, upcomingPayments] = await Promise.all([
+    const [stats, upcomingPayments, presentialTrainings] = await Promise.all([
         getDashboardStats(),
-        getUpcomingPayments()
+        getUpcomingPayments(),
+        getTodayPresentialTrainings()
     ])
 
     const statCards = [
@@ -52,7 +54,8 @@ export default async function DashboardPage() {
             description: "Requieren atención inmediata",
             icon: AlertCircle,
             alert: stats.pendingPaymentsCount > 0,
-            variant: "destructive"
+            variant: "destructive",
+            href: "/pagos?filter=overdue"
         },
         {
             title: "Check-ins Pendientes",
@@ -91,6 +94,9 @@ export default async function DashboardPage() {
                     <StatsCard key={index} {...stat} />
                 ))}
             </div>
+
+            {/* Presential Trainings */}
+            <PresentialTrainings trainings={presentialTrainings} />
 
             {/* Quick Actions Container */}
             <Card>

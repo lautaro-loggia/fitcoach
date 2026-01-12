@@ -183,29 +183,46 @@ export async function registerPayment(data: {
         }
 
         // Calculate next due date
-        // Parse date as local time to avoid timezone issues
+        // Parse the paid date components directly from the string (YYYY-MM-DD format)
         const [year, month, day] = data.paidAt.split('-').map(Number)
-        const paidDate = new Date(year, month - 1, day)
-        let nextDueDate: Date
+
+        let nextYear = year
+        let nextMonth = month
+        let nextDay = day
 
         switch (client.billing_frequency) {
             case 'weekly':
-                nextDueDate = new Date(paidDate)
-                nextDueDate.setDate(paidDate.getDate() + 7)
+                // For weekly: add 7 days using Date object but extract components immediately
+                const weeklyDate = new Date(Date.UTC(year, month - 1, day + 7))
+                nextYear = weeklyDate.getUTCFullYear()
+                nextMonth = weeklyDate.getUTCMonth() + 1
+                nextDay = weeklyDate.getUTCDate()
                 break
             case 'monthly':
             default:
-                nextDueDate = new Date(paidDate)
-                nextDueDate.setMonth(paidDate.getMonth() + 1)
+                // For monthly: simply add 1 month, handling year rollover
+                // The rule is: payment on day X → next due on day X of next month
+                // If day X doesn't exist in next month (e.g., 31st → February), use last day of month
+                nextMonth = month + 1
+                if (nextMonth > 12) {
+                    nextMonth = 1
+                    nextYear = year + 1
+                }
+                // Check if the day exists in the target month
+                // Create a date with day 0 of the next-next month to get the last day of target month
+                const lastDayOfNextMonth = new Date(Date.UTC(nextYear, nextMonth, 0)).getUTCDate()
+                nextDay = Math.min(day, lastDayOfNextMonth)
                 break
         }
+
+        // Format the next due date as YYYY-MM-DD string directly (no Date object conversion needed)
 
         // Update client
         const { error: updateError } = await supabase
             .from('clients')
             .update({
                 last_paid_at: data.paidAt,
-                next_due_date: `${nextDueDate.getFullYear()}-${String(nextDueDate.getMonth() + 1).padStart(2, '0')}-${String(nextDueDate.getDate()).padStart(2, '0')}`,
+                next_due_date: `${nextYear}-${String(nextMonth).padStart(2, '0')}-${String(nextDay).padStart(2, '0')}`,
                 payment_status: 'paid',
                 plan_id: data.planId || null,
                 price_monthly: data.amount

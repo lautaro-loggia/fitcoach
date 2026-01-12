@@ -9,38 +9,12 @@ import { Loader2 } from 'lucide-react'
 
 interface NotificationsFormProps {
     userId: string
+    initialEnabled: boolean
 }
 
-export function NotificationsForm({ userId }: NotificationsFormProps) {
+export function NotificationsForm({ userId, initialEnabled }: NotificationsFormProps) {
     const supabase = createClient()
-    const [loading, setLoading] = useState(true)
-    const [notificationsEnabled, setNotificationsEnabled] = useState(true)
-
-    useEffect(() => {
-        loadNotificationSettings()
-    }, [])
-
-    const loadNotificationSettings = async () => {
-        try {
-            setLoading(true)
-
-            const { data: profile, error } = await supabase
-                .from('profiles')
-                .select('notifications_enabled')
-                .eq('id', userId)
-                .single()
-
-            if (error) throw error
-
-            if (profile) {
-                setNotificationsEnabled(profile.notifications_enabled ?? true)
-            }
-        } catch (error) {
-            console.error('Error loading notification settings:', error)
-        } finally {
-            setLoading(false)
-        }
-    }
+    const [notificationsEnabled, setNotificationsEnabled] = useState(initialEnabled)
 
     const handleToggle = async (checked: boolean) => {
         try {

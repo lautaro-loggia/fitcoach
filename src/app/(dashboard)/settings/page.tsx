@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { AccountForm } from '@/components/settings/account-form'
 import { NotificationsForm } from '@/components/settings/notifications-form'
+import { WhatsAppSettingsForm } from '@/components/settings/whatsapp-settings-form'
 
 export default async function SettingsPage() {
     const supabase = await createClient()
@@ -11,6 +12,12 @@ export default async function SettingsPage() {
     if (!user) {
         redirect('/login')
     }
+
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('notifications_enabled, whatsapp_message_template')
+        .eq('id', user.id)
+        .single()
 
     return (
         <div className="space-y-6">
@@ -32,7 +39,11 @@ export default async function SettingsPage() {
                 </TabsContent>
 
                 <TabsContent value="notifications" className="space-y-4">
-                    <NotificationsForm userId={user.id} />
+                    <NotificationsForm userId={user.id} initialEnabled={profile?.notifications_enabled ?? false} />
+                    <WhatsAppSettingsForm
+                        userId={user.id}
+                        initialTemplate={profile?.whatsapp_message_template || 'Hola {nombre}, recuerda que tenemos entrenamiento {hora}'}
+                    />
                 </TabsContent>
             </Tabs>
         </div>

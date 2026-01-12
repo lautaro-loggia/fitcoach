@@ -50,7 +50,7 @@ export function PhotoComparisonDialog({ photos }: PhotoComparisonDialogProps) {
                     Comparar
                 </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-[90vw] h-[90vh] flex flex-col p-0 gap-0 bg-background text-foreground">
+            <DialogContent className="max-w-[98vw] w-full h-[95vh] flex flex-col p-0 gap-0 bg-background text-foreground">
                 <DialogTitle className="sr-only">Comparación de Fotos</DialogTitle>
                 <div className="flex flex-1 overflow-hidden">
                     {/* Sidebar Selection */}
@@ -99,18 +99,18 @@ export function PhotoComparisonDialog({ photos }: PhotoComparisonDialogProps) {
                         <div className="h-full flex flex-col items-center justify-center">
                             <h2 className="text-2xl font-bold mb-8">Comparación de Progreso</h2>
 
-                            <div className="flex flex-col md:flex-row gap-8 w-full max-w-5xl justify-center items-center h-full">
+                            <div className="flex flex-col md:flex-row gap-4 md:gap-8 w-full h-full justify-center items-center p-4">
                                 {selectedPhotos.length === 0 && <p className="text-muted-foreground">Selecciona fotos para comenzar</p>}
 
                                 {selectedPhotos.map((photo, index) => (
-                                    <div key={photo.id} className="relative w-full max-w-md aspect-[3/4] rounded-xl overflow-hidden shadow-2xl border bg-black">
+                                    <div key={photo.id} className="relative flex-1 h-full w-full max-h-[85vh] rounded-xl overflow-hidden shadow-2xl border bg-black group">
                                         <Image
                                             src={photo.url}
                                             alt="Comparison"
                                             fill
                                             className="object-contain" // Contain to show full photo
                                         />
-                                        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent p-6 text-white">
+                                        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent p-6 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                             <p className="text-lg font-bold">{format(new Date(photo.date), "MMMM d, yyyy", { locale: es })}</p>
                                             <div className="flex gap-4 mt-2 text-sm opacity-90">
                                                 <div>

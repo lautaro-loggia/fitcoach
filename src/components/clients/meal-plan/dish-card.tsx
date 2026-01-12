@@ -91,7 +91,7 @@ export function DishCard({ item, onDelete }: DishCardProps) {
                              RecipeCard is designed as a card, so it fits well.
                          */}
                         <div className="bg-background rounded-2xl overflow-hidden shadow-xl" onClick={(e) => e.stopPropagation()}>
-                            <RecipeCard recipe={item.recipe} />
+                            <RecipeCard recipe={item.recipe} onSelect={() => { }} />
                             <div className="p-4 pt-0 flex justify-end">
                                 <Button variant="outline" onClick={() => setDetailOpen(false)}>Cerrar</Button>
                             </div>

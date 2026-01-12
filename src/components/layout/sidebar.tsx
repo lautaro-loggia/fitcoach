@@ -127,7 +127,7 @@ export function Sidebar() {
             {/* Desktop Sidebar */}
             <div
                 className={cn(
-                    "hidden md:flex h-full flex-col bg-sidebar border-r border-sidebar-border transition-all duration-300 ease-in-out",
+                    "hidden md:flex h-full flex-col bg-[#F9F9FA] border-r border-sidebar-border transition-all duration-300 ease-in-out",
                     collapsed ? "w-[70px]" : "w-64"
                 )}
             >
@@ -136,7 +136,7 @@ export function Sidebar() {
 
             {/* Mobile Sidebar - Sheet */}
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-                <SheetContent side="left" className="w-64 p-0 bg-sidebar">
+                <SheetContent side="left" className="w-64 p-0 bg-[#F9F9FA]">
                     <SheetTitle className="sr-only">Menú de navegación</SheetTitle>
                     <SidebarContent collapsed={false} onNavigate={() => setMobileOpen(false)} />
                 </SheetContent>

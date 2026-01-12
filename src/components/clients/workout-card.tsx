@@ -9,7 +9,7 @@ import {
     DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal, Edit2, Eye, Trash2, Download, Play } from "lucide-react"
-import { format } from "date-fns"
+import { format, parse } from "date-fns"
 import { es } from "date-fns/locale"
 
 interface WorkoutCardProps {
@@ -32,7 +32,7 @@ export function WorkoutCard({ workout, onEdit, onDelete, onView, onDownload, onS
 
     // Check date string
     const checkDateString = workout.valid_until
-        ? `Revisar el ${format(new Date(workout.valid_until), "d 'de' MMMM, yyyy", { locale: es })}`
+        ? `Revisar el ${format(parse(workout.valid_until, 'yyyy-MM-dd', new Date()), "d 'de' MMMM, yyyy", { locale: es })}`
         : "Sin fecha de revisión"
 
     return (

@@ -54,22 +54,67 @@ export function WorkoutDetailDialog({ isOpen, onClose, workout, client, onEdit }
                         {exercises.map((ex: any, i: number) => {
                             const setsDetail = ex.sets_detail || []
                             const hasDetailedSets = setsDetail.length > 0
+                            const isCardio = ex.category === 'Cardio'
 
                             return (
                                 <div key={i} className="border rounded-lg overflow-hidden">
                                     <div className="bg-muted/30 p-3 font-semibold text-sm border-b flex justify-between items-center">
                                         <div className="flex items-center gap-2">
                                             <span>{ex.name}</span>
-                                            {ex.muscle_group && (
+                                            {isCardio ? (
+                                                <span className="px-2 py-0.5 text-xs rounded-full bg-orange-100 text-orange-700 font-normal">
+                                                    Cardio
+                                                </span>
+                                            ) : ex.muscle_group && (
                                                 <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600 font-normal">
                                                     {ex.muscle_group}
                                                 </span>
                                             )}
                                         </div>
-                                        {!hasDetailedSets && <span className="text-xs font-normal text-muted-foreground">{ex.sets} series x {ex.reps}</span>}
+                                        {!isCardio && !hasDetailedSets && <span className="text-xs font-normal text-muted-foreground">{ex.sets} series x {ex.reps}</span>}
                                     </div>
 
-                                    {hasDetailedSets ? (
+                                    {isCardio ? (
+                                        /* Cardio display */
+                                        <div className="p-4 space-y-2">
+                                            {ex.cardio_config?.type === 'continuous' ? (
+                                                <div className="flex items-center gap-4 text-sm">
+                                                    <div>
+                                                        <span className="text-muted-foreground">Duración:</span>{' '}
+                                                        <span className="font-semibold">{ex.cardio_config?.duration} minutos</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-muted-foreground">Intensidad:</span>{' '}
+                                                        <span className="font-semibold">
+                                                            {ex.cardio_config?.intensity === 'low' ? 'Baja' :
+                                                                ex.cardio_config?.intensity === 'medium' ? 'Media' :
+                                                                    ex.cardio_config?.intensity === 'high' ? 'Alta' : 'HIIT'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-2 text-sm">
+                                                    <div className="flex items-center gap-4">
+                                                        <div>
+                                                            <span className="text-muted-foreground">Trabajo:</span>{' '}
+                                                            <span className="font-semibold">{ex.cardio_config?.work_time}s</span>
+                                                        </div>
+                                                        <div>
+                                                            <span className="text-muted-foreground">Descanso:</span>{' '}
+                                                            <span className="font-semibold">{ex.cardio_config?.rest_time}s</span>
+                                                        </div>
+                                                        <div>
+                                                            <span className="text-muted-foreground">Rondas:</span>{' '}
+                                                            <span className="font-semibold">{ex.cardio_config?.rounds}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-xs text-muted-foreground">
+                                                        Tiempo total: {Math.floor((ex.cardio_config?.work_time + ex.cardio_config?.rest_time) * ex.cardio_config?.rounds / 60)} min
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : hasDetailedSets ? (
                                         <div className="grid grid-cols-4 gap-2 p-3 text-sm text-center">
                                             <div className="text-xs font-bold text-foreground mb-1 border-b pb-1">Serie</div>
                                             <div className="text-xs font-bold text-foreground mb-1 border-b pb-1">Repeticiones</div>

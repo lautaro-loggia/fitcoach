@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { ClientAvatar } from '@/components/clients/client-avatar'
 import { Search, UserCheck } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -34,7 +34,7 @@ export function ClientSelectorDialog({
         const supabase = createClient()
         const { data } = await supabase
             .from('clients')
-            .select('id, full_name')
+            .select('id, full_name, avatar_url')
             .order('full_name')
 
         if (data) setClients(data)
@@ -90,12 +90,12 @@ export function ClientSelectorDialog({
                                     className="cursor-pointer hover:border-primary hover:bg-muted/50 transition-all p-4 flex flex-col items-center gap-3 text-center group"
                                     onClick={() => handleSelect(client.id)}
                                 >
-                                    <Avatar className="h-16 w-16 border-2 border-transparent group-hover:border-primary/20 transition-all">
-                                        <AvatarImage src={`https://avatar.vercel.sh/${client.id}.png`} alt={client.full_name} />
-                                        <AvatarFallback className="text-lg bg-primary/10 text-primary">
-                                            {client.full_name.charAt(0).toUpperCase()}
-                                        </AvatarFallback>
-                                    </Avatar>
+                                    <ClientAvatar
+                                        name={client.full_name}
+                                        avatarUrl={client.avatar_url}
+                                        size="xl"
+                                        className="border-2 border-transparent group-hover:border-primary/20 transition-all"
+                                    />
                                     <div className="space-y-1">
                                         <p className="font-medium leading-none group-hover:text-primary transition-colors">
                                             {client.full_name}

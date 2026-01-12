@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Loader2 } from "lucide-react"
 import { assignWorkoutToClientsAction } from "@/app/(dashboard)/workouts/actions"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ClientAvatar } from "@/components/clients/client-avatar"
 
 interface AssignWorkoutToClientsDialogProps {
     open: boolean
@@ -100,12 +100,10 @@ export function AssignWorkoutToClientsDialog({ open, onOpenChange, workout }: As
                                         htmlFor={`client-${client.id}`}
                                         className="flex-1 flex items-center gap-3 cursor-pointer font-normal"
                                     >
-                                        <Avatar className="h-8 w-8">
-                                            <AvatarImage src="" />
-                                            <AvatarFallback className="text-xs">
-                                                {client.full_name?.substring(0, 2).toUpperCase() || 'CL'}
-                                            </AvatarFallback>
-                                        </Avatar>
+                                        <ClientAvatar
+                                            name={client.full_name || 'Cliente'}
+                                            size="sm"
+                                        />
                                         <div className="flex flex-col">
                                             <span className="font-medium text-sm">{client.full_name}</span>
                                             <span className="text-xs text-muted-foreground">{client.email}</span>

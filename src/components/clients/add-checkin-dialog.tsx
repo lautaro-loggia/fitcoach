@@ -31,7 +31,7 @@ export function AddCheckinDialog({ clientId, autoOpen }: AddCheckinDialogProps) 
     const [date, setDate] = useState(new Date().toISOString().split('T')[0])
     const [nextCheckinDate, setNextCheckinDate] = useState(() => {
         const next = new Date()
-        next.setDate(next.getDate() + 7)
+        next.setMonth(next.getMonth() + 1)
         return next.toISOString().split('T')[0]
     })
     const fileInputRef = useRef<HTMLInputElement>(null)
@@ -174,19 +174,92 @@ export function AddCheckinDialog({ clientId, autoOpen }: AddCheckinDialogProps) 
                         </div>
                     </div>
 
-                    {/* Photo Upload Section */}
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2 pb-2">
+                            <h4 className="font-semibold text-lg">Composición corporal</h4>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4">
+                            <div className="space-y-2">
+                                <Label>Peso (kg)</Label>
+                                <Input type="number" placeholder="0.0" value={weight} onChange={e => setWeight(e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Grasa corporal (%)</Label>
+                                <Input type="number" placeholder="0.0" value={bodyFat} onChange={e => setBodyFat(e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Masa magra (%)</Label>
+                                <Input type="number" placeholder="0.0" value={leanMass} onChange={e => setLeanMass(e.target.value)} />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2 pb-2">
+                            <h4 className="font-semibold text-lg">Medidas (cm)</h4>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4">
+                            <div className="space-y-2">
+                                <Label>Pecho</Label>
+                                <Input type="number" placeholder="0.0" value={chest} onChange={e => setChest(e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Cintura</Label>
+                                <Input type="number" placeholder="0.0" value={waist} onChange={e => setWaist(e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Cadera</Label>
+                                <Input type="number" placeholder="0.0" value={hips} onChange={e => setHips(e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Brazo</Label>
+                                <Input type="number" placeholder="0.0" value={arm} onChange={e => setArm(e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Muslo</Label>
+                                <Input type="number" placeholder="0.0" value={thigh} onChange={e => setThigh(e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Gemelos</Label>
+                                <Input type="number" placeholder="0.0" value={calves} onChange={e => setCalves(e.target.value)} />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Photo Upload Section Moved Here */}
                     <div className="space-y-2">
-                        <Label>Foto de estado actual (Opcional)</Label>
-                        <div className="flex items-center gap-4">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => fileInputRef.current?.click()}
-                                className="w-full sm:w-auto"
-                            >
-                                <Camera className="mr-2 h-4 w-4" />
-                                {photoFile ? "Cambiar foto" : "Subir foto"}
-                            </Button>
+                        <div
+                            className="border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors"
+                            onClick={() => fileInputRef.current?.click()}
+                        >
+                            {photoPreview ? (
+                                <div className="relative w-full h-[200px] rounded-md overflow-hidden">
+                                    <Image
+                                        src={photoPreview}
+                                        alt="Previsualización"
+                                        fill
+                                        className="object-contain"
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="destructive"
+                                        size="icon"
+                                        className="absolute top-2 right-2 h-6 w-6 rounded-full"
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            handleRemovePhoto()
+                                        }}
+                                    >
+                                        <X className="h-3 w-3" />
+                                    </Button>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                                        Subir foto del estado actual <Camera className="h-4 w-4" />
+                                    </div>
+                                </>
+                            )}
                             <input
                                 type="file"
                                 ref={fileInputRef}
@@ -195,103 +268,29 @@ export function AddCheckinDialog({ clientId, autoOpen }: AddCheckinDialogProps) 
                                 onChange={handleFileSelect}
                             />
                         </div>
-
-                        {photoPreview && (
-                            <div className="relative mt-4 w-full sm:w-[200px] h-[200px] rounded-md overflow-hidden border">
-                                <Image
-                                    src={photoPreview}
-                                    alt="Previsualización"
-                                    fill
-                                    className="object-cover"
-                                />
-                                <Button
-                                    type="button"
-                                    variant="destructive"
-                                    size="icon"
-                                    className="absolute top-2 right-2 h-6 w-6 rounded-full"
-                                    onClick={handleRemovePhoto}
-                                >
-                                    <X className="h-3 w-3" />
-                                </Button>
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-2 pb-2 border-b">
-                            <Scale className="h-5 w-5 text-primary" />
-                            <h4 className="font-semibold text-sm">Composición Corporal</h4>
-                        </div>
-                        <div className="grid grid-cols-3 gap-4">
-                            <div className="space-y-2">
-                                <Label>Peso (kg)</Label>
-                                <Input type="number" placeholder="0.0" value={weight} onChange={e => setWeight(e.target.value)} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Grasa Corporal (%)</Label>
-                                <Input type="number" placeholder="0.0" value={bodyFat} onChange={e => setBodyFat(e.target.value)} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Masa Magra (kg)</Label>
-                                <Input type="number" placeholder="0.0" value={leanMass} onChange={e => setLeanMass(e.target.value)} />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-2 pb-2 border-b">
-                            <Ruler className="h-5 w-5 text-primary" />
-                            <h4 className="font-semibold text-sm">Medidas (cm)</h4>
-                        </div>
-                        <div className="grid grid-cols-3 gap-4">
-                            <div className="space-y-2">
-                                <Label>Pecho</Label>
-                                <Input type="number" value={chest} onChange={e => setChest(e.target.value)} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Cintura</Label>
-                                <Input type="number" value={waist} onChange={e => setWaist(e.target.value)} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Cadera</Label>
-                                <Input type="number" value={hips} onChange={e => setHips(e.target.value)} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Brazo</Label>
-                                <Input type="number" value={arm} onChange={e => setArm(e.target.value)} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Muslo</Label>
-                                <Input type="number" value={thigh} onChange={e => setThigh(e.target.value)} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Gemelos</Label>
-                                <Input type="number" value={calves} onChange={e => setCalves(e.target.value)} />
-                            </div>
-                        </div>
                     </div>
 
                     <div className="space-y-2">
                         <Label>Observaciones</Label>
                         <Textarea
-                            placeholder="Sensaciones, energía, digestión, etc."
+                            placeholder=""
                             value={observations}
                             onChange={e => setObservations(e.target.value)}
                         />
                     </div>
 
                     <div className="flex justify-end gap-3 pt-4">
-                        <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+                        <Button variant="ghost" onClick={() => setOpen(false)}>Cerrar</Button>
                         <Button
                             className="bg-primary hover:bg-primary/90"
                             onClick={handleSave}
-                            disabled={loading || !weight}
+                            disabled={loading}
                         >
                             {loading ? 'Guardando...' : 'Guardar Check-in'}
                         </Button>
                     </div>
                 </div>
             </DialogContent>
-        </Dialog>
+        </Dialog >
     )
 }

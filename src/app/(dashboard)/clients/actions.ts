@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { parseISO } from 'date-fns'
 
 export async function createClientAction(formData: FormData) {
     const supabase = await createClient()
@@ -60,7 +61,7 @@ export async function createClientAction(formData: FormData) {
 
     if (initial_weight && height && birth_date && gender && activity_level) {
         // Calculate Age
-        const birthDate = new Date(birth_date)
+        const birthDate = parseISO(birth_date)
         const ageDifMs = Date.now() - birthDate.getTime()
         const ageDate = new Date(ageDifMs)
         const age = Math.abs(ageDate.getUTCFullYear() - 1970)
