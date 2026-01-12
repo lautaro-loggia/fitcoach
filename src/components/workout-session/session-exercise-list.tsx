@@ -20,7 +20,16 @@ import {
 interface Exercise {
     name: string
     exercise_id?: string
-    sets_detail: Array<{ reps: string; weight: string; rest: string }>
+    category?: string
+    sets_detail?: Array<{ reps: string; weight: string; rest: string }>
+    cardio_config?: {
+        type: 'continuous' | 'intervals'
+        duration?: number
+        intensity?: 'low' | 'medium' | 'high' | 'hiit'
+        work_time?: number
+        rest_time?: number
+        rounds?: number
+    }
 }
 
 interface ExerciseCardProps {
@@ -47,7 +56,7 @@ function ExerciseCard({ sessionId, exerciseIndex, exercise }: ExerciseCardProps)
 
     const loadCheckin = async () => {
         setLoading(true)
-        const defaultRest = parseInt(exercise.sets_detail[0]?.rest || '1') * 60
+        const defaultRest = parseInt(exercise.sets_detail?.[0]?.rest || '1') * 60
 
         const { checkin: existingCheckin } = await getExerciseCheckinWithSets(sessionId, exerciseIndex)
 
@@ -223,6 +232,72 @@ function ExerciseCard({ sessionId, exerciseIndex, exercise }: ExerciseCardProps)
     )
 }
 
+interface CardioExerciseCardProps {
+    exercise: Exercise
+}
+
+function CardioExerciseCard({ exercise }: CardioExerciseCardProps) {
+    const config = exercise.cardio_config
+    const intensityLabel = config?.intensity === 'low' ? 'Baja' :
+        config?.intensity === 'medium' ? 'Media' :
+            config?.intensity === 'high' ? 'Alta' : 'HIIT'
+
+    return (
+        <div className="space-y-4 py-2">
+            <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-lg leading-none">{exercise.name}</h3>
+                    <span className="px-2 py-0.5 text-xs rounded-full bg-orange-100 text-orange-700">
+                        Cardio
+                    </span>
+                </div>
+            </div>
+
+            <div className="border rounded-lg overflow-hidden bg-background p-4 space-y-3">
+                {config?.type === 'continuous' ? (
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">Duración</span>
+                            <span className="font-bold text-lg">{config?.duration} minutos</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">Intensidad</span>
+                            <span className="font-semibold">{intensityLabel}</span>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        <div className="grid grid-cols-3 gap-4 text-center">
+                            <div>
+                                <div className="text-xs text-muted-foreground">Trabajo</div>
+                                <div className="font-bold text-lg">{config?.work_time}s</div>
+                            </div>
+                            <div>
+                                <div className="text-xs text-muted-foreground">Descanso</div>
+                                <div className="font-bold text-lg">{config?.rest_time}s</div>
+                            </div>
+                            <div>
+                                <div className="text-xs text-muted-foreground">Rondas</div>
+                                <div className="font-bold text-lg">{config?.rounds}</div>
+                            </div>
+                        </div>
+                        <div className="text-center text-sm text-muted-foreground border-t pt-2">
+                            Tiempo total: {Math.floor(((config?.work_time || 0) + (config?.rest_time || 0)) * (config?.rounds || 0) / 60)} min
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">Intensidad</span>
+                            <span className="font-semibold">{intensityLabel}</span>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Divider between exercises */}
+            <div className="pt-6 border-b border-border/40" />
+        </div>
+    )
+}
+
 interface SessionExerciseListProps {
     sessionId: string
     exercises: Exercise[]
@@ -233,14 +308,27 @@ interface SessionExerciseListProps {
 export function SessionExerciseList({ sessionId, exercises, clientName, workoutName }: SessionExerciseListProps) {
     return (
         <div className="space-y-6 pb-20">
-            {exercises.map((exercise, index) => (
-                <ExerciseCard
-                    key={index}
-                    sessionId={sessionId}
-                    exerciseIndex={index}
-                    exercise={exercise}
-                />
-            ))}
+            {exercises.map((exercise, index) => {
+                const isCardio = exercise.category === 'Cardio'
+
+                if (isCardio) {
+                    return (
+                        <CardioExerciseCard
+                            key={index}
+                            exercise={exercise}
+                        />
+                    )
+                }
+
+                return (
+                    <ExerciseCard
+                        key={index}
+                        sessionId={sessionId}
+                        exerciseIndex={index}
+                        exercise={exercise}
+                    />
+                )
+            })}
         </div>
     )
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday } from 'date-fns'
+import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday, parse } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, Dumbbell } from 'lucide-react'
 import { useState } from 'react'
@@ -49,8 +49,9 @@ export function CalendarView({ workouts, onUpdateWorkout }: CalendarViewProps) {
 
         return workouts.filter(w => {
             // Date validity check
-            const validFrom = new Date(w.created_at)
-            const validUntil = w.valid_until ? new Date(w.valid_until) : new Date('2099-12-31')
+            const validFrom = new Date(w.created_at) // created_at includes time, so new Date() is fine as long as we reset time below
+            // valid_until is YYYY-MM-DD string, so we must parse it to local date
+            const validUntil = w.valid_until ? parse(w.valid_until, 'yyyy-MM-dd', new Date()) : new Date('2099-12-31')
 
             // Strip time
             validFrom.setHours(0, 0, 0, 0)

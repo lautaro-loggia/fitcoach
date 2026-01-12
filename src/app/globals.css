@@ -76,7 +76,7 @@
   --chart-3: #8C929C;
   --chart-4: #0E0E0E;
   --chart-5: #E6E6E6;
-  --sidebar: #FFFFFF;
+  --sidebar: #F9F9FA;
   /* White Sidebar */
   --sidebar-foreground: #09090b;
   /* Zinc 950 text */
@@ -99,4 +99,31 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Fix for cmdk Command List scrolling inside popovers */
+/* The list container must have a fixed max-height and clip content */
+[cmdk-list] {
+  max-height: 300px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: contain;
+}
+
+/* Ensure the inner sizer doesn't constrain height */
+[cmdk-list-sizer] {
+  max-height: none !important;
+}
+
+/* Force popover content to clip overflow when containing Command */
+[data-radix-popper-content-wrapper] [cmdk-root] {
+  max-height: 350px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Ensure the popover container clips its children */
+[data-slot="popover-content"]:has([cmdk-root]) {
+  overflow: hidden !important;
 }

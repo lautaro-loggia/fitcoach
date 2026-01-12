@@ -66,7 +66,7 @@ export function DietTab({ client }: { client: any }) {
     return (
         <div className="space-y-6">
             {/* Macronutrients Summary */}
-            <Card className="bg-primary/5 border-primary/20">
+            <Card>
                 <CardHeader className="pb-2">
                     <CardTitle className="text-lg font-bold flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -93,79 +93,79 @@ export function DietTab({ client }: { client: any }) {
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                        <div className="p-3 bg-background rounded-lg border shadow-sm">
+                        <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900">
                             {isEditing ? (
-                                <div className="space-y-1">
+                                <div className="space-y-1 w-full">
                                     <Input
                                         type="number"
                                         name="target_calories"
                                         value={formData.target_calories}
                                         onChange={handleChange}
-                                        className="h-8 text-center text-lg font-bold"
+                                        className="h-8 text-center text-lg font-bold bg-white/50"
                                     />
-                                    <div className="text-[10px] text-muted-foreground uppercase font-semibold">Kcal</div>
+                                    <div className="text-[10px] uppercase font-semibold text-zinc-500">KCAL</div>
                                 </div>
                             ) : (
                                 <>
-                                    <div className="text-2xl font-bold text-primary">{client.target_calories || 0}</div>
-                                    <div className="text-xs text-muted-foreground uppercase font-semibold">Kcal</div>
+                                    <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">{client.target_calories || 0}</div>
+                                    <div className="text-xs uppercase font-semibold text-zinc-500">KCAL</div>
                                 </>
                             )}
                         </div>
-                        <div className="p-3 bg-background rounded-lg border shadow-sm">
+                        <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20">
                             {isEditing ? (
-                                <div className="space-y-1">
+                                <div className="space-y-1 w-full">
                                     <Input
                                         type="number"
                                         name="target_protein"
                                         value={formData.target_protein}
                                         onChange={handleChange}
-                                        className="h-8 text-center text-lg font-bold"
+                                        className="h-8 text-center text-lg font-bold bg-white/50"
                                     />
-                                    <div className="text-[10px] text-muted-foreground uppercase font-semibold">Proteína (g)</div>
+                                    <div className="text-[10px] uppercase font-semibold text-blue-600/70">PROT</div>
                                 </div>
                             ) : (
                                 <>
-                                    <div className="text-2xl font-bold">{client.target_protein || 0}g</div>
-                                    <div className="text-xs text-muted-foreground uppercase font-semibold">Proteína</div>
+                                    <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{client.target_protein || 0}g</div>
+                                    <div className="text-xs uppercase font-semibold text-blue-600/70">PROT</div>
                                 </>
                             )}
                         </div>
-                        <div className="p-3 bg-background rounded-lg border shadow-sm">
+                        <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20">
                             {isEditing ? (
-                                <div className="space-y-1">
+                                <div className="space-y-1 w-full">
                                     <Input
                                         type="number"
                                         name="target_carbs"
                                         value={formData.target_carbs}
                                         onChange={handleChange}
-                                        className="h-8 text-center text-lg font-bold"
+                                        className="h-8 text-center text-lg font-bold bg-white/50"
                                     />
-                                    <div className="text-[10px] text-muted-foreground uppercase font-semibold">Carbos (g)</div>
+                                    <div className="text-[10px] uppercase font-semibold text-amber-600/70">CARBS</div>
                                 </div>
                             ) : (
                                 <>
-                                    <div className="text-2xl font-bold">{client.target_carbs || 0}g</div>
-                                    <div className="text-xs text-muted-foreground uppercase font-semibold">Carbos</div>
+                                    <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">{client.target_carbs || 0}g</div>
+                                    <div className="text-xs uppercase font-semibold text-amber-600/70">CARBS</div>
                                 </>
                             )}
                         </div>
-                        <div className="p-3 bg-background rounded-lg border shadow-sm">
+                        <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-rose-50 dark:bg-rose-900/20">
                             {isEditing ? (
-                                <div className="space-y-1">
+                                <div className="space-y-1 w-full">
                                     <Input
                                         type="number"
                                         name="target_fats"
                                         value={formData.target_fats}
                                         onChange={handleChange}
-                                        className="h-8 text-center text-lg font-bold"
+                                        className="h-8 text-center text-lg font-bold bg-white/50"
                                     />
-                                    <div className="text-[10px] text-muted-foreground uppercase font-semibold">Grasas (g)</div>
+                                    <div className="text-[10px] uppercase font-semibold text-rose-600/70">GRASAS</div>
                                 </div>
                             ) : (
                                 <>
-                                    <div className="text-2xl font-bold">{client.target_fats || 0}g</div>
-                                    <div className="text-xs text-muted-foreground uppercase font-semibold">Grasas</div>
+                                    <div className="text-2xl font-bold text-rose-600 dark:text-rose-400">{client.target_fats || 0}g</div>
+                                    <div className="text-xs uppercase font-semibold text-rose-600/70">GRASAS</div>
                                 </>
                             )}
                         </div>

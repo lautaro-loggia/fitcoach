@@ -1,15 +1,9 @@
 'use client'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
+import { ClientAvatar } from "@/components/clients/client-avatar"
 import { Badge } from "@/components/ui/badge"
-import { Mail, Loader2, Check } from "lucide-react"
-import { useState } from "react"
-import { toast } from "sonner"
 import { formatCurrency } from "@/lib/utils"
-// Import the server action directly
-import { sendPaymentReminder } from "@/app/(dashboard)/pagos/actions"
 
 interface ClientDue {
     id: string
@@ -36,28 +30,10 @@ export function UpcomingPayments({
     emptyMessage = "No hay vencimientos próximos.",
     cardClassName = "col-span-3"
 }: UpcomingPaymentsProps) {
-    const [sending, setSending] = useState<string | null>(null)
-    const [sent, setSent] = useState<Record<string, boolean>>({})
-
-    const handleRemind = async (clientId: string) => {
-        try {
-            setSending(clientId)
-            const result = await sendPaymentReminder(clientId)
-            if (result.success) {
-                toast.success(result.message)
-                setSent(prev => ({ ...prev, [clientId]: true }))
-            } else {
-                toast.error("Error al enviar recordatorio")
-            }
-        } catch (error) {
-            toast.error("Error de conexión")
-        } finally {
-            setSending(null)
-        }
-    }
 
     const getDateBadge = (dateString: string) => {
-        const date = new Date(dateString)
+        // Add T12:00:00 to avoid timezone issues when parsing YYYY-MM-DD dates
+        const date = new Date(dateString + 'T12:00:00')
         const today = new Date()
         const d = new Date(date.getFullYear(), date.getMonth(), date.getDate())
         const t = new Date(today.getFullYear(), today.getMonth(), today.getDate())
@@ -112,12 +88,12 @@ export function UpcomingPayments({
                         clients.map((client) => (
                             <div key={client.id} className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors">
                                 <div className="flex items-center gap-3 min-w-0">
-                                    <Avatar className="h-8 w-8 border border-border/50">
-                                        <AvatarImage src={client.avatar_url || undefined} />
-                                        <AvatarFallback className="text-xs bg-muted text-muted-foreground">
-                                            {client.full_name.substring(0, 2).toUpperCase()}
-                                        </AvatarFallback>
-                                    </Avatar>
+                                    <ClientAvatar
+                                        name={client.full_name}
+                                        avatarUrl={client.avatar_url}
+                                        size="sm"
+                                        className="border border-border/50"
+                                    />
                                     <div className="flex flex-col min-w-0 gap-0.5">
                                         <span className="text-sm font-medium leading-none truncate text-foreground/90">
                                             {client.full_name}
@@ -127,29 +103,11 @@ export function UpcomingPayments({
                                         </span>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-4">
-                                    <div className="text-right flex flex-col items-end gap-1">
-                                        <span className="text-sm font-bold text-foreground tabular-nums">
-                                            {formatCurrency(client.price_monthly)}
-                                        </span>
-                                        {getDateBadge(client.next_due_date)}
-                                    </div>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-full"
-                                        onClick={() => handleRemind(client.id)}
-                                        disabled={!!sending || sent[client.id]}
-                                        title="Enviar recordatorio"
-                                    >
-                                        {sent[client.id] ? (
-                                            <Check className="h-4 w-4 text-green-500" />
-                                        ) : sending === client.id ? (
-                                            <Loader2 className="h-3 w-3 animate-spin" />
-                                        ) : (
-                                            <Mail className="h-4 w-4" />
-                                        )}
-                                    </Button>
+                                <div className="text-right flex flex-col items-end gap-1">
+                                    <span className="text-sm font-bold text-foreground tabular-nums">
+                                        {formatCurrency(client.price_monthly)}
+                                    </span>
+                                    {getDateBadge(client.next_due_date)}
                                 </div>
                             </div>
                         ))

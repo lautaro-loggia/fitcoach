@@ -97,10 +97,10 @@ export function ExerciseSelector({ onAdd }: ExerciseSelectorProps) {
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-[400px] p-0" style={{ maxHeight: '350px' }}>
-                        <Command className="flex flex-col overflow-hidden">
+                    <PopoverContent className="w-[400px] p-0">
+                        <Command>
                             <CommandInput placeholder="Buscar por nombre o grupo muscular..." />
-                            <CommandList className="flex-1 overflow-y-auto" style={{ maxHeight: '280px' }}>
+                            <CommandList style={{ maxHeight: '300px', overflowY: 'auto' }}>
                                 <CommandEmpty>No se encontraron ejercicios.</CommandEmpty>
                                 <CommandGroup>
                                     {exercises.map((ex) => (

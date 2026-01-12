@@ -175,7 +175,8 @@ export async function getUpcomingPayments(): Promise<ClientDue[]> {
         .from('clients')
         .select(`
             id, 
-            full_name, 
+            full_name,
+            avatar_url,
             next_due_date, 
             price_monthly,
             payment_status,
@@ -197,11 +198,67 @@ export async function getUpcomingPayments(): Promise<ClientDue[]> {
         return {
             id: client.id,
             full_name: client.full_name,
-            avatar_url: null,
+            avatar_url: client.avatar_url || null,
             plan_name: planName,
             next_due_date: client.next_due_date,
             price_monthly: client.price_monthly || 0,
             status: client.payment_status as 'pending' | 'overdue'
         }
     })
+}
+
+export interface PresentialTraining {
+    id: string
+    clientName: string
+    clientAvatar: string | null
+    workoutName: string
+    clientPhone: string | null
+    startTime: string | null
+    messageTemplate: string
+}
+
+export async function getTodayPresentialTrainings(): Promise<PresentialTraining[]> {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return []
+
+    const today = new Date()
+    // Helper to get day name in 'Lunes', 'Martes' format
+    const dayName = today.toLocaleDateString('es-ES', { weekday: 'long', timeZone: 'America/Argentina/Buenos_Aires' })
+    const capitalizedDay = dayName.charAt(0).toUpperCase() + dayName.slice(1)
+    const todayStr = today.toISOString().split('T')[0]
+
+    const { data } = await supabase
+        .from('assigned_workouts')
+        .select(`
+            id,
+            name,
+            start_time,
+            client:clients(full_name, avatar_url, phone)
+        `)
+        .eq('trainer_id', user.id)
+        .eq('is_presential', true)
+        .gte('valid_until', todayStr)
+        .contains('scheduled_days', [capitalizedDay])
+
+    if (!data) return []
+
+    // Fetch trainer's whatsapp template
+    const { data: trainerProfile } = await supabase
+        .from('profiles')
+        .select('whatsapp_message_template')
+        .eq('id', user.id)
+        .single()
+
+    const messageTemplate = trainerProfile?.whatsapp_message_template || 'Hola {nombre}, recuerda que tenemos entrenamiento {hora}'
+
+    return data.map((item: any) => ({
+        id: item.id,
+        clientName: item.client?.full_name || 'Cliente',
+        clientAvatar: item.client?.avatar_url || null,
+        workoutName: item.name,
+        clientPhone: item.client?.phone || null,
+        startTime: item.start_time || null,
+        messageTemplate
+    }))
 }

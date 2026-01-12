@@ -11,6 +11,9 @@ export async function assignWorkoutAction(data: {
     validUntil?: string
     scheduledDays?: string[]
     notes?: string
+    isPresential?: boolean
+    startTime?: string
+    endTime?: string
 }) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -28,7 +31,10 @@ export async function assignWorkoutAction(data: {
         is_customized: true,
         valid_until: data.validUntil || null,
         scheduled_days: data.scheduledDays || [],
-        notes: data.notes || null
+        notes: data.notes || null,
+        is_presential: data.isPresential || false,
+        start_time: data.startTime || null,
+        end_time: data.endTime || null
     })
 
     if (error) {
@@ -48,6 +54,9 @@ export async function updateAssignedWorkoutAction(data: {
     validUntil?: string
     scheduledDays?: string[]
     notes?: string
+    isPresential?: boolean
+    startTime?: string
+    endTime?: string
 }) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -62,7 +71,10 @@ export async function updateAssignedWorkoutAction(data: {
             structure: data.exercises,
             valid_until: data.validUntil || null,
             scheduled_days: data.scheduledDays || [],
-            notes: data.notes || null
+            notes: data.notes || null,
+            is_presential: data.isPresential || false,
+            start_time: data.startTime || null,
+            end_time: data.endTime || null
         })
         .eq('id', data.id)
         .eq('trainer_id', user.id)

@@ -30,6 +30,12 @@ export default async function ClientNotesPage({
         .eq('id', id)
         .single()
 
+    const { data: allClients } = await supabase
+        .from('clients')
+        .select('id, full_name, status')
+        .eq('status', 'active')
+        .order('full_name', { ascending: true })
+
     if (error || !client) {
         notFound()
     }
@@ -37,7 +43,7 @@ export default async function ClientNotesPage({
     return (
         <Tabs defaultValue={defaultTab} className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4">
-                <ProfileHeader client={client} />
+                <ProfileHeader client={client} allClients={allClients || []} />
 
                 <TabsList className="h-9">
                     <TabsTrigger value="profile">Perfil</TabsTrigger>

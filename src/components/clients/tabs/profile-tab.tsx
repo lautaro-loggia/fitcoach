@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Eye, Plus, ArrowDown, ArrowUp, ImageIcon, TrendingDown, TrendingUp, Minus } from 'lucide-react'
 import { BarChart, Bar, AreaChart, Area, XAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts'
-import { format, subMonths } from 'date-fns'
+import { format, subMonths, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
 import Image from 'next/image'
 import { AddCheckinDialog } from '../add-checkin-dialog'
@@ -130,30 +130,30 @@ export function ProfileTab({ client }: ProfileTabProps) {
             {/* Top Cards: Objectives */}
             <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
                 <Card className="bg-background shadow-sm">
-                    <CardHeader className="p-4 pb-1">
-                        <CardTitle className="text-base font-bold">Objetivo personal</CardTitle>
+                    <CardHeader className="p-3 pb-0">
+                        <CardTitle className="text-sm font-bold">Objetivo personal</CardTitle>
                     </CardHeader>
-                    <CardContent className="p-4 pt-1">
+                    <CardContent className="p-3 pt-1">
                         <p className="text-sm text-muted-foreground leading-snug">
                             {client.goal_text || "Sin objetivo definido."}
                         </p>
                     </CardContent>
                 </Card>
                 <Card className="bg-background shadow-sm">
-                    <CardHeader className="p-4 pb-1">
-                        <CardTitle className="text-base font-bold">Objetivo a realizar</CardTitle>
+                    <CardHeader className="p-3 pb-0">
+                        <CardTitle className="text-sm font-bold">Objetivo a realizar</CardTitle>
                     </CardHeader>
-                    <CardContent className="p-4 pt-1">
+                    <CardContent className="p-3 pt-1">
                         <p className="text-sm text-muted-foreground capitalize leading-snug">
                             {client.goal_specific ? (goalTranslations[client.goal_specific] || client.goal_specific.replace(/_/g, ' ')) : "Mantener"}
                         </p>
                     </CardContent>
                 </Card>
                 <Card className="bg-background shadow-sm">
-                    <CardHeader className="p-4 pb-1">
-                        <CardTitle className="text-base font-bold">Nivel de actividad</CardTitle>
+                    <CardHeader className="p-3 pb-0">
+                        <CardTitle className="text-sm font-bold">Nivel de actividad</CardTitle>
                     </CardHeader>
-                    <CardContent className="p-4 pt-1">
+                    <CardContent className="p-3 pt-1">
                         <p className="text-sm text-muted-foreground capitalize leading-snug">
                             {client.activity_level ? (activityTranslations[client.activity_level] || client.activity_level.replace(/_/g, ' ')) : "Moderado"}
                         </p>
@@ -415,7 +415,7 @@ export function ProfileTab({ client }: ProfileTabProps) {
                         <div>
                             <span className="block text-xs text-muted-foreground mb-1">Fecha de Nacimiento</span>
                             <p className="font-medium text-sm">
-                                {client.birth_date ? format(new Date(client.birth_date), 'dd/MM/yyyy') : '-'}
+                                {client.birth_date ? format(parseISO(client.birth_date), 'dd/MM/yyyy') : '-'}
                             </p>
                         </div>
                         <div>
