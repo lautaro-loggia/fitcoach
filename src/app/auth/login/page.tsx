@@ -16,10 +16,34 @@ function LoginForm() {
     const searchParams = useSearchParams()
 
     useEffect(() => {
-        const error = searchParams.get('error')
-        if (error) {
-            toast.error(decodeURIComponent(error))
+        const handleAuthCallback = async () => {
+            const code = searchParams.get('code')
+            const error = searchParams.get('error')
+            const errorDesc = searchParams.get('error_description')
+
+            if (error) {
+                toast.error(decodeURIComponent(errorDesc || error))
+                return
+            }
+
+            if (code) {
+                setLoading(true)
+                const supabase = createClient()
+                // Attempt to exchange code for session
+                const { data, error: sessionError } = await supabase.auth.exchangeCodeForSession(code)
+
+                if (sessionError) {
+                    toast.error(`Error de autenticación: ${sessionError.message}`)
+                    setLoading(false)
+                } else if (data.session) {
+                    toast.success('Sesión iniciada correctamente')
+                    // Check onboarding status or default to dashboard
+                    window.location.href = '/dashboard' // Force reload to pick up session cookies
+                }
+            }
         }
+
+        handleAuthCallback()
     }, [searchParams])
 
     const handleLogin = async (e: React.FormEvent) => {
