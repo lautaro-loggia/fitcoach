@@ -17,8 +17,33 @@ function LoginForm() {
 
     useEffect(() => {
         const handleAuthCallback = async () => {
-            // Check for hash errors (Supabase sometimes sends errors in fragment)
             const hash = window.location.hash
+
+            // Check for Implicit Grant (Hash Tokens) - Rescue flow
+            if (hash && hash.includes('access_token=')) {
+                const params = new URLSearchParams(hash.substring(1)) // remove #
+                const accessToken = params.get('access_token')
+                const refreshToken = params.get('refresh_token')
+
+                if (accessToken && refreshToken) {
+                    setLoading(true)
+                    const supabase = createClient()
+                    const { data, error } = await supabase.auth.setSession({
+                        access_token: accessToken,
+                        refresh_token: refreshToken
+                    })
+
+                    if (!error && data.session) {
+                        toast.success('Sesión recuperada correctamente')
+                        window.location.href = '/dashboard' // Force reload to sync cookies
+                        return
+                    } else if (error) {
+                        toast.error('Error recuperando sesión: ' + error.message)
+                    }
+                }
+            }
+
+            // Check for hash errors (Supabase sometimes sends errors in fragment)
             if (hash && hash.includes('error=')) {
                 const params = new URLSearchParams(hash.substring(1)) // remove #
                 const errorCode = params.get('error_code')
