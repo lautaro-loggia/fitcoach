@@ -17,13 +17,34 @@ function LoginForm() {
 
     useEffect(() => {
         const handleAuthCallback = async () => {
+            // Check for hash errors (Supabase sometimes sends errors in fragment)
+            const hash = window.location.hash
+            if (hash && hash.includes('error=')) {
+                const params = new URLSearchParams(hash.substring(1)) // remove #
+                const errorCode = params.get('error_code')
+                const errorDesc = params.get('error_description')
+
+                if (errorCode === 'otp_expired' || errorDesc?.includes('expired')) {
+                    toast.error("El enlace de invitación ha expirado. Por favor solicitá uno nuevo.")
+                } else if (errorDesc) {
+                    toast.error(decodeURIComponent(errorDesc).replace(/\+/g, ' '))
+                }
+                return
+            }
+
             const code = searchParams.get('code')
             const error = searchParams.get('error')
             const errorDesc = searchParams.get('error_description')
 
             if (error) {
-                toast.error(decodeURIComponent(errorDesc || error))
-                return
+                // Ignore generic 'no_code' error if we have a specific hash error (handled above, but hash check runs first)
+                // If no hash error, show the param error
+                if (error === 'no_code_or_user' && !hash) {
+                    // This is our generic fallback, suppress it if it's confusing or show a better message
+                    // For now, allow it but maybe cleaner text
+                } else {
+                    toast.error(decodeURIComponent(errorDesc || error))
+                }
             }
 
             if (code) {
