@@ -17,10 +17,19 @@ interface AddDishDialogProps {
     onConfirm: (data: { recipeId?: string, customName?: string, portions?: number }) => Promise<void>
     clientAllergens?: string[]
     clientPreference?: string
+    // Controlled props
+    open?: boolean
+    onOpenChange?: (open: boolean) => void
 }
 
-export function AddDishDialog({ mealId, contextLabel, onConfirm, clientAllergens, clientPreference }: AddDishDialogProps) {
-    const [open, setOpen] = useState(false)
+export function AddDishDialog({ mealId, contextLabel, onConfirm, clientAllergens, clientPreference, open, onOpenChange }: AddDishDialogProps) {
+    // Internal state if uncontrolled (fallback)
+    const [internalOpen, setInternalOpen] = useState(false)
+    const isControlled = open !== undefined
+
+    const isOpen = isControlled ? open : internalOpen
+    const setOpen = isControlled ? onOpenChange! : setInternalOpen
+
     const [loading, setLoading] = useState(false)
     const [recipes, setRecipes] = useState<any[]>([])
     const [searchQuery, setSearchQuery] = useState("")
@@ -36,10 +45,16 @@ export function AddDishDialog({ mealId, contextLabel, onConfirm, clientAllergens
     const [pendingAction, setPendingAction] = useState<(() => Promise<void>) | null>(null)
 
     useEffect(() => {
-        if (open && recipes.length === 0) {
+        if (isOpen && recipes.length === 0) {
             fetchRecipes()
         }
-    }, [open])
+        if (isOpen) {
+            // Reset fields on open
+            setSelectedRecipeId("custom")
+            setCustomName("")
+            setPortions(1)
+        }
+    }, [isOpen])
 
     const fetchRecipes = async () => {
         const supabase = createClient()
@@ -62,10 +77,6 @@ export function AddDishDialog({ mealId, contextLabel, onConfirm, clientAllergens
                 portions
             })
             setOpen(false)
-            // Reset fields
-            setSelectedRecipeId("custom")
-            setCustomName("")
-            setPortions(1)
         } catch (error) {
             console.error(error)
         } finally {
@@ -75,7 +86,7 @@ export function AddDishDialog({ mealId, contextLabel, onConfirm, clientAllergens
 
     const handlePreSubmit = () => {
         if (selectedRecipeId === 'custom' && !customName) {
-            alert("Por favor ingresa el nombre del plato")
+            alert("Por favor ingresa el nombre de la receta")
             return
         }
 
@@ -108,16 +119,18 @@ export function AddDishDialog({ mealId, contextLabel, onConfirm, clientAllergens
 
     return (
         <>
-            <Dialog open={open} onOpenChange={setOpen}>
-                <DialogTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-8 gap-1 text-muted-foreground hover:text-primary">
-                        <Plus className="h-3 w-3" /> Agregar plato
-                    </Button>
-                </DialogTrigger>
+            <Dialog open={isOpen} onOpenChange={setOpen}>
+                {!isControlled && (
+                    <DialogTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 gap-1 text-muted-foreground hover:text-primary">
+                            <Plus className="h-3 w-3" /> Agregar receta
+                        </Button>
+                    </DialogTrigger>
+                )}
                 <DialogContent className="w-full sm:max-w-[1000px] h-[85vh] flex flex-col p-6">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
-                            <span>Agregar plato a</span>
+                            <span>Agregar receta a</span>
                             <span className="bg-primary/10 text-primary px-2 py-0.5 rounded text-sm">{contextLabel}</span>
                         </DialogTitle>
                     </DialogHeader>
@@ -139,7 +152,7 @@ export function AddDishDialog({ mealId, contextLabel, onConfirm, clientAllergens
                             </div>
 
                             <div className="space-y-2 md:col-span-1">
-                                <Label>Nombre (Personalizado/Override)</Label>
+                                <Label>Nombre (Personalizado)</Label>
                                 <Input
                                     placeholder="Ej: Pollo con arroz"
                                     value={customName}
@@ -163,7 +176,7 @@ export function AddDishDialog({ mealId, contextLabel, onConfirm, clientAllergens
                             <div className={`w-4 h-4 rounded-full border border-primary flex items-center justify-center ${selectedRecipeId === 'custom' ? 'bg-primary' : 'bg-transparent'}`}>
                                 {selectedRecipeId === 'custom' && <div className="w-2 h-2 rounded-full bg-white" />}
                             </div>
-                            <span className={selectedRecipeId === 'custom' ? 'font-medium' : ''}>Crear plato desde cero (sin receta base)</span>
+                            <span className={selectedRecipeId === 'custom' ? 'font-medium' : ''}>Crear receta desde cero (sin base)</span>
                         </div>
 
                         {/* Recipe Grid */}

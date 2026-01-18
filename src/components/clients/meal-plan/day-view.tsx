@@ -2,7 +2,7 @@
 
 import { MealSlot } from './meal-slot'
 import { Button } from '@/components/ui/button'
-import { Copy, Trash2, RotateCcw } from 'lucide-react'
+import { Copy } from 'lucide-react'
 import { copyDay } from '@/app/(dashboard)/clients/[id]/meal-plan-actions'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useState } from 'react'
@@ -14,11 +14,23 @@ interface DayViewProps {
     clientAllergens?: string[]
     clientPreference?: string
     onUpdate: () => void
+    dailyStats?: {
+        kcal: number
+        prot: number
+        carbs: number
+        fats: number
+        targets: {
+            kcal: number
+            prot: number
+            carbs: number
+            fats: number
+        }
+    }
 }
 
 const WEEKDAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
 
-export function DayView({ day, allDays, clientId, clientAllergens, clientPreference, onUpdate }: DayViewProps) {
+export function DayView({ day, allDays, clientId, clientAllergens, clientPreference, onUpdate, dailyStats }: DayViewProps) {
     const [loading, setLoading] = useState(false)
 
     if (!day) return null
@@ -26,13 +38,11 @@ export function DayView({ day, allDays, clientId, clientAllergens, clientPrefere
     const dayLabel = WEEKDAYS[day.day_of_week - 1]
 
     const handleCopyDay = async (targetDayId: string) => {
-        if (!confirm(`¿Copiar todo el contenido de ${dayLabel} al día seleccionado? Esto reemplazará lo que haya en ese día.`)) return
-
+        if (!confirm(`¿Copiar todo el contenido de ${dayLabel} al día seleccionado?`)) return
         setLoading(true)
         try {
             await copyDay(day.id, targetDayId, clientId)
             onUpdate()
-            alert('Copiado correctamente')
         } catch (error) {
             console.error(error)
             alert('Error al copiar')
@@ -43,25 +53,57 @@ export function DayView({ day, allDays, clientId, clientAllergens, clientPrefere
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold tracking-tight">{dayLabel}</h2>
+            {/* Header: Title + Inline Stats */}
+            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+                <div className="flex flex-wrap items-baseline gap-4">
+                    <h2 className="text-2xl font-bold tracking-tight">Comidas <span className="capitalize">{dayLabel}</span></h2>
 
-                <div className="flex items-center gap-2">
+                    {dailyStats && (
+                        <div className="flex flex-wrap items-center gap-4 text-sm font-medium text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                                <span className="text-foreground font-bold">{dailyStats.kcal}</span>
+                                <span className="text-xs">/ {dailyStats.targets.kcal} kcal</span>
+                            </div>
+                            <span className="text-border">|</span>
+
+                            <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+                                    <span className="text-foreground font-bold">{dailyStats.prot}g</span>
+                                    <span className="text-xs">/ {dailyStats.targets.prot}g Prot</span>
+                                </div>
+
+                                <div className="flex items-center gap-1">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
+                                    <span className="text-foreground font-bold">{dailyStats.carbs}g</span>
+                                    <span className="text-xs">/ {dailyStats.targets.carbs}g Carb</span>
+                                </div>
+
+                                <div className="flex items-center gap-1">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
+                                    <span className="text-foreground font-bold">{dailyStats.fats}g</span>
+                                    <span className="text-xs">/ {dailyStats.targets.fats}g Grasa</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Actions */}
+                <div className="hidden sm:block"> {/* Copy only on desktop for now to save mobile space, or keep it? Keeping logic simple */}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm" disabled={loading}>
-                                <Copy className="mr-2 h-4 w-4" /> Copiar a...
+                            <Button variant="ghost" size="sm" disabled={loading} className="text-muted-foreground hover:text-foreground">
+                                <Copy className="mr-2 h-3.5 w-3.5" />
+                                Copiar día a...
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48">
-                            {allDays
-                                .filter(d => d.id !== day.id)
-                                .map(d => (
-                                    <DropdownMenuItem key={d.id} onClick={() => handleCopyDay(d.id)}>
-                                        {WEEKDAYS[d.day_of_week - 1]}
-                                    </DropdownMenuItem>
-                                ))
-                            }
+                        <DropdownMenuContent align="end">
+                            {allDays.filter(d => d.id !== day.id).map(d => (
+                                <DropdownMenuItem key={d.id} onClick={() => handleCopyDay(d.id)}>
+                                    {WEEKDAYS[d.day_of_week - 1]}
+                                </DropdownMenuItem>
+                            ))}
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
@@ -82,7 +124,7 @@ export function DayView({ day, allDays, clientId, clientAllergens, clientPrefere
 
                 {day.meals.length === 0 && (
                     <div className="col-span-full border border-dashed p-8 text-center text-muted-foreground rounded-lg">
-                        No hay comidas configuradas para este día.
+                        No hay comidas configuradas.
                     </div>
                 )}
             </div>

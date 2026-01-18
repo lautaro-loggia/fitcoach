@@ -2,10 +2,19 @@
 
 import { useRouter } from 'next/navigation'
 import { useTransition, useState, useMemo } from 'react'
-import { MoreHorizontal, FileText, Trash, UserCog, Loader2, Search, X, ChevronDown } from 'lucide-react'
+import { MoreHorizontal, FileText, Trash, UserCog, Loader2, Search, X, ChevronDown, Calendar, SlidersHorizontal, Filter, Check } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { PresentialCalendarDialog, Workout } from '@/components/clients/presential-calendar-dialog'
+import { AddClientDialog } from '@/components/clients/add-client-dialog'
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useDebounce } from "@/hooks/use-debounce"
+
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -25,6 +34,19 @@ import {
 import { ClientAvatar } from '@/components/clients/client-avatar'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { deleteClientAction } from '@/app/(dashboard)/clients/actions'
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { toast } from "sonner"
 
 // We define a type for the client data we expect
 export interface Client {
@@ -46,9 +68,14 @@ type StatusFilter = 'all' | 'active' | 'inactive'
 type PaymentFilter = 'all' | 'paid' | 'pending' | 'overdue'
 type PlanFilter = 'all' | 'with_plan' | 'without_plan'
 
+type CheckinStatus = 'all' | 'overdue' | 'due_soon' | 'future' | 'none'
+type GoalFilter = 'all' | 'lose_fat' | 'gain_muscle' | 'recomp'
+
 interface ClientTableProps {
     clients: Client[]
+    presentialWorkouts: Workout[]
 }
+
 
 function getGoalLabel(goal: string | null) {
     if (goal === 'lose_fat') return 'Bajar grasa'
@@ -57,77 +84,119 @@ function getGoalLabel(goal: string | null) {
     return '-'
 }
 
-export function ClientTable({ clients }: ClientTableProps) {
+
+function getCheckinStatus(client: Client): { status: CheckinStatus, date: Date, labels: string, color: string } {
+    let date: Date;
+    let isEstimated = false;
+
+    if (client.next_checkin_date) {
+        date = new Date(client.next_checkin_date);
+    } else if (client.checkins && client.checkins.length > 0) {
+        // Last checkin + 7 days
+        const lastCheckin = new Date(client.checkins[0].date);
+        date = new Date(lastCheckin);
+        date.setDate(date.getDate() + 7);
+        isEstimated = true;
+    } else {
+        // No checkins
+        return { status: 'none', date: new Date(8640000000000000), labels: 'Pendiente (Inicio)', color: 'text-yellow-600' };
+    }
+
+    const now = new Date();
+    // Normalize to start of day for accurate comparison
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const checkinDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+    const diffTime = checkinDay.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    let status: CheckinStatus = 'future';
+    let color = 'text-green-600';
+
+    if (diffDays < 0) {
+        status = 'overdue';
+        color = 'text-red-600';
+    } else if (diffDays <= 2) { // Today or < 48h (approx 2 days)
+        status = 'due_soon';
+        color = 'text-yellow-600';
+    } else {
+        status = 'future';
+        color = 'text-green-600';
+    }
+
+    return {
+        status,
+        date,
+        labels: format(date, 'dd/MM/yyyy', { locale: es }),
+        color
+    };
+}
+
+export function ClientTable({ clients, presentialWorkouts }: ClientTableProps) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
     const [navigatingId, setNavigatingId] = useState<string | null>(null)
 
     // Search and filter state
     const [searchQuery, setSearchQuery] = useState('')
+    const debouncedSearch = useDebounce(searchQuery, 300)
+
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
-    const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>('all')
-    const [planFilter, setPlanFilter] = useState<PlanFilter>('all')
+    const [goalFilter, setGoalFilter] = useState<GoalFilter>('all')
+    const [checkinFilter, setCheckinFilter] = useState<CheckinStatus>('all')
 
     // Filtered clients
     const filteredClients = useMemo(() => {
         return clients.filter(client => {
-            // Search filter (name or email)
-            const searchLower = searchQuery.toLowerCase().trim()
+            // Search filter (name or email or goal)
+            const searchLower = debouncedSearch.toLowerCase().trim()
             if (searchLower) {
                 const nameMatch = client.full_name.toLowerCase().includes(searchLower)
                 const emailMatch = client.email?.toLowerCase().includes(searchLower) || false
-                if (!nameMatch && !emailMatch) return false
+                const goalMatch = getGoalLabel(client.goal_specific).toLowerCase().includes(searchLower)
+                if (!nameMatch && !emailMatch && !goalMatch) return false
             }
 
             // Status filter
             if (statusFilter !== 'all' && client.status !== statusFilter) return false
 
-            // Payment filter
-            if (paymentFilter !== 'all') {
-                if (paymentFilter === 'paid' && client.payment_status !== 'paid') return false
-                if (paymentFilter === 'pending' && client.payment_status !== 'pending') return false
-                if (paymentFilter === 'overdue' && client.payment_status !== 'overdue') return false
+            // Goal filter
+            if (goalFilter !== 'all' && client.goal_specific !== goalFilter) return false
+
+            const checkinInfo = getCheckinStatus(client);
+
+            // Checkin Status filter
+            if (checkinFilter !== 'all') {
+                if (checkinFilter === 'overdue' && checkinInfo.status !== 'overdue') return false;
+                if (checkinFilter === 'due_soon' && checkinInfo.status !== 'due_soon') return false;
+                if (checkinFilter === 'future' && checkinInfo.status !== 'future') return false;
+                // 'none' usually means pending first checkin, often treated as warning/due_soon visually but let's keep robust logic
             }
 
-            // Plan filter
-            if (planFilter !== 'all') {
-                if (planFilter === 'with_plan' && !client.plan_id) return false
-                if (planFilter === 'without_plan' && client.plan_id) return false
-            }
+
 
             return true
+        }).sort((a, b) => {
+            // Default sort: Next Check-in (asc)
+            const checkinA = getCheckinStatus(a);
+            const checkinB = getCheckinStatus(b);
+            return checkinA.date.getTime() - checkinB.date.getTime();
         })
-    }, [clients, searchQuery, statusFilter, paymentFilter, planFilter])
+    }, [clients, debouncedSearch, statusFilter, goalFilter, checkinFilter])
 
-    // Check if any filter is active
-    const hasActiveFilters = statusFilter !== 'all' || paymentFilter !== 'all' || planFilter !== 'all'
+    const hasActiveFilters = statusFilter !== 'all' || goalFilter !== 'all' || checkinFilter !== 'all'
 
-    // Clear all filters
     const clearFilters = () => {
-        setSearchQuery('')
         setStatusFilter('all')
-        setPaymentFilter('all')
-        setPlanFilter('all')
+        setGoalFilter('all')
+        setCheckinFilter('all')
+        setSearchQuery('')
     }
 
-    // Helper to calculate next check-in
-    const getNextCheckin = (client: Client) => {
-        // 1. If we have a manually set next_checkin_date, use it.
-        if (client.next_checkin_date) {
-            return format(new Date(client.next_checkin_date), 'dd/MM/yyyy', { locale: es })
-        }
-
-        // 2. Fallback to automatic calculation if no check-ins.
-        if (!client.checkins || client.checkins.length === 0) {
-            return "Pendiente (Inicio)"
-        }
-
-        // 3. Fallback to last check-in + 7 days.
-        const lastCheckin = new Date(client.checkins[0].date)
-        const nextCheckin = new Date(lastCheckin)
-        nextCheckin.setDate(nextCheckin.getDate() + 7)
-
-        return format(nextCheckin, 'dd/MM/yyyy', { locale: es })
+    const removeFilter = (type: 'status' | 'goal' | 'checkin') => {
+        if (type === 'status') setStatusFilter('all')
+        if (type === 'goal') setGoalFilter('all')
+        if (type === 'checkin') setCheckinFilter('all')
     }
 
     const handleRowClick = (id: string) => {
@@ -145,177 +214,221 @@ export function ClientTable({ clients }: ClientTableProps) {
         })
     }
 
-    const ActionMenu = ({ client }: { client: Client }) => (
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                <Button variant="ghost" className="h-8 w-8 p-0">
-                    <span className="sr-only">Abrir menú</span>
-                    <MoreHorizontal className="h-4 w-4" />
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => handleRowClick(client.id)}>
-                    <FileText className="mr-2 h-4 w-4" /> Ver perfil
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={(e) => handleEditProfile(e, client.id)}>
-                    <UserCog className="mr-2 h-4 w-4" /> Editar perfil
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                    className="text-destructive"
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        // Add delete logic call here if exists
-                    }}
-                >
-                    <Trash className="mr-2 h-4 w-4" /> Eliminar
-                </DropdownMenuItem>
-            </DropdownMenuContent>
-        </DropdownMenu>
-    )
-
-    if (clients.length === 0) {
+    // Action Menu Component (Re-use existing logic)
+    const ActionMenu = ({ client }: { client: Client }) => {
+        const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+        const handleDelete = async () => {
+            const result = await deleteClientAction(client.id)
+            if (result?.error) toast.error(result.error)
+            else { toast.success("Cliente eliminado correctamente"); setShowDeleteDialog(false) }
+        }
         return (
-            <div className="rounded-md border p-8 text-center text-muted-foreground">
-                No hay asesorados cargados.
+            <>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Abrir menú</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => handleRowClick(client.id)}>
+                            <FileText className="mr-2 h-4 w-4" /> Ver perfil
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => handleEditProfile(e, client.id)}>
+                            <UserCog className="mr-2 h-4 w-4" /> Editar perfil
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); setShowDeleteDialog(true) }}>
+                            <Trash className="mr-2 h-4 w-4" /> Eliminar
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+                <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                    <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>¿Estás completamente seguro?</AlertDialogTitle>
+                            <AlertDialogDescription>Esta acción no se puede deshacer. Esto eliminará permanentemente al cliente <strong>{client.full_name}</strong>.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={async (e) => { e.stopPropagation(); await handleDelete() }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Eliminar</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </>
+        )
+    }
+
+    if (clients.length === 0 && !searchQuery && !hasActiveFilters) {
+        return (
+            <div className="flex flex-col items-center justify-center p-8 space-y-4 text-center border rounded-md bg-muted/10 h-64">
+                <div className="p-3 bg-primary/10 rounded-full">
+                    <UserCog className="w-6 h-6 text-primary" />
+                </div>
+                <div className="space-y-2">
+                    <h3 className="font-semibold text-lg">No tienes asesorados aún</h3>
+                    <p className="text-muted-foreground max-w-sm">Comenzá agregando a tu primer cliente para gestionar sus entrenamientos.</p>
+                </div>
+                <AddClientDialog />
             </div>
         )
     }
 
-    // Filter dropdown component
-    const FilterDropdown = ({
-        label,
-        value,
-        onChange,
-        options
-    }: {
-        label: string
-        value: string
-        onChange: (value: any) => void
-        options: { value: string; label: string }[]
-    }) => (
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button
-                    variant={value !== 'all' ? 'default' : 'outline'}
-                    size="sm"
-                    className="h-9 gap-1"
-                >
-                    {options.find(o => o.value === value)?.label || label}
-                    <ChevronDown className="h-3.5 w-3.5 opacity-50" />
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-                <DropdownMenuLabel>{label}</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {options.map(option => (
-                    <DropdownMenuItem
-                        key={option.value}
-                        onClick={() => onChange(option.value)}
-                        className={value === option.value ? 'bg-accent' : ''}
-                    >
-                        {option.label}
-                    </DropdownMenuItem>
-                ))}
-            </DropdownMenuContent>
-        </DropdownMenu>
-    )
-
     return (
-        <div className="space-y-4">
-            {/* Search and Filters */}
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
-                {/* Search Bar */}
-                <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        placeholder="Buscar por nombre o email..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-9 pr-9"
-                    />
-                    {searchQuery && (
-                        <button
-                            onClick={() => setSearchQuery('')}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        >
-                            <X className="h-4 w-4" />
-                        </button>
-                    )}
+        <div className="space-y-6 md:space-y-8">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Mis Asesorados</h2>
+                    <p className="text-muted-foreground">
+                        Gestioná tus clientes, sus planes y seguimiento.
+                    </p>
                 </div>
 
-                {/* Filter Dropdowns */}
-                <div className="flex flex-wrap items-center gap-2">
-                    <FilterDropdown
-                        label="Estado"
-                        value={statusFilter}
-                        onChange={setStatusFilter}
-                        options={[
-                            { value: 'all', label: 'Todos' },
-                            { value: 'active', label: 'Activos' },
-                            { value: 'inactive', label: 'Inactivos' },
-                        ]}
-                    />
+                {/* Actions */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto">
+                    {/* Search */}
+                    <div className="relative flex-1 md:w-[320px]">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Buscar por nombre, email u objetivo"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-9 pr-9"
+                        />
+                        {searchQuery && (
+                            <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                                <X className="h-4 w-4" />
+                            </button>
+                        )}
+                    </div>
 
-                    <FilterDropdown
-                        label="Pago"
-                        value={paymentFilter}
-                        onChange={setPaymentFilter}
-                        options={[
-                            { value: 'all', label: 'Todos' },
-                            { value: 'paid', label: 'Al día' },
-                            { value: 'pending', label: 'Pendiente' },
-                            { value: 'overdue', label: 'Vencido' },
-                        ]}
-                    />
+                    {/* Filter Button */}
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" size="icon" className="shrink-0" title="Filtros">
+                                <SlidersHorizontal className="h-4 w-4" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80" align="end">
+                            <div className="space-y-4">
+                                <h4 className="font-medium leading-none">Filtros</h4>
 
-                    <FilterDropdown
-                        label="Plan"
-                        value={planFilter}
-                        onChange={setPlanFilter}
-                        options={[
-                            { value: 'all', label: 'Todos' },
-                            { value: 'with_plan', label: 'Con plan' },
-                            { value: 'without_plan', label: 'Sin plan' },
-                        ]}
-                    />
+                                <div className="space-y-2">
+                                    <Label>Estado</Label>
+                                    <RadioGroup value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="all" id="s-all" />
+                                            <Label htmlFor="s-all">Todos</Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="active" id="s-active" />
+                                            <Label htmlFor="s-active">Activos</Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="inactive" id="s-inactive" />
+                                            <Label htmlFor="s-inactive">Inactivos</Label>
+                                        </div>
+                                    </RadioGroup>
+                                </div>
 
-                    {hasActiveFilters && (
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={clearFilters}
-                            className="h-9 text-muted-foreground hover:text-foreground"
-                        >
-                            <X className="h-4 w-4 mr-1" />
-                            Limpiar
-                        </Button>
-                    )}
+                                <div className="space-y-2">
+                                    <Label>Objetivo</Label>
+                                    <RadioGroup value={goalFilter} onValueChange={(v) => setGoalFilter(v as GoalFilter)}>
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="all" id="g-all" />
+                                            <Label htmlFor="g-all">Todos</Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="lose_fat" id="g-lose" />
+                                            <Label htmlFor="g-lose">Bajar grasa</Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="gain_muscle" id="g-gain" />
+                                            <Label htmlFor="g-gain">Ganar músculo</Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="recomp" id="g-recomp" />
+                                            <Label htmlFor="g-recomp">Recomposición</Label>
+                                        </div>
+                                    </RadioGroup>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label>Próximo Check-in</Label>
+                                    <RadioGroup value={checkinFilter} onValueChange={(v) => setCheckinFilter(v as CheckinStatus)}>
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="all" id="c-all" />
+                                            <Label htmlFor="c-all">Todos</Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="overdue" id="c-overdue" />
+                                            <Label htmlFor="c-overdue" className="text-red-600">Vencido</Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="due_soon" id="c-soon" />
+                                            <Label htmlFor="c-soon" className="text-yellow-600">Hoy o &lt;48h</Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="future" id="c-future" />
+                                            <Label htmlFor="c-future" className="text-green-600">Mayor a 48h</Label>
+                                        </div>
+                                    </RadioGroup>
+                                </div>
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+
+                    {/* Calendar Button */}
+                    <PresentialCalendarDialog workouts={presentialWorkouts} />
+
+                    {/* Add Client Button */}
+                    <AddClientDialog />
                 </div>
             </div>
 
-            {/* Results count */}
-            {(searchQuery || hasActiveFilters) && (
-                <p className="text-sm text-muted-foreground">
-                    {filteredClients.length === 0
-                        ? 'No se encontraron resultados'
-                        : `${filteredClients.length} de ${clients.length} asesorados`
-                    }
-                </p>
-            )}
-
-            {/* Empty state when no results */}
-            {filteredClients.length === 0 && (
-                <div className="rounded-md border p-8 text-center text-muted-foreground">
-                    <p>No se encontraron asesorados con los filtros actuales.</p>
-                    <Button variant="link" onClick={clearFilters} className="mt-2">
-                        Limpiar filtros
+            {/* Active Filters Chips */}
+            {hasActiveFilters && (
+                <div className="flex flex-wrap gap-2 items-center">
+                    {statusFilter !== 'all' && (
+                        <Badge variant="secondary" className="gap-1 pr-1">
+                            Estado: {statusFilter === 'active' ? 'Activo' : 'Inactivo'}
+                            <button onClick={() => removeFilter('status')} className="ml-1 hover:text-foreground"><X className="h-3 w-3" /></button>
+                        </Badge>
+                    )}
+                    {goalFilter !== 'all' && (
+                        <Badge variant="secondary" className="gap-1 pr-1">
+                            Objetivo: {getGoalLabel(goalFilter)}
+                            <button onClick={() => removeFilter('goal')} className="ml-1 hover:text-foreground"><X className="h-3 w-3" /></button>
+                        </Badge>
+                    )}
+                    {checkinFilter !== 'all' && (
+                        <Badge variant="secondary" className="gap-1 pr-1">
+                            Check-in: {checkinFilter === 'overdue' ? 'Vencido' : checkinFilter === 'due_soon' ? 'Próximo' : 'Futuro'}
+                            <button onClick={() => removeFilter('checkin')} className="ml-1 hover:text-foreground"><X className="h-3 w-3" /></button>
+                        </Badge>
+                    )}
+                    <Button variant="ghost" size="sm" onClick={clearFilters} className="h-6 text-xs text-muted-foreground">
+                        Limpiar todo
                     </Button>
                 </div>
             )}
 
-            {filteredClients.length > 0 && (
+
+
+
+
+            {filteredClients.length === 0 ? (
+                <div className="rounded-md border p-8 text-center text-muted-foreground">
+                    <p className="text-lg font-medium text-foreground">No se encontraron resultados</p>
+                    <p className="mb-4">Intenta ajustar los filtros o la búsqueda.</p>
+                    <div className="flex justify-center gap-4">
+                        <Button variant="outline" onClick={clearFilters}>Limpiar filtros</Button>
+                        <AddClientDialog />
+                    </div>
+                </div>
+            ) : (
                 <>
                     {/* Desktop Table */}
                     <div className="hidden md:block rounded-md border relative">
@@ -327,8 +440,7 @@ export function ClientTable({ clients }: ClientTableProps) {
                         <Table>
                             <TableHeader>
                                 <TableRow className="hover:bg-transparent cursor-default">
-                                    <TableHead className="w-[80px]">Avatar</TableHead>
-                                    <TableHead>Nombre</TableHead>
+                                    <TableHead className="w-[300px]">Asesorado</TableHead>
                                     <TableHead>Estado</TableHead>
                                     <TableHead>Objetivo</TableHead>
                                     <TableHead>Próximo Check-in</TableHead>
@@ -336,81 +448,80 @@ export function ClientTable({ clients }: ClientTableProps) {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {filteredClients.map((client) => (
-                                    <TableRow
-                                        key={client.id}
-                                        className="cursor-pointer hover:bg-muted/50 transition-colors"
-                                        onClick={() => handleRowClick(client.id)}
-                                    >
-                                        <TableCell>
-                                            <ClientAvatar
-                                                name={client.full_name}
-                                                avatarUrl={client.avatar_url}
-                                                size="md"
-                                            />
-                                        </TableCell>
-                                        <TableCell className="font-medium">
-                                            <div className="flex items-center gap-2">
-                                                {client.full_name}
-                                                {isPending && navigatingId === client.id && (
-                                                    <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-                                                )}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge
-                                                variant={client.status === 'active' ? 'default' : 'secondary'}
-                                                className={client.status === 'active' ? 'bg-green-100 text-green-700 hover:bg-green-100' : ''}
-                                            >
-                                                {client.status === 'active' ? 'Activo' : 'Inactivo'}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell>{getGoalLabel(client.goal_specific)}</TableCell>
-                                        <TableCell>{getNextCheckin(client)}</TableCell>
-                                        <TableCell className="text-right">
-                                            <ActionMenu client={client} />
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
+                                {filteredClients.map((client) => {
+                                    const checkinInfo = getCheckinStatus(client);
+                                    return (
+                                        <TableRow
+                                            key={client.id}
+                                            className="cursor-pointer hover:bg-muted/50 transition-colors"
+                                            onClick={() => handleRowClick(client.id)}
+                                        >
+                                            <TableCell>
+                                                <div className="flex items-center gap-3">
+                                                    <ClientAvatar name={client.full_name} avatarUrl={client.avatar_url} size="md" />
+                                                    <div className="flex flex-col">
+                                                        <span className="font-medium">{client.full_name}</span>
+                                                        <span className="text-xs text-muted-foreground">{client.email || '-'}</span>
+                                                    </div>
+                                                    {isPending && navigatingId === client.id && (
+                                                        <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-2">
+                                                    <div className={`h-2.5 w-2.5 rounded-full ${client.status === 'active' ? 'bg-green-500' : 'bg-gray-300'}`} />
+                                                    <span className="text-sm">{client.status === 'active' ? 'Activo' : 'Inactivo'}</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant="secondary" className="font-normal border-transparent bg-muted text-muted-foreground hover:bg-muted">
+                                                    {getGoalLabel(client.goal_specific)}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                                <span className={`font-medium ${checkinInfo.color}`}>
+                                                    {checkinInfo.labels}
+                                                </span>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <ActionMenu client={client} />
+                                            </TableCell>
+                                        </TableRow>
+                                    )
+                                })}
                             </TableBody>
                         </Table>
                     </div>
 
-                    {/* Mobile Cards */}
+                    {/* Mobile Cards (Simplified for consistency, though user asked for Table improvements, Mobile usually falls back to cards) */}
                     <div className="md:hidden space-y-3">
-                        {filteredClients.map((client) => (
-                            <div
-                                key={client.id}
-                                className="flex items-center gap-3 p-4 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
-                                onClick={() => handleRowClick(client.id)}
-                            >
-                                <ClientAvatar
-                                    name={client.full_name}
-                                    avatarUrl={client.avatar_url}
-                                    size="md"
-                                />
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2">
-                                        <p className="font-medium truncate">{client.full_name}</p>
-                                        {isPending && navigatingId === client.id && (
-                                            <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-                                        )}
+                        {filteredClients.map((client) => {
+                            const checkinInfo = getCheckinStatus(client);
+                            return (
+                                <div key={client.id} className="flex flex-col gap-3 p-4 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleRowClick(client.id)}>
+                                    <div className="flex justify-between items-start">
+                                        <div className="flex items-center gap-3">
+                                            <ClientAvatar name={client.full_name} avatarUrl={client.avatar_url} size="md" />
+                                            <div>
+                                                <p className="font-medium">{client.full_name}</p>
+                                                <p className="text-sm text-muted-foreground">{getGoalLabel(client.goal_specific)}</p>
+                                            </div>
+                                        </div>
+                                        <ActionMenu client={client} />
                                     </div>
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <Badge
-                                            variant={client.status === 'active' ? 'default' : 'secondary'}
-                                            className={client.status === 'active' ? 'text-xs bg-green-100 text-green-700 hover:bg-green-100' : 'text-xs'}
-                                        >
-                                            {client.status === 'active' ? 'Activo' : 'Inactivo'}
-                                        </Badge>
-                                        <span className="text-xs text-muted-foreground">
-                                            {getGoalLabel(client.goal_specific)}
+                                    <div className="flex items-center justify-between text-sm">
+                                        <div className="flex items-center gap-2">
+                                            <div className={`h-2.5 w-2.5 rounded-full ${client.status === 'active' ? 'bg-green-500' : 'bg-gray-300'}`} />
+                                            <span>{client.status === 'active' ? 'Activo' : 'Inactivo'}</span>
+                                        </div>
+                                        <span className={`${checkinInfo.color}`}>
+                                            Check-in: {checkinInfo.labels}
                                         </span>
                                     </div>
                                 </div>
-                                <ActionMenu client={client} />
-                            </div>
-                        ))}
+                            )
+                        })}
                     </div>
                 </>
             )}

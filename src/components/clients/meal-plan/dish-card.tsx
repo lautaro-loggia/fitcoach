@@ -86,6 +86,9 @@ export function DishCard({ item, onDelete }: DishCardProps) {
             {hasRecipe && (
                 <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
                     <DialogContent className="max-w-md sm:max-w-lg p-0 border-0 bg-transparent shadow-none">
+                        <DialogHeader className="sr-only">
+                            <DialogTitle>{displayName}</DialogTitle>
+                        </DialogHeader>
                         {/* Reusing RecipeCard for detail view. 
                              We might need to wrap it to look good in a loose dialog or use its native style. 
                              RecipeCard is designed as a card, so it fits well.

@@ -44,10 +44,12 @@ export async function updateSession(request: NextRequest) {
         ) {
             const url = request.nextUrl.clone()
             url.pathname = '/login'
+            // pass the original URL as query param for redirect after login if needed
+            // url.searchParams.set('next', request.nextUrl.pathname)
             return NextResponse.redirect(url)
         }
 
-        // Redirect to dashboard if authenticated and trying to access auth pages
+        // Redirect to dashboard if authenticated and trying to access auth pages (except callback/signout)
         if (
             user &&
             (request.nextUrl.pathname.startsWith('/login') ||

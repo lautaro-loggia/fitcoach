@@ -12,6 +12,17 @@ import { updateClientAction, deleteClientAction } from "@/app/(dashboard)/client
 import { Loader2, Save, Trash2, AlertTriangle } from "lucide-react"
 import { AllergenSelector } from "../allergen-selector"
 import { ClientAvatarUpload } from "../client-avatar-upload"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 export function SettingsTab({ client }: { client: any }) {
     const router = useRouter()
@@ -80,15 +91,13 @@ export function SettingsTab({ client }: { client: any }) {
     }
 
     const handleDelete = async () => {
-        if (confirm("¿Estás seguro de que querés eliminar este asesorado? Esta acción no se puede deshacer y borrará todos sus datos, rutinas y chequeos.")) {
-            setLoading(true)
-            const result = await deleteClientAction(client.id)
-            if (result?.error) {
-                setMessage({ type: 'error', text: result.error })
-                setLoading(false)
-            } else {
-                router.push('/clients')
-            }
+        setLoading(true)
+        const result = await deleteClientAction(client.id)
+        if (result?.error) {
+            setMessage({ type: 'error', text: result.error })
+            setLoading(false)
+        } else {
+            router.push('/clients')
         }
     }
 
@@ -330,10 +339,28 @@ export function SettingsTab({ client }: { client: any }) {
                         <p className="text-sm text-muted-foreground mb-4">
                             Si eliminás este asesorado, se perderán todos sus datos, incluyendo historial de check-ins, rutinas asignadas y dietas. Esta acción no se puede deshacer.
                         </p>
-                        <Button variant="destructive" onClick={handleDelete} disabled={loading}>
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Eliminar Asesorado
-                        </Button>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" disabled={loading}>
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Eliminar Asesorado
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Estás completamente seguro?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Esta acción no se puede deshacer. Esto eliminará permanentemente al cliente <strong>{client.full_name}</strong> y todos sus datos asociados.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                        Eliminar
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                     </CardContent>
                 </Card>
             </div>
