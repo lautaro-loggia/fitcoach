@@ -15,18 +15,23 @@ function LoginForm() {
     const [sent, setSent] = useState(false)
     const searchParams = useSearchParams()
 
+    // Separate effect for Hash-based auth (Implicit Grant / Rescue)
     useEffect(() => {
-        const handleAuthCallback = async () => {
+        const handleHashAuth = async () => {
+            // Un-escape potentially double-encoded URLs or just grab raw hash
             const hash = window.location.hash
+            console.log("Checking hash for recovery:", hash)
 
-            // Check for Implicit Grant (Hash Tokens) - Rescue flow
             if (hash && hash.includes('access_token=')) {
-                const params = new URLSearchParams(hash.substring(1)) // remove #
+                // Parse manually to avoid URLSearchParams issues with fragments
+                const params = new URLSearchParams(hash.substring(1))
                 const accessToken = params.get('access_token')
                 const refreshToken = params.get('refresh_token')
 
                 if (accessToken && refreshToken) {
                     setLoading(true)
+                    toast.info("Recuperando sesión...")
+
                     const supabase = createClient()
                     const { data, error } = await supabase.auth.setSession({
                         access_token: accessToken,
@@ -35,17 +40,28 @@ function LoginForm() {
 
                     if (!error && data.session) {
                         toast.success('Sesión recuperada correctamente')
-                        window.location.href = '/dashboard' // Force reload to sync cookies
-                        return
+                        window.location.href = '/dashboard'
                     } else if (error) {
+                        console.error("Session recovery error:", error)
                         toast.error('Error recuperando sesión: ' + error.message)
+                        setLoading(false)
                     }
                 }
             }
+        }
 
+        // Small timeout to ensure hydration doesn't wipe hash immediately
+        const timer = setTimeout(handleHashAuth, 100)
+        return () => clearTimeout(timer)
+    }, [])
+
+    useEffect(() => {
+        const handleParamAuth = async () => {
             // Check for hash errors (Supabase sometimes sends errors in fragment)
+            const hash = window.location.hash
             if (hash && hash.includes('error=')) {
-                const params = new URLSearchParams(hash.substring(1)) // remove #
+                // ... (keep existing error handling for hash)
+                const params = new URLSearchParams(hash.substring(1))
                 const errorCode = params.get('error_code')
                 const errorDesc = params.get('error_description')
 
@@ -60,13 +76,10 @@ function LoginForm() {
             const code = searchParams.get('code')
             const error = searchParams.get('error')
             const errorDesc = searchParams.get('error_description')
-
+            // ... rest of param logic (keep existing code handling)
             if (error) {
-                // Ignore generic 'no_code' error if we have a specific hash error (handled above, but hash check runs first)
-                // If no hash error, show the param error
                 if (error === 'no_code_or_user' && !hash) {
-                    // This is our generic fallback, suppress it if it's confusing or show a better message
-                    // For now, allow it but maybe cleaner text
+                    // Generic error, usually safe to ignore if hash auth picks up
                 } else {
                     toast.error(decodeURIComponent(errorDesc || error))
                 }
@@ -75,7 +88,6 @@ function LoginForm() {
             if (code) {
                 setLoading(true)
                 const supabase = createClient()
-                // Attempt to exchange code for session
                 const { data, error: sessionError } = await supabase.auth.exchangeCodeForSession(code)
 
                 if (sessionError) {
@@ -83,13 +95,11 @@ function LoginForm() {
                     setLoading(false)
                 } else if (data.session) {
                     toast.success('Sesión iniciada correctamente')
-                    // Check onboarding status or default to dashboard
-                    window.location.href = '/dashboard' // Force reload to pick up session cookies
+                    window.location.href = '/dashboard'
                 }
             }
         }
-
-        handleAuthCallback()
+        handleParamAuth()
     }, [searchParams])
 
     const handleLogin = async (e: React.FormEvent) => {
