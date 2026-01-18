@@ -510,35 +510,10 @@ export type Database = {
 
 
 
+
 type PublicSchema = Database[Extract<keyof Database, "public">]
 
-export type Tables<
-    T extends keyof PublicSchema["Tables"] | { schema: keyof Database } = keyof PublicSchema["Tables"]
-> = T extends keyof PublicSchema["Tables"]
-    ? PublicSchema["Tables"][T]["Row"]
-    : any
+// Helpers removed to avoid build errors. 
+// Use Database['public']['Tables']['tablename']['Row'] directly if needed.
 
-export type TablesInsert<
-    T extends keyof PublicSchema["Tables"] | { schema: keyof Database } = keyof PublicSchema["Tables"]
-> = T extends keyof PublicSchema["Tables"]
-    ? PublicSchema["Tables"][T]["Insert"]
-    : any
-
-export type TablesUpdate<
-    T extends keyof PublicSchema["Tables"] | { schema: keyof Database } = keyof PublicSchema["Tables"]
-> = T extends keyof PublicSchema["Tables"]
-    ? PublicSchema["Tables"][T]["Update"]
-    : any
-
-export type Enums<
-    T extends keyof PublicSchema["Enums"] | { schema: keyof Database } = keyof PublicSchema["Enums"]
-> = T extends keyof PublicSchema["Enums"]
-    ? PublicSchema["Enums"][T]
-    : any
-
-export type CompositeTypes<
-    T extends keyof PublicSchema["CompositeTypes"] | { schema: keyof Database } = keyof PublicSchema["CompositeTypes"]
-> = T extends keyof PublicSchema["CompositeTypes"]
-    ? PublicSchema["CompositeTypes"][T]
-    : any
 
