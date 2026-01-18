@@ -44,8 +44,10 @@ export async function updateSession(request: NextRequest) {
         ) {
             const url = request.nextUrl.clone()
             url.pathname = '/login'
-            // pass the original URL as query param for redirect after login if needed
-            // url.searchParams.set('next', request.nextUrl.pathname)
+            // Preserve query params (like 'code') so login page can handle auth exchange or errors
+            request.nextUrl.searchParams.forEach((value, key) => {
+                url.searchParams.set(key, value)
+            })
             return NextResponse.redirect(url)
         }
 
