@@ -46,7 +46,8 @@ export async function inviteClient(prevState: any, formData: FormData) {
 
         // 3. Send Supabase Auth Invite (Magic Link)
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://orbit-fit.vercel.app'
-        const redirectUrl = `${baseUrl}/auth/callback?next=/onboarding`
+        // Remove query params to avoid encoding issues commonly seen with Magic Links
+        const redirectUrl = `${baseUrl}/auth/callback`
 
         console.log('Sending invite with redirect URL:', redirectUrl)
 

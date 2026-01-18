@@ -32,6 +32,8 @@ export async function GET(request: Request) {
             // Only acts if the Client Record has NO user_id set.
             const adminSupabase = createAdminClient()
 
+
+            // Secure Account Linking: 
             const { error: linkError } = await adminSupabase
                 .from('clients')
                 .update({ user_id: user.id })
@@ -39,11 +41,34 @@ export async function GET(request: Request) {
                 .is('user_id', null)
 
             if (linkError) {
-                // Log but don't fail the login; maybe they are a trainer or already linked
                 console.error('Account Linking Error:', linkError)
             }
 
-            return NextResponse.redirect(`${origin}${next}`)
+            // Check Client Status to determine redirect
+            const { data: clientData } = await adminSupabase
+                .from('clients')
+                .select('onboarding_status')
+                .eq('email', user.email)
+                .single()
+
+            let finalRedirect = next
+
+            // If explicit 'next' was just root, try to be smarter
+            if (next === '/') {
+                if (clientData) {
+                    // It is a client
+                    if (clientData.onboarding_status === 'completed') {
+                        finalRedirect = '/dashboard'
+                    } else {
+                        finalRedirect = '/onboarding'
+                    }
+                } else {
+                    // Maybe a trainer? Default to dashboard
+                    finalRedirect = '/dashboard'
+                }
+            }
+
+            return NextResponse.redirect(`${origin}${finalRedirect}`)
         }
     }
 
