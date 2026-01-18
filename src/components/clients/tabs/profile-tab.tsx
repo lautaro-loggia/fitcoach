@@ -43,25 +43,76 @@ export function ProfileTab({ client }: ProfileTabProps) {
     const [checkins, setCheckins] = useState<any[]>([])
     // ... (keep existing state)
 
+    // -- Photos State (Missing in previous step) --
+    const [photos, setPhotos] = useState<any[]>([])
+
     useEffect(() => {
-        const supabase = createClient()
-        const channel = supabase.channel(`client-${client.id}`)
-            .on('postgres_changes', {
-                event: 'UPDATE',
-                schema: 'public',
-                table: 'clients',
-                filter: `id=eq.${client.id}`
-            }, () => {
-                router.refresh()
-            })
-            .subscribe()
+        fetchData()
+    }, [client.id])
 
-        return () => {
-            supabase.removeChannel(channel)
+    const fetchData = async () => {
+        try {
+            const supabase = createClient()
+            const { data: checkinsData, error } = await supabase
+                .from('checkins')
+                .select('*')
+                .eq('client_id', client.id)
+                .order('date', { ascending: true })
+
+            if (error) {
+                console.error("Error fetching checkins:", error)
+                return
+            }
+
+            if (checkinsData) {
+                setCheckins(checkinsData)
+
+                // Extract photos from checkins
+                const allPhotos: any[] = []
+                checkinsData.forEach(c => {
+                    if (c.photos && Array.isArray(c.photos)) {
+                        c.photos.forEach((url: string) => {
+                            allPhotos.push({
+                                id: c.id,
+                                url,
+                                date: c.date,
+                                weight: c.weight,
+                                bodyFat: c.body_fat
+                            })
+                        })
+                    }
+                })
+                setPhotos(allPhotos.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()))
+            }
+        } catch (err) {
+            console.error("Error in fetchData:", err)
         }
-    }, [client.id, router])
+    }
 
-    // ... (keep existing fetchData)
+    // -- Process Data for Charts --
+    const weightData = checkins.map(c => ({
+        name: format(new Date(c.date), 'MMM', { locale: es }),
+        fullDate: c.date,
+        weight: c.weight,
+    })).slice(-6)
+
+    const bodyFatData = checkins.map(c => ({
+        name: format(new Date(c.date), 'MMM', { locale: es }),
+        fullDate: c.date,
+        fat: c.body_fat
+    })).filter(d => d.fat).slice(-6)
+
+    // -- Metrics Calculation --
+    const currentWeight = checkins.length > 0 ? checkins[checkins.length - 1].weight : client.initial_weight
+    const previousWeight = checkins.length > 1 ? checkins[checkins.length - 2].weight : client.initial_weight
+    const weightDiff = currentWeight - previousWeight
+
+    // -- Mock Updates --
+    const updates = checkins.slice().reverse().slice(0, 3).map(c => ({
+        title: "Actualización corporal",
+        description: "Se actualizaron las medidas corporales del asesorado.",
+        daysAgo: Math.floor((new Date().getTime() - new Date(c.date).getTime()) / (1000 * 3600 * 24))
+    }))
 
     return (
         <div className="space-y-3 animate-in fade-in duration-500">
