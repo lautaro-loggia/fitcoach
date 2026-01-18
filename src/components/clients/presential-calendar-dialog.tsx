@@ -77,7 +77,7 @@ export function PresentialCalendarDialog({ workouts }: PresentialCalendarDialogP
             <DialogTrigger asChild>
                 <Button variant="outline" className="gap-2">
                     <CalendarIcon className="h-4 w-4" />
-                    <span className="hidden md:inline">Calendario Presencial</span>
+                    <span>Calendario</span>
                 </Button>
             </DialogTrigger>
             <DialogContent className="max-w-[1100px] w-full max-h-[90vh] flex flex-col sm:max-w-[1100px]">

@@ -45,13 +45,41 @@ export default async function ClientNotesPage({
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4">
                 <ProfileHeader client={client} allClients={allClients || []} />
 
-                <TabsList className="h-9">
-                    <TabsTrigger value="profile">Perfil</TabsTrigger>
-                    <TabsTrigger value="checkin">Check-In</TabsTrigger>
-                    <TabsTrigger value="training">Entrenamiento</TabsTrigger>
-                    <TabsTrigger value="diet">Comidas</TabsTrigger>
-                    <TabsTrigger value="settings">Ajustes</TabsTrigger>
-                </TabsList>
+                <div className="flex items-center gap-2 overflow-x-auto max-w-full">
+                    <div id="header-actions" className="flex items-center gap-2" />
+                    <TabsList className="inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground">
+                        <TabsTrigger
+                            value="profile"
+                            className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                        >
+                            Perfil
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="checkin"
+                            className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                        >
+                            Check-In
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="training"
+                            className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                        >
+                            Entrenamiento
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="diet"
+                            className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                        >
+                            Comidas
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="settings"
+                            className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                        >
+                            Ajustes
+                        </TabsTrigger>
+                    </TabsList>
+                </div>
             </div>
 
             <TabsContent value="profile" className="space-y-4 outline-none text-foreground">

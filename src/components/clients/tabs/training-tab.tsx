@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Calendar as CalendarIcon, Download, Plus } from 'lucide-react'
+import { Calendar as CalendarIcon, Download, Plus, LayoutGrid } from 'lucide-react'
 import { AssignWorkoutDialog } from '../assign-workout-dialog'
 import { deleteAssignedWorkoutAction, updateAssignedWorkoutAction } from '@/app/(dashboard)/clients/[id]/training-actions'
 import { getOrCreateSession } from '@/app/(dashboard)/session/actions'
@@ -22,11 +23,14 @@ interface TrainingTabProps {
 export function TrainingTab({ client }: TrainingTabProps) {
     const router = useRouter()
     const [workouts, setWorkouts] = useState<any[]>([])
-    const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list')
+    const [viewMode, setViewMode] = useState<'cards' | 'calendar'>('cards')
     const [editingWorkout, setEditingWorkout] = useState<any>(null)
     const [viewingWorkout, setViewingWorkout] = useState<any>(null) // New state for viewing details
 
+    const [mounted, setMounted] = useState(false)
+
     useEffect(() => {
+        setMounted(true)
         fetchAssignedWorkouts()
     }, [client.id])
 
@@ -98,37 +102,55 @@ export function TrainingTab({ client }: TrainingTabProps) {
 
     return (
         <div className="space-y-6 h-full flex flex-col">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div />
-
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                    <Button
-                        variant={viewMode === 'calendar' ? 'default' : 'outline'}
-                        className={cn(viewMode === 'calendar' ? "bg-primary hover:bg-primary/90" : "")}
-                        onClick={() => setViewMode(viewMode === 'list' ? 'calendar' : 'list')}
-                    >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {viewMode === 'list' ? 'Calendario' : 'Lista'}
-                    </Button>
-
+            {/* Portal Action Buttons to Page Header */}
+            {mounted && document.getElementById('header-actions') && createPortal(
+                <>
                     <AssignWorkoutDialog
                         clientId={client.id}
                         clientName={client.full_name}
                         onOpenChange={(open) => {
                             if (!open) fetchAssignedWorkouts()
                         }}
+                        trigger={
+                            <Button size="sm" className="bg-[#18181B] hover:bg-[#18181B]/90 text-white h-9 shadow-sm gap-2">
+                                <Plus className="h-4 w-4" /> Asignar Rutina
+                            </Button>
+                        }
                     />
 
                     {workouts.length > 0 && (
-                        <Button variant="outline" className="hidden sm:flex" onClick={handleDownloadAllWorkouts}>
-                            <Download className="mr-2 h-4 w-4" /> Descargar Rutinas
+                        <Button variant="outline" size="sm" className="h-9 gap-2 bg-white" onClick={handleDownloadAllWorkouts}>
+                            <Download className="h-4 w-4" /> Descargar
                         </Button>
                     )}
+                </>,
+                document.getElementById('header-actions')!
+            )}
+
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                {/* View Toggles */}
+                <div className="flex items-center bg-muted/20 p-1 rounded-lg border">
+                    <Button
+                        variant={viewMode === 'cards' ? 'secondary' : 'ghost'}
+                        size="sm"
+                        className="text-xs h-8"
+                        onClick={() => setViewMode('cards')}
+                    >
+                        <LayoutGrid className="mr-2 h-3.5 w-3.5" /> Tarjetas
+                    </Button>
+                    <Button
+                        variant={viewMode === 'calendar' ? 'secondary' : 'ghost'}
+                        size="sm"
+                        className="text-xs h-8"
+                        onClick={() => setViewMode('calendar')}
+                    >
+                        <CalendarIcon className="mr-2 h-3.5 w-3.5" /> Calendario
+                    </Button>
                 </div>
             </div>
 
             <div className="flex-1">
-                {viewMode === 'list' ? (
+                {viewMode === 'cards' && (
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                         {workouts.map(workout => (
                             <WorkoutCard
@@ -147,7 +169,9 @@ export function TrainingTab({ client }: TrainingTabProps) {
                             </div>
                         )}
                     </div>
-                ) : (
+                )}
+
+                {viewMode === 'calendar' && (
                     <CalendarView
                         workouts={workouts}
                         onUpdateWorkout={handleUpdateStructure}

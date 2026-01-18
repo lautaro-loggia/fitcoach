@@ -8,7 +8,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, Edit2, Eye, Trash2, Download, Play } from "lucide-react"
+import { MoreHorizontal, Edit2, Eye, Trash2, Download, Play, Calendar as CalendarIcon } from "lucide-react"
 import { format, parse } from "date-fns"
 import { es } from "date-fns/locale"
 
@@ -37,16 +37,29 @@ export function WorkoutCard({ workout, onEdit, onDelete, onView, onDownload, onS
 
     return (
         <Card
-            className="relative hover:shadow transition-all cursor-pointer group flex flex-col h-full"
+            className="relative hover:shadow-md transition-all cursor-pointer group flex flex-col h-full bg-white border-gray-100"
             onClick={onView}
         >
-            <CardHeader className="p-5 space-y-0 flex-1">
-                <div className="flex justify-between items-start mb-2">
-                    <CardTitle className="text-lg font-bold pr-8 leading-tight">
-                        {workout.name}
+            <CardHeader className="p-4 space-y-0 flex-1">
+                <div className="flex justify-between items-start mb-1">
+                    <CardTitle className="text-base font-bold pr-8 leading-tight truncate w-full" title={workout.name}>
+                        {workout.name.replace(/^Rutina de\s+/i, '')}
                     </CardTitle>
 
-                    <div className="absolute top-3 right-2" onClick={(e) => e.stopPropagation()}>
+                    <div className="absolute top-2 right-2 flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                        {onStart && (
+                            <Button
+                                size="icon"
+                                className="h-8 w-8 bg-[#5254D9] hover:bg-[#4547b8] text-white shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                                title="Comenzar entrenamiento"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onStart();
+                                }}
+                            >
+                                <Play className="h-3.5 w-3.5" fill="currentColor" />
+                            </Button>
+                        )}
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
@@ -71,35 +84,25 @@ export function WorkoutCard({ workout, onEdit, onDelete, onView, onDownload, onS
                     </div>
                 </div>
 
-                <div className="flex flex-col gap-3">
-                    <div className="flex items-center text-sm text-muted-foreground">
-                        <span className="font-semibold text-foreground bg-secondary/50 px-2 py-0.5 rounded text-xs">
-                            {exerciseCount} {exerciseCount === 1 ? 'ejercicio' : 'ejercicios'}
+                <div className="flex flex-col gap-2 mt-2">
+                    <div className="flex items-center text-xs text-muted-foreground gap-2">
+                        <span className="font-medium bg-gray-50 text-gray-600 px-2 py-0.5 rounded border border-gray-100">
+                            {exerciseCount} {exerciseCount === 1 ? 'ejer' : 'ejers'}
                         </span>
-                        <span className="mx-2 text-muted-foreground/40">|</span>
-                        <span className="truncate text-xs font-medium max-w-[180px]" title={scheduledDays}>
+                        <span className="text-muted-foreground/30">•</span>
+                        <span className="truncate max-w-[150px]" title={String(workout.scheduled_days?.join(', ') || '')}>
                             {scheduledDays}
                         </span>
                     </div>
 
-                    <div className="text-xs text-muted-foreground pt-3 border-t mt-1">
-                        {checkDateString}
-                    </div>
+                    {workout.valid_until && (
+                        <div className="text-[11px] text-muted-foreground flex items-center gap-1">
+                            <CalendarIcon className="h-3 w-3 opacity-50" />
+                            {format(parse(workout.valid_until, 'yyyy-MM-dd', new Date()), "d MMM", { locale: es })}
+                        </div>
+                    )}
                 </div>
             </CardHeader>
-            {onStart && (
-                <CardFooter className="p-4 pt-0 mt-auto">
-                    <Button
-                        className="w-full bg-[#5254D9] hover:bg-[#4547b8] text-white relative z-10"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onStart();
-                        }}
-                    >
-                        <Play className="mr-2 h-4 w-4" /> Comenzar
-                    </Button>
-                </CardFooter>
-            )}
         </Card>
     )
 }

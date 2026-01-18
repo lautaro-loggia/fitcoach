@@ -2,12 +2,14 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { MoreHorizontal, EyeOff, Eye, Plus } from 'lucide-react'
+import { MoreHorizontal, Plus, Eye, EyeOff } from 'lucide-react'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { AddDishDialog } from './add-dish-dialog'
 import { DishCard } from './dish-card'
 import { addDishToMeal, removeDish, toggleMealSkip } from '@/app/(dashboard)/clients/[id]/meal-plan-actions'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
+import { useState } from 'react'
 
 interface MealSlotProps {
     meal: any
@@ -20,16 +22,24 @@ interface MealSlotProps {
 
 export function MealSlot({ meal, dayName, clientId, clientAllergens, clientPreference, onUpdate }: MealSlotProps) {
     const isSkipped = meal.is_skipped
+    const [addDialogOpen, setAddDialogOpen] = useState(false)
 
     const handleAddDish = async (data: any) => {
-        await addDishToMeal(meal.id, clientId, data)
-        onUpdate()
+        const result = await addDishToMeal(meal.id, clientId, data)
+        if (result?.error) {
+            toast.error('Error al agregar receta')
+        } else {
+            toast.success('Receta agregada')
+            onUpdate()
+            setAddDialogOpen(false)
+        }
     }
 
     const handleDeleteDish = async (itemId: string) => {
-        if (confirm('¿Eliminar plato?')) {
+        if (confirm('¿Eliminar receta?')) {
             await removeDish(itemId, clientId)
             onUpdate()
+            toast.success('Receta eliminada')
         }
     }
 
@@ -39,56 +49,57 @@ export function MealSlot({ meal, dayName, clientId, clientAllergens, clientPrefe
     }
 
     return (
-        <Card className={cn("transition-colors", isSkipped && "opacity-60 bg-muted/50 border-dashed")}>
+        <Card className={cn(
+            "flex flex-col h-[320px] shadow-sm transition-all overflow-hidden border-border/60", // Fixed height or min-height to match mockup uniformity
+            isSkipped && "opacity-50 bg-muted/40"
+        )}>
             <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
-                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <CardTitle className="text-base font-bold">
                     {meal.name}
-                    {isSkipped && <span className="text-xs font-normal text-muted-foreground">(Omitido)</span>}
+                    {isSkipped && <span className="ml-2 text-xs font-normal text-muted-foreground">(Omitido)</span>}
                 </CardTitle>
-                <div className="flex items-center gap-1">
-                    {!isSkipped && (
-                        <AddDishDialog
-                            mealId={meal.id}
-                            contextLabel={`${dayName} · ${meal.name}`}
-                            clientAllergens={clientAllergens}
-                            clientPreference={clientPreference}
-                            onConfirm={handleAddDish}
-                        />
-                    )}
-
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={handleToggleSkip}>
-                                {isSkipped ? <Eye className="mr-2 h-4 w-4" /> : <EyeOff className="mr-2 h-4 w-4" />}
-                                {isSkipped ? "Restaurar comida" : "Omitir comida"}
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                            <MoreHorizontal className="h-5 w-5" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={handleToggleSkip}>
+                            {isSkipped ? <Eye className="mr-2 h-4 w-4" /> : <EyeOff className="mr-2 h-4 w-4" />}
+                            {isSkipped ? "Restaurar" : "Omitir"}
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </CardHeader>
 
-            {!isSkipped && (
-                <CardContent className="p-4 pt-2 space-y-3">
-                    {meal.items && meal.items.length > 0 ? (
-                        meal.items.map((item: any) => (
-                            <DishCard
-                                key={item.id}
-                                item={item}
-                                onDelete={handleDeleteDish}
-                            />
-                        ))
-                    ) : (
-                        <div className="text-sm text-muted-foreground italic py-2 text-center border border-dashed rounded-md bg-muted/20">
-                            Sin platos asignados
-                        </div>
-                    )}
-                </CardContent>
-            )}
-        </Card>
+            <CardContent className="p-4 pt-2 flex-1 flex flex-col justify-between">
+                <div className="space-y-3 overflow-y-auto max-h-[200px] pr-1 scrollbar-hide">
+                    {meal.items && meal.items.map((item: any) => (
+                        <DishCard key={item.id} item={item} onDelete={handleDeleteDish} />
+                    ))}
+                </div>
+
+                {!isSkipped && (
+                    <Button
+                        variant="secondary"
+                        className="w-full mt-4 bg-muted/50 hover:bg-muted text-foreground"
+                        onClick={() => setAddDialogOpen(true)}
+                    >
+                        <Plus className="mr-2 h-4 w-4" /> Agregar receta
+                    </Button>
+                )}
+
+                <AddDishDialog
+                    open={addDialogOpen}
+                    onOpenChange={setAddDialogOpen}
+                    mealId={meal.id}
+                    contextLabel={`${dayName} · ${meal.name}`}
+                    clientAllergens={clientAllergens}
+                    clientPreference={clientPreference}
+                    onConfirm={handleAddDish}
+                />
+            </CardContent>
+        </Card >
     )
 }
