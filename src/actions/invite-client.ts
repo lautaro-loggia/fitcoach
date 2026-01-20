@@ -61,9 +61,33 @@ export async function inviteClient(prevState: any, formData: FormData) {
             }
         })
 
+        let userId: string | null = null
+
         if (inviteError) {
-            console.error('Invite error:', inviteError)
-            return { error: `Error enviando invitación: ${inviteError.message}`, success: false }
+            // Handle "Already Registered" case
+            if (inviteError.message.includes('already been registered')) {
+                console.log('User already exists, sending magic link instead.')
+
+                // Trigger Magic Link for existing user
+                // Note: We use the standard client (not admin) to behave like a normal login request
+                const { error: otpError } = await supabase.auth.signInWithOtp({
+                    email,
+                    options: { emailRedirectTo: redirectUrl }
+                })
+
+                if (otpError) {
+                    console.error('Error sending magic link to existing user:', otpError)
+                    return { error: `Error enviando enlace de acceso: ${otpError.message}`, success: false }
+                }
+                // User ID is unknown right now (without listing all users), 
+                // but will be automatically linked by 'auth/callback' on login.
+                userId = null
+            } else {
+                console.error('Invite error:', inviteError)
+                return { error: `Error enviando invitación: ${inviteError.message}`, success: false }
+            }
+        } else {
+            userId = inviteData.user.id
         }
 
         // 4. Create or Update Client Record in DB
@@ -76,7 +100,7 @@ export async function inviteClient(prevState: any, formData: FormData) {
             full_name: fullName,
             onboarding_status: 'invited',
             status: 'active', // Operational status
-            user_id: inviteData.user.id // Link immediately since we created the user!
+            user_id: userId // Link immediately or defer check on callback
         }
 
         let dbError
