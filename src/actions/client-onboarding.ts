@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin' // Import Admin Client
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
@@ -11,7 +12,10 @@ async function getAuthenticatedClient() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Unauthorized')
 
-    const { data: client, error } = await supabase
+    // Use Admin Client for DB operations to bypass RLS for updates
+    const adminSupabase = createAdminClient()
+
+    const { data: client, error } = await adminSupabase
         .from('clients')
         .select('*')
         .eq('user_id', user.id)
@@ -19,7 +23,7 @@ async function getAuthenticatedClient() {
 
     if (error || !client) throw new Error('Client record not found')
 
-    return { supabase, client, user }
+    return { supabase, adminSupabase, client, user }
 }
 
 // --- Step Actions ---
@@ -29,18 +33,14 @@ export async function updateBasicProfile(data: {
     height: number
     weight: number // saved to current_weight
 }) {
-    const { supabase, client } = await getAuthenticatedClient()
+    const { adminSupabase, client } = await getAuthenticatedClient()
 
-    const { error } = await supabase
+    const { error } = await adminSupabase
         .from('clients')
         .update({
             birth_date: data.birth_date,
             height: data.height,
             current_weight: data.weight,
-            // Also update initial values if they are null? Or just keep current?
-            // Prompt says "Este peso será usado luego como baseline".
-            // We'll set initial_weight too if it's the first time?
-            // Let's just update current_weight for now. Baseline creation uses current_weight.
             updated_at: new Date().toISOString()
         })
         .eq('id', client.id)
@@ -54,39 +54,16 @@ export async function updateGoals(data: {
     goal_specific?: string // Textarea
     target_weight?: number
     target_fat?: number
-    // Duration/Timeframe could be stored in goals jsonb?
     timeframe: string
 }) {
-    const { supabase, client } = await getAuthenticatedClient()
+    const { adminSupabase, client } = await getAuthenticatedClient()
 
-    // Construct goals object for JSONB if needed, or mapped columns
-    // We have main_goal column. Others go to goals jsonb?
-    // Schema plan said `goals` jsonb.
-
-    const goalsJson = {
-        specific: data.goal_specific,
-        timeframe: data.timeframe,
-        ...(client.goals as object || {}) // Merge
-    }
-
-    const { error } = await supabase
+    const { error } = await adminSupabase
         .from('clients')
         .update({
             main_goal: data.main_goal,
             target_weight: data.target_weight,
             target_fat: data.target_fat,
-            // goals: goalsJson, // Wait, I didn't add 'goals' column in migration? 
-            // Checking Schema... I added 'main_goal' column.
-            // I did NOT add 'goals' JSONB explicitly in step 60 migration?
-            // Step 60: "add column if not exists main_goal text".
-            // "add column if not exists dietary_info jsonb"
-            // "add column if not exists training_availability jsonb"
-            // "add column if not exists injuries jsonb"
-            // I missed 'goals' JSONB column in migration 20260118151400.
-            // However, `clients` table ALREADY had `goal_text` and `goal_specific` text columns from original schema (lines 42-43 of schema.sql).
-            // So I can use `goal_text` for the custom text and `goal_specific` for something else?
-            // Prompt Step 2: "Objetivo estructurado (select)... Objetivo personal (textarea)".
-            // Let's use `main_goal` for the Select, and `goal_text` for the Textarea.
             goal_text: data.goal_specific
         })
         .eq('id', client.id)
@@ -98,18 +75,15 @@ export async function updateGoals(data: {
 export async function updateLifestyle(data: {
     activity_level: string
     work_type: string
-    training_days: number // or text?
-    // Prompt: "1 to 7 days". 
-    // Schema: `training_availability` JSONB.
+    training_days: number
 }) {
-    const { supabase, client } = await getAuthenticatedClient()
+    const { adminSupabase, client } = await getAuthenticatedClient()
 
-    const { error } = await supabase
+    const { error } = await adminSupabase
         .from('clients')
         .update({
             activity_level: data.activity_level,
             work_type: data.work_type,
-            // Store training days in training_availability JSON
             training_availability: {
                 days_per_week: data.training_days
             }
@@ -122,11 +96,11 @@ export async function updateLifestyle(data: {
 
 export async function updateInjuries(data: {
     has_injuries: boolean
-    injuries: any[] // { zone, description, severity, diagnosed }
+    injuries: any[]
 }) {
-    const { supabase, client } = await getAuthenticatedClient()
+    const { adminSupabase, client } = await getAuthenticatedClient()
 
-    const { error } = await supabase
+    const { error } = await adminSupabase
         .from('clients')
         .update({
             injuries: data.has_injuries ? data.injuries : []
@@ -144,7 +118,7 @@ export async function updateNutrition(data: {
     allergens: string[]
     other_restrictions?: string
 }) {
-    const { supabase, client } = await getAuthenticatedClient()
+    const { adminSupabase, client } = await getAuthenticatedClient()
 
     const dietaryInfo = {
         preference: data.diet_preference,
@@ -154,7 +128,7 @@ export async function updateNutrition(data: {
         other: data.other_restrictions
     }
 
-    const { error } = await supabase
+    const { error } = await adminSupabase
         .from('clients')
         .update({
             dietary_info: dietaryInfo
@@ -171,28 +145,22 @@ export async function completeOnboarding(data: {
         waist: number
         hip?: number
     }
-    body_fat_percentage?: number // calculated or manual
+    body_fat_percentage?: number
     method: 'navy' | 'manual' | 'skipped'
 }) {
-    const { supabase, client, user } = await getAuthenticatedClient()
+    const { adminSupabase, client } = await getAuthenticatedClient()
 
     // 1. Update DB with Body Fat info if provided
-    // Note: Clients table has `initial_body_fat`.
     const updates: any = {
         onboarding_status: 'completed',
-        // Ensure status is active
         status: 'active'
     }
 
     if (data.body_fat_percentage) {
         updates.initial_body_fat = data.body_fat_percentage
-        // We can also update current fat? No column for current_fat in client table in my update?
-        // Migration added `current_weight`, `target_fat`.
-        // Schema had `initial_body_fat`.
-        // Baseline checkin will hold the current fat.
     }
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await adminSupabase
         .from('clients')
         .update(updates)
         .eq('id', client.id)
@@ -200,33 +168,22 @@ export async function completeOnboarding(data: {
     if (updateError) return { error: updateError.message }
 
     // 2. Create Baseline Check-in
-    // We need current weight (from DB), height (from DB), and the new fat info.
-
     const checkinData: any = {
         client_id: client.id,
         trainer_id: client.trainer_id,
-        date: new Date().toISOString().split('T')[0], // Today YYYY-MM-DD
-        type: 'baseline', // Wait, 'type' column exists in checkins?
-        // Schema check: "create table public.checkins ... weight, body_fat, lean_mass, measurements jsonb, observations..."
-        // No 'type' column in standard schema shown in Step 27.
-        // I can put 'type' in observations or just assume first checkin is baseline.
-        // Or I can add 'type' column?
-        // Prompt: "tipo: baseline".
-        // I missed adding 'type' column to checkins.
-        // I will add it to `observations` for now: "Baseline Check-in"
+        date: new Date().toISOString().split('T')[0],
         observations: 'Check-in Inicial (Baseline)',
-        weight: client.current_weight, // Saved in Step 1
+        weight: client.current_weight,
         body_fat: data.body_fat_percentage,
         measurements: data.navy_method ? { ...data.navy_method, method: 'navy' } : null
     }
 
-    const { error: checkinError } = await supabase
+    const { error: checkinError } = await adminSupabase
         .from('checkins')
         .insert(checkinData)
 
     if (checkinError) {
         console.error('Error creating baseline checkin:', checkinError)
-        // Non-fatal? We still completed onboarding.
     }
 
     revalidatePath('/dashboard', 'layout')

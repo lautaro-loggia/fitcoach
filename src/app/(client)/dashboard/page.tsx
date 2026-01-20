@@ -30,6 +30,20 @@ export default async function ClientDashboard() {
         // If status is 'invited' or 'in_progress', we might want to nudge them.
     }
 
+    // Check for assigned plans
+    const { count: workoutCount } = await supabase
+        .from('assigned_workouts')
+        .select('*', { count: 'exact', head: true })
+        .eq('client_id', client.id)
+
+    const { count: dietCount } = await supabase
+        .from('assigned_diets')
+        .select('*', { count: 'exact', head: true })
+        .eq('client_id', client.id)
+
+    const hasWorkout = workoutCount ? workoutCount > 0 : false
+    const hasDiet = dietCount ? dietCount > 0 : false
+
     return (
         <div className="p-4 space-y-6 pb-24">
             {/* Header */}
@@ -70,19 +84,19 @@ export default async function ClientDashboard() {
 
             {/* Main Actions Grid */}
             <div className="grid grid-cols-2 gap-4">
-                <Link href="/dashboard/plan" className="block">
-                    <Card className="p-4 flex flex-col items-center justify-center gap-2 h-32 hover:bg-gray-50 cursor-pointer transition-colors">
-                        <div className="p-3 bg-neutral-100 rounded-full">
-                            <Dumbbell className="h-6 w-6 text-neutral-700" />
+                <Link href={hasWorkout ? "/dashboard/plan" : "#"} className={hasWorkout ? "block" : "block pointer-events-none"}>
+                    <Card className={`p-4 flex flex-col items-center justify-center gap-2 h-32 transition-colors ${hasWorkout ? "hover:bg-gray-50 cursor-pointer" : "opacity-50 cursor-not-allowed bg-gray-50"}`}>
+                        <div className={`p-3 rounded-full ${hasWorkout ? "bg-neutral-100" : "bg-neutral-200"}`}>
+                            <Dumbbell className={`h-6 w-6 ${hasWorkout ? "text-neutral-700" : "text-neutral-400"}`} />
                         </div>
                         <span className="font-medium text-sm">Tu Plan</span>
                     </Card>
                 </Link>
 
-                <Link href="/dashboard/diet" className="block">
-                    <Card className="p-4 flex flex-col items-center justify-center gap-2 h-32 hover:bg-gray-50 cursor-pointer transition-colors">
-                        <div className="p-3 bg-neutral-100 rounded-full">
-                            <Utensils className="h-6 w-6 text-neutral-700" />
+                <Link href={hasDiet ? "/dashboard/diet" : "#"} className={hasDiet ? "block" : "block pointer-events-none"}>
+                    <Card className={`p-4 flex flex-col items-center justify-center gap-2 h-32 transition-colors ${hasDiet ? "hover:bg-gray-50 cursor-pointer" : "opacity-50 cursor-not-allowed bg-gray-50"}`}>
+                        <div className={`p-3 rounded-full ${hasDiet ? "bg-neutral-100" : "bg-neutral-200"}`}>
+                            <Utensils className={`h-6 w-6 ${hasDiet ? "text-neutral-700" : "text-neutral-400"}`} />
                         </div>
                         <span className="font-medium text-sm">Alimentación</span>
                     </Card>
@@ -90,15 +104,17 @@ export default async function ClientDashboard() {
             </div>
 
             {/* Check-in Action (Primary) */}
-            <Card className="p-6 bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-lg shadow-blue-200 cursor-pointer">
-                <div className="flex justify-between items-center">
-                    <div>
-                        <h3 className="font-bold text-lg">Cargar Check-in</h3>
-                        <p className="text-blue-100 text-sm">Registrá tu progreso semanal</p>
+            <Link href="/dashboard/checkin" className="block">
+                <Card className="p-6 bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-lg shadow-blue-200 cursor-pointer hover:shadow-xl transition-shadow">
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <h3 className="font-bold text-lg">Cargar Check-in</h3>
+                            <p className="text-blue-100 text-sm">Registrá tu progreso semanal</p>
+                        </div>
+                        <Calendar className="h-8 w-8 text-blue-200 opacity-80" />
                     </div>
-                    <Calendar className="h-8 w-8 text-blue-200 opacity-80" />
-                </div>
-            </Card>
+                </Card>
+            </Link>
 
         </div>
     )
