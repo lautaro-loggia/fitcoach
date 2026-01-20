@@ -15,6 +15,10 @@ import { cn } from '@/lib/utils'
 import { WorkoutDetailDialog } from '../workout-detail-dialog'
 import { generateWorkoutPDF } from '@/lib/pdf-utils'
 import { WorkoutHistory } from '../workout-history'
+import { InjuriesCard } from '../cards/injuries-card'
+
+
+
 
 interface TrainingTabProps {
     client: any
@@ -126,6 +130,9 @@ export function TrainingTab({ client }: TrainingTabProps) {
                 </>,
                 document.getElementById('header-actions')!
             )}
+
+            {/* Injuries Summary */}
+            <InjuriesCard client={client} />
 
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 {/* View Toggles */}

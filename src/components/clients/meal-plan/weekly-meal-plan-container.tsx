@@ -14,6 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { generateWeeklyPlanPDF } from './pdf-generator'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { DietaryCard } from '../cards/dietary-card'
 
 interface WeeklyMealPlanContainerProps {
     client: any
@@ -123,9 +124,7 @@ export function WeeklyMealPlanContainer({ client }: WeeklyMealPlanContainerProps
 
     const currentDayData = plan.days.find((d: any) => d.day_of_week === selectedDay)
 
-    // UI Helpers
-    const preferenceLabel = client.dietary_preference?.replace(/_/g, ' ') || "Sin restricción"
-    const allergens = client.allergens || []
+
 
     const targetKcal = client.target_calories || 0
     const targetProt = client.target_protein || 0
@@ -163,48 +162,33 @@ export function WeeklyMealPlanContainer({ client }: WeeklyMealPlanContainerProps
                 </div>
             </div>
 
-            {/* 2. Top Bar: Restrictions & Goals */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                {/* Left: Restrictions */}
-                <div className="flex flex-wrap items-center gap-3 text-sm text-foreground/80">
-                    <span className="text-muted-foreground">Dieta:</span>
-                    <Badge variant="outline" className="font-normal bg-background px-3 py-1 text-foreground gap-2">
-                        <Utensils className="h-3 w-3 text-muted-foreground" />
-                        {preferenceLabel}
-                    </Badge>
+            {/* 2. Top Bar: Info & Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <DietaryCard client={client} />
 
-                    <span className="text-muted-foreground ml-2">| Alergenos:</span>
-                    {allergens.length > 0 ? (
-                        allergens.map((a: string) => (
-                            <Badge key={a} variant="outline" className="font-normal bg-background text-foreground capitalize">
-                                🚫 {a}
-                            </Badge>
-                        ))
-                    ) : (
-                        <span className="text-muted-foreground text-xs italic">Ninguno</span>
-                    )}
-                </div>
-
-                {/* Right: Goals (Read Only / Quick View) */}
-                <div className="flex items-center gap-2 text-sm">
-                    <div className="px-3 py-1 rounded bg-muted/30 border border-border">
-                        <span className="text-muted-foreground mr-1">Kcal</span>
-                        <span className="font-bold">{targetKcal}</span>
-                    </div>
-
-                    <div className="px-3 py-1 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                        <span className="mr-1 opacity-70">Prot</span>
-                        <span className="font-bold">{targetProt}</span>
-                    </div>
-
-                    <div className="px-3 py-1 rounded bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-800">
-                        <span className="mr-1 opacity-70">Carbs</span>
-                        <span className="font-bold">{targetCarbs}</span>
-                    </div>
-
-                    <div className="px-3 py-1 rounded bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800">
-                        <span className="mr-1 opacity-70">Grasas</span>
-                        <span className="font-bold">{targetFats}</span>
+                <div className="md:col-span-2 flex flex-col justify-center h-full">
+                    <div className="bg-white rounded-xl border p-4 h-full flex flex-col justify-center">
+                        <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                            Objetivos Diarios
+                        </h3>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="flex flex-col">
+                                <span className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Calorías</span>
+                                <span className="text-2xl font-bold text-gray-900">{targetKcal} <span className="text-sm font-normal text-gray-500">kcal</span></span>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-xs text-blue-600 font-medium uppercase tracking-wider mb-1">Proteínas</span>
+                                <span className="text-2xl font-bold text-gray-900">{targetProt}g</span>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-xs text-yellow-600 font-medium uppercase tracking-wider mb-1">Carbohidratos</span>
+                                <span className="text-2xl font-bold text-gray-900">{targetCarbs}g</span>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-xs text-red-600 font-medium uppercase tracking-wider mb-1">Grasas</span>
+                                <span className="text-2xl font-bold text-gray-900">{targetFats}g</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

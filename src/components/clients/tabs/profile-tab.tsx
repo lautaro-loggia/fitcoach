@@ -15,8 +15,6 @@ import { AddCheckinDialog } from '../add-checkin-dialog'
 import { PhotoComparisonDialog } from '../photo-comparison-dialog'
 import { getWeightProgressColor, progressColorClasses } from '@/lib/utils/progress-colors'
 import { StrengthProgressCard } from '../cards/strength-progress-card'
-import { InjuriesCard } from '../cards/injuries-card'
-import { DietaryCard } from '../cards/dietary-card'
 
 interface ProfileTabProps {
     client: any
@@ -117,15 +115,10 @@ export function ProfileTab({ client }: ProfileTabProps) {
     return (
         <div className="space-y-3 animate-in fade-in duration-500">
 
-            {/* Top Row: Strength & Critical Info */}
+            {/* Top Row: Strength & Critical Info - Updated Layout */}
             <div className="grid gap-3 grid-cols-1 md:grid-cols-3">
                 <StrengthProgressCard clientId={client.id} />
-                <InjuriesCard client={client} />
-                <DietaryCard client={client} />
-            </div>
 
-            {/* Second Row: Goals & Activity (Smaller context) */}
-            <div className="grid gap-3 grid-cols-1 md:grid-cols-2">
                 <Card className="bg-white shadow-sm border border-gray-100 rounded-2xl flex flex-col justify-center p-4">
                     <div className="space-y-0.5">
                         <h3 className="text-[17px] font-bold text-gray-900 leading-tight">Objetivo</h3>
@@ -135,6 +128,7 @@ export function ProfileTab({ client }: ProfileTabProps) {
                         </p>
                     </div>
                 </Card>
+
                 <Card className="bg-white shadow-sm border border-gray-100 rounded-2xl flex flex-col justify-center p-4">
                     <div className="space-y-0.5">
                         <h3 className="text-[17px] font-bold text-gray-900 leading-tight">Nivel de actividad</h3>
