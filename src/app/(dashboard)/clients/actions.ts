@@ -186,14 +186,41 @@ export async function updateClientAction(clientId: string, data: any) {
     return { success: true }
 }
 
+import { createAdminClient } from '@/lib/supabase/admin'
+
 export async function deleteClientAction(clientId: string) {
     const supabase = await createClient()
+    const adminSupabase = createAdminClient()
 
+    // 1. Get Client to retrieve user_id
+    const { data: client, error: fetchError } = await supabase
+        .from('clients')
+        .select('user_id')
+        .eq('id', clientId)
+        .single()
+
+    if (fetchError) {
+        console.error("Error fetching client for deletion:", fetchError)
+        // Continue even if fetch fails? Probably not safe. But maybe client is already gone.
+    }
+
+    // 2. Delete Client Record
     const { error } = await supabase.from('clients').delete().eq('id', clientId)
 
     if (error) {
         console.error("Error deleting client:", error)
         return { error: "Error al eliminar el cliente" }
+    }
+
+    // 3. Delete Auth User if exists
+    if (client?.user_id) {
+        const { error: deleteUserError } = await adminSupabase.auth.admin.deleteUser(client.user_id)
+        if (deleteUserError) {
+            console.error("Error deleting auth user:", deleteUserError)
+            // We don't block success here, as the client record is gone.
+        } else {
+            console.log("Auth user deleted successfully")
+        }
     }
 
     revalidatePath('/clients')
