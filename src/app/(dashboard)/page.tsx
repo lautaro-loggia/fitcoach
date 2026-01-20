@@ -10,11 +10,28 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/com
 import { ClientSelectorDialog } from '@/components/dashboard/client-selector-dialog'
 import { PresentialTrainings } from '@/components/dashboard/presential-trainings'
 
+import { redirect } from 'next/navigation'
+
 export default async function DashboardPage() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) return null
+
+    // Helper to check client role and redirect
+    if (user.user_metadata?.role === 'client') {
+        const { data: client } = await supabase
+            .from('clients')
+            .select('onboarding_status')
+            .eq('user_id', user.id)
+            .single()
+
+        if (client && client.onboarding_status !== 'completed') {
+            redirect('/onboarding')
+        } else {
+            redirect('/dashboard')
+        }
+    }
 
     // Get user profile for name
     const { data: profile } = await supabase
