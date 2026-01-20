@@ -67,22 +67,39 @@ export async function inviteClient(prevState: any, formData: FormData) {
         }
 
         // 4. Create or Update Client Record in DB
-        const { error: dbError } = await adminSupabase
-            .from('clients')
-            .upsert({
-                trainer_id: user.id,
-                email: email,
-                full_name: fullName,
-                onboarding_status: 'invited',
-                status: 'active', // Operational status
-                user_id: inviteData.user.id // Link immediately since we created the user!
-            }, { onConflict: 'email' })
+        // NOTE: We manually handle Update vs Insert because the 'email' column 
+        // effectively requires uniqueness for 'upsert' to work with ON CONFLICT, 
+        // but we skipped adding that constraint to the DB.
+        const clientData = {
+            trainer_id: user.id,
+            email: email,
+            full_name: fullName,
+            onboarding_status: 'invited',
+            status: 'active', // Operational status
+            user_id: inviteData.user.id // Link immediately since we created the user!
+        }
+
+        let dbError
+
+        if (existingClients && existingClients.length > 0) {
+            // Update existing
+            const { error } = await adminSupabase
+                .from('clients')
+                .update(clientData)
+                .eq('id', existingClients[0].id)
+            dbError = error
+        } else {
+            // Insert new
+            const { error } = await adminSupabase
+                .from('clients')
+                .insert(clientData)
+            dbError = error
+        }
 
         if (dbError) {
             console.error('DB Error upserting client:', dbError)
             return { msg: 'Invitación enviada, pero hubo error guardando en base de datos.', success: false }
         }
-
         revalidatePath('/dashboard/clients')
         return { success: true, message: 'Invitación enviada correctamente' }
 
