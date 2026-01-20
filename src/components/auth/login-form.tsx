@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -14,6 +14,52 @@ export function LoginForm() {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [showPassword, setShowPassword] = useState(false)
+    const router = useRouter()
+
+    useEffect(() => {
+        const supabase = createClient()
+
+        // Handle Implicit Flow (Hash Fragment) manually
+        // because automatic detection by createBrowserClient sometimes fails in this context
+        const handleHashSession = async () => {
+            const hash = window.location.hash
+            if (hash && hash.includes('access_token')) {
+                const params = new URLSearchParams(hash.substring(1)) // remove #
+                const accessToken = params.get('access_token')
+                const refreshToken = params.get('refresh_token')
+
+                if (accessToken) {
+                    const { error } = await supabase.auth.setSession({
+                        access_token: accessToken,
+                        refresh_token: refreshToken || '',
+                    })
+
+                    if (!error) {
+                        router.push('/')
+                        return
+                    }
+                }
+            }
+
+            // Fallback: Check standard session retrieval
+            const { data: { session } } = await supabase.auth.getSession()
+            if (session) {
+                router.push('/')
+            }
+        }
+
+        handleHashSession()
+
+        const {
+            data: { subscription },
+        } = supabase.auth.onAuthStateChange((_event, session) => {
+            if (session) {
+                router.push('/')
+            }
+        })
+
+        return () => subscription.unsubscribe()
+    }, [router])
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
