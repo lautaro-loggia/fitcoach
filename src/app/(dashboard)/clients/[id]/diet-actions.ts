@@ -78,6 +78,7 @@ export async function assignDietAction(data: {
     }
 
     revalidatePath(`/clients/${data.clientId}`)
+    revalidatePath('/dashboard', 'layout')
     return { success: true }
 }
 
@@ -121,6 +122,7 @@ export async function updateAssignedDietAction(data: {
 
     if (error) return { error: 'Error actualizando dieta' }
     revalidatePath(`/clients/${data.clientId}`)
+    revalidatePath('/dashboard', 'layout')
     return { success: true }
 }
 
@@ -129,5 +131,6 @@ export async function deleteAssignedDietAction(id: string, clientId: string) {
     const { error } = await supabase.from('assigned_diets').delete().eq('id', id)
     if (error) return { error: 'Error eliminando' }
     revalidatePath(`/clients/${clientId}`)
+    revalidatePath('/dashboard', 'layout')
     return { success: true }
 }

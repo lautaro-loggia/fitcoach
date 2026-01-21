@@ -43,6 +43,7 @@ export async function assignWorkoutAction(data: {
     }
 
     revalidatePath(`/clients/${data.clientId}`)
+    revalidatePath('/dashboard', 'layout')
     return { success: true }
 }
 
@@ -85,6 +86,7 @@ export async function updateAssignedWorkoutAction(data: {
     }
 
     revalidatePath(`/clients/${data.clientId}`)
+    revalidatePath('/dashboard', 'layout')
     return { success: true }
 }
 
@@ -101,5 +103,6 @@ export async function deleteAssignedWorkoutAction(id: string, clientId: string) 
     }
 
     revalidatePath(`/clients/${clientId}`)
+    revalidatePath('/dashboard', 'layout')
     return { success: true }
 }

@@ -55,6 +55,7 @@ export interface Client {
     email?: string | null
     status: 'active' | 'inactive'
     goal_specific: string | null
+    main_goal: string | null
     next_checkin_date?: string | null
     payment_status?: 'paid' | 'pending' | 'overdue' | null
     plan_id?: string | null
@@ -69,7 +70,7 @@ type PaymentFilter = 'all' | 'paid' | 'pending' | 'overdue'
 type PlanFilter = 'all' | 'with_plan' | 'without_plan'
 
 type CheckinStatus = 'all' | 'overdue' | 'due_soon' | 'future' | 'none'
-type GoalFilter = 'all' | 'lose_fat' | 'gain_muscle' | 'recomp'
+type GoalFilter = 'all' | 'fat_loss' | 'muscle_gain' | 'recomp' | 'performance' | 'health'
 
 interface ClientTableProps {
     clients: Client[]
@@ -78,9 +79,11 @@ interface ClientTableProps {
 
 
 function getGoalLabel(goal: string | null) {
-    if (goal === 'lose_fat') return 'Bajar grasa'
-    if (goal === 'gain_muscle') return 'Ganar músculo'
+    if (goal === 'fat_loss') return 'Pérdida de grasa'
+    if (goal === 'muscle_gain') return 'Ganancia muscular'
     if (goal === 'recomp') return 'Recomposición'
+    if (goal === 'performance') return 'Rendimiento'
+    if (goal === 'health') return 'Salud'
     return '-'
 }
 
@@ -153,7 +156,7 @@ export function ClientTable({ clients, presentialWorkouts }: ClientTableProps) {
             if (searchLower) {
                 const nameMatch = client.full_name.toLowerCase().includes(searchLower)
                 const emailMatch = client.email?.toLowerCase().includes(searchLower) || false
-                const goalMatch = getGoalLabel(client.goal_specific).toLowerCase().includes(searchLower)
+                const goalMatch = getGoalLabel(client.main_goal).toLowerCase().includes(searchLower)
                 if (!nameMatch && !emailMatch && !goalMatch) return false
             }
 
@@ -161,7 +164,7 @@ export function ClientTable({ clients, presentialWorkouts }: ClientTableProps) {
             if (statusFilter !== 'all' && client.status !== statusFilter) return false
 
             // Goal filter
-            if (goalFilter !== 'all' && client.goal_specific !== goalFilter) return false
+            if (goalFilter !== 'all' && client.main_goal !== goalFilter) return false
 
             const checkinInfo = getCheckinStatus(client);
 
@@ -341,16 +344,24 @@ export function ClientTable({ clients, presentialWorkouts }: ClientTableProps) {
                                             <Label htmlFor="g-all">Todos</Label>
                                         </div>
                                         <div className="flex items-center space-x-2">
-                                            <RadioGroupItem value="lose_fat" id="g-lose" />
-                                            <Label htmlFor="g-lose">Bajar grasa</Label>
+                                            <RadioGroupItem value="fat_loss" id="g-lose" />
+                                            <Label htmlFor="g-lose">Pérdida de grasa</Label>
                                         </div>
                                         <div className="flex items-center space-x-2">
-                                            <RadioGroupItem value="gain_muscle" id="g-gain" />
-                                            <Label htmlFor="g-gain">Ganar músculo</Label>
+                                            <RadioGroupItem value="muscle_gain" id="g-gain" />
+                                            <Label htmlFor="g-gain">Ganancia muscular</Label>
                                         </div>
                                         <div className="flex items-center space-x-2">
                                             <RadioGroupItem value="recomp" id="g-recomp" />
                                             <Label htmlFor="g-recomp">Recomposición</Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="performance" id="g-perf" />
+                                            <Label htmlFor="g-perf">Rendimiento</Label>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem value="health" id="g-health" />
+                                            <Label htmlFor="g-health">Salud</Label>
                                         </div>
                                     </RadioGroup>
                                 </div>
@@ -476,7 +487,7 @@ export function ClientTable({ clients, presentialWorkouts }: ClientTableProps) {
                                             </TableCell>
                                             <TableCell>
                                                 <Badge variant="secondary" className="font-normal border-transparent bg-muted text-muted-foreground hover:bg-muted">
-                                                    {getGoalLabel(client.goal_specific)}
+                                                    {getGoalLabel(client.main_goal)}
                                                 </Badge>
                                             </TableCell>
                                             <TableCell>
@@ -505,7 +516,7 @@ export function ClientTable({ clients, presentialWorkouts }: ClientTableProps) {
                                             <ClientAvatar name={client.full_name} avatarUrl={client.avatar_url} size="md" />
                                             <div>
                                                 <p className="font-medium">{client.full_name}</p>
-                                                <p className="text-sm text-muted-foreground">{getGoalLabel(client.goal_specific)}</p>
+                                                <p className="text-sm text-muted-foreground">{getGoalLabel(client.main_goal)}</p>
                                             </div>
                                         </div>
                                         <ActionMenu client={client} />

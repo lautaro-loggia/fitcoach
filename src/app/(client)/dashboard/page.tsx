@@ -5,6 +5,8 @@ import { Card } from '@/components/ui/card'
 import { AlertCircle, Calendar, Dumbbell, Utensils } from 'lucide-react'
 import Link from 'next/link'
 
+import { UpdatePasswordDialog } from '@/components/clients/update-password-dialog'
+
 export default async function ClientDashboard() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -52,7 +54,7 @@ export default async function ClientDashboard() {
                     <h1 className="text-2xl font-bold">Hola, {client.full_name.split(' ')[0]}</h1>
                     <p className="text-sm text-gray-500">Vamos por esos objetivos 💪</p>
                 </div>
-                {/* Avatar or Settings Icon could go here */}
+                <UpdatePasswordDialog />
             </div>
 
             {/* Pending Banner */}

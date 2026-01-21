@@ -25,7 +25,13 @@ const goalTranslations: { [key: string]: string } = {
     lose_weight: "Perder Peso",
     maintenance: "Mantenimiento",
     improve_endurance: "Mejorar Resistencia",
-    increase_strength: "Aumentar Fuerza"
+    increase_strength: "Aumentar Fuerza",
+    // New values from onboarding
+    fat_loss: "Pérdida de grasa",
+    muscle_gain: "Ganancia muscular",
+    recomp: "Recomposición corporal",
+    performance: "Rendimiento",
+    health: "Salud general"
 }
 
 const activityTranslations: { [key: string]: string } = {
@@ -34,6 +40,12 @@ const activityTranslations: { [key: string]: string } = {
     moderate: "Moderado",
     active: "Activo",
     very_active: "Muy Activo"
+}
+
+const workTypeTranslations: { [key: string]: string } = {
+    sedentary: "Oficina / Sedentario",
+    mixed: "Mixto (Parado/Sentado)",
+    physical: "Físico / Activo"
 }
 
 export function ProfileTab({ client }: ProfileTabProps) {
@@ -135,7 +147,7 @@ export function ProfileTab({ client }: ProfileTabProps) {
                         <p className="text-[15px] text-gray-400 leading-snug">
                             {client.activity_level ? (activityTranslations[client.activity_level] || client.activity_level) : "Moderado"}
                             <span className="block text-xs text-gray-300 mt-1">
-                                {client.work_type ? `Trabajo: ${client.work_type}` : ''}
+                                {client.work_type ? `Trabajo: ${workTypeTranslations[client.work_type] || client.work_type}` : ''}
                             </span>
                         </p>
                     </div>
