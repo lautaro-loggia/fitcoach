@@ -2,10 +2,18 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { AlertCircle, Calendar, Dumbbell, Utensils } from 'lucide-react'
+import { AlertCircle, Calendar, Dumbbell, Utensils, LogOut, Settings as SettingsIcon } from 'lucide-react'
 import Link from 'next/link'
-
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { UpdatePasswordDialog } from '@/components/clients/update-password-dialog'
+import { ClientLogoutButton } from '@/components/clients/client-logout-button'
 
 export default async function ClientDashboard() {
     const supabase = await createClient()
@@ -25,14 +33,10 @@ export default async function ClientDashboard() {
 
     // Redirect to onboarding if not completed/invited
     if (client.onboarding_status !== 'completed') {
-        // Optional: Check if they are mid-onboarding or just invited?
-        // If they are allowed to 'finish later', we show a warning instead of strict redirect?
-        // Plan said: "Dashboard will show 'Complete Profile' warning if exiting early".
-        // But `OnboardingPage` handles the completion logic.
-        // If status is 'invited' or 'in_progress', we might want to nudge them.
+        // logic...
     }
 
-    // Check for assigned plans
+    // Check for assigned plans...
     const { count: workoutCount } = await supabase
         .from('assigned_workouts')
         .select('*', { count: 'exact', head: true })
@@ -54,7 +58,21 @@ export default async function ClientDashboard() {
                     <h1 className="text-2xl font-bold">Hola, {client.full_name.split(' ')[0]}</h1>
                     <p className="text-sm text-gray-500">Vamos por esos objetivos 💪</p>
                 </div>
-                <UpdatePasswordDialog />
+
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="rounded-full">
+                            <SettingsIcon className="h-5 w-5" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <UpdatePasswordDialog asMenuItem />
+                        <DropdownMenuSeparator />
+                        <ClientLogoutButton />
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
 
             {/* Pending Banner */}
