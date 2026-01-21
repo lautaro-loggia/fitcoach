@@ -14,7 +14,7 @@ import { Calendar } from '@/components/ui/calendar'
 import { Textarea } from '@/components/ui/textarea'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
-import { format, parse } from 'date-fns'
+import { format, parse, addWeeks } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import { Switch } from '@/components/ui/switch'
@@ -353,7 +353,38 @@ export function AssignWorkoutDialog({
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2 flex flex-col">
-                                        <Label>Fecha de revisión *</Label>
+                                        <div className="flex justify-between items-center">
+                                            <Label>Fecha de revisión *</Label>
+                                            <div className="flex gap-1">
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-6 px-2 text-xs text-muted-foreground hover:text-primary"
+                                                    onClick={() => setValidUntil(addWeeks(new Date(), 4))}
+                                                >
+                                                    4 sem
+                                                </Button>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-6 px-2 text-xs text-muted-foreground hover:text-primary"
+                                                    onClick={() => setValidUntil(addWeeks(new Date(), 8))}
+                                                >
+                                                    8 sem
+                                                </Button>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-6 px-2 text-xs text-muted-foreground hover:text-primary"
+                                                    onClick={() => setValidUntil(addWeeks(new Date(), 12))}
+                                                >
+                                                    12 sem
+                                                </Button>
+                                            </div>
+                                        </div>
                                         <Popover>
                                             <PopoverTrigger asChild>
                                                 <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !validUntil && "text-muted-foreground")}>
