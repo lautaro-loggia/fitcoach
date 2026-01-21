@@ -42,6 +42,9 @@ export async function assignWorkoutAction(data: {
         return { error: 'Error al asignar el entrenamiento' }
     }
 
+    // Update client planning status to 'planned'
+    await supabase.from('clients').update({ planning_status: 'planned' }).eq('id', data.clientId)
+
     revalidatePath(`/clients/${data.clientId}`)
     revalidatePath('/dashboard', 'layout')
     return { success: true }
