@@ -9,11 +9,19 @@ import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { KeyRound, Lock, Loader2 } from 'lucide-react'
 
-export function UpdatePasswordDialog() {
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
+
+interface UpdatePasswordDialogProps {
+    asMenuItem?: boolean
+}
+
+export function UpdatePasswordDialog({ asMenuItem }: UpdatePasswordDialogProps) {
     const [open, setOpen] = useState(false)
     const [password, setPassword] = useState('')
     const [confirmPassword, setConfirmPassword] = useState('')
     const [loading, setLoading] = useState(false)
+
+    // ... handleUpdate ...
 
     const handleUpdate = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -44,10 +52,17 @@ export function UpdatePasswordDialog() {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-gray-500 hover:text-gray-900" title="Cambiar contraseña">
-                    <KeyRound className="h-5 w-5" />
-                    <span className="sr-only">Cambiar contraseña</span>
-                </Button>
+                {asMenuItem ? (
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-pointer">
+                        <KeyRound className="mr-2 h-4 w-4" />
+                        <span>Cambiar contraseña</span>
+                    </DropdownMenuItem>
+                ) : (
+                    <Button variant="ghost" size="icon" className="text-gray-500 hover:text-gray-900" title="Cambiar contraseña">
+                        <KeyRound className="h-5 w-5" />
+                        <span className="sr-only">Cambiar contraseña</span>
+                    </Button>
+                )}
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
