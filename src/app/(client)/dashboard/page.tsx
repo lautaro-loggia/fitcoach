@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -36,13 +37,16 @@ export default async function ClientDashboard() {
         // logic...
     }
 
-    // Check for assigned plans...
-    const { count: workoutCount } = await supabase
+    // Check for assigned plans using Admin/Service Role to bypass RLS
+    // This ensures checking for existence always works even if RLS policies are finicky
+    const adminClient = createAdminClient()
+
+    const { count: workoutCount } = await adminClient
         .from('assigned_workouts')
         .select('*', { count: 'exact', head: true })
         .eq('client_id', client.id)
 
-    const { count: dietCount } = await supabase
+    const { count: dietCount } = await adminClient
         .from('assigned_diets')
         .select('*', { count: 'exact', head: true })
         .eq('client_id', client.id)
@@ -76,7 +80,7 @@ export default async function ClientDashboard() {
             </div>
 
             {/* Pending Banner */}
-            {client.planning_status === 'pending' && (
+            {client.planning_status === 'pending' && !hasWorkout && !hasDiet && (
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex gap-3 text-amber-800">
                     <AlertCircle className="h-5 w-5 shrink-0" />
                     <div className="space-y-1">
