@@ -48,7 +48,7 @@ export function SettingsTab({ client }: { client: any }) {
         target_calories: client.target_calories || '',
         target_protein: client.target_protein || '',
         target_carbs: client.target_carbs || '',
-        target_fats: client.target_fats || ''
+        target_fats: client.target_fats || '',
     })
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {

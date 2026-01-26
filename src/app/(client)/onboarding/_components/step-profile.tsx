@@ -28,7 +28,8 @@ export function StepProfile({ client, onNext }: { client: any, onNext: () => voi
             const res = await updateBasicProfile({
                 birth_date: formData.birth_date,
                 height: Number(formData.height),
-                weight: Number(formData.weight)
+                weight: Number(formData.weight),
+                gender: formData.gender
             })
 
             if (res.error) {

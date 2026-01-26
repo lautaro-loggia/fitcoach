@@ -26,6 +26,14 @@ export interface ClientDue {
     status: 'pending' | 'overdue'
 }
 
+export interface CheckinDue {
+    id: string
+    full_name: string
+    avatar_url: string | null
+    next_checkin_date: string
+    status: 'pending' | 'overdue'
+}
+
 export async function getDashboardStats(): Promise<DashboardStats> {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -203,6 +211,50 @@ export async function getUpcomingPayments(): Promise<ClientDue[]> {
             next_due_date: client.next_due_date,
             price_monthly: client.price_monthly || 0,
             status: client.payment_status as 'pending' | 'overdue'
+        }
+    })
+}
+
+export async function getPendingCheckins(): Promise<CheckinDue[]> {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Not authenticated')
+
+    const todayStr = new Date().toISOString().split('T')[0]
+
+    const { data: clients } = await supabase
+        .from('clients')
+        .select(`
+            id, 
+            full_name,
+            avatar_url,
+            next_checkin_date
+        `)
+        .eq('trainer_id', user.id)
+        .eq('status', 'active')
+        .lte('next_checkin_date', todayStr)
+        .order('next_checkin_date', { ascending: true })
+        .limit(10)
+
+    if (!clients) return []
+
+    return clients.map(client => {
+        // Calculate status based on date
+        const checkinDate = new Date(client.next_checkin_date)
+        const today = new Date()
+        checkinDate.setHours(0, 0, 0, 0)
+        today.setHours(0, 0, 0, 0)
+
+        // If checkin date is before today, it's overdue (atrasado)
+        // If checkin date is today, it's pending (pendiente hoy)
+        const status = checkinDate < today ? 'overdue' : 'pending'
+
+        return {
+            id: client.id,
+            full_name: client.full_name,
+            avatar_url: client.avatar_url || null,
+            next_checkin_date: client.next_checkin_date,
+            status: status
         }
     })
 }

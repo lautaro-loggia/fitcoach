@@ -75,8 +75,8 @@ type GoalFilter = 'all' | 'fat_loss' | 'muscle_gain' | 'recomp' | 'performance' 
 interface ClientTableProps {
     clients: Client[]
     presentialWorkouts: Workout[]
+    defaultOpenNew?: boolean
 }
-
 
 function getGoalLabel(goal: string | null) {
     if (goal === 'fat_loss') return 'Pérdida de grasa'
@@ -88,54 +88,82 @@ function getGoalLabel(goal: string | null) {
 }
 
 
-function getCheckinStatus(client: Client): { status: CheckinStatus, date: Date, labels: string, color: string } {
-    let date: Date;
-    let isEstimated = false;
+function parseLocalDate(dateStr: string) {
+    if (!dateStr) return new Date()
+    const parts = dateStr.split('-')
+    if (parts.length === 3) {
+        return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]))
+    }
+    return new Date(dateStr)
+}
 
-    if (client.next_checkin_date) {
-        date = new Date(client.next_checkin_date);
-    } else if (client.checkins && client.checkins.length > 0) {
-        // Last checkin + 7 days
-        const lastCheckin = new Date(client.checkins[0].date);
-        date = new Date(lastCheckin);
-        date.setDate(date.getDate() + 7);
-        isEstimated = true;
-    } else {
-        // No checkins
-        return { status: 'none', date: new Date(8640000000000000), labels: 'Pendiente (Inicio)', color: 'text-yellow-600' };
+function getCheckinStatus(client: Client): { status: CheckinStatus | 'pending_review', date: Date | null, labels: string, color: string } {
+    const lastCheckin = client.checkins && client.checkins.length > 0 ? client.checkins[0] : null
+    let lastCheckinDate: Date | null = null
+
+    if (lastCheckin) {
+        // Assuming checkin.date is YYYY-MM-DD from DB or ISO string. 
+        // If it's pure date string from postgres 'date' column, it might come as YYYY-MM-DD.
+        // Convert strict to avoid timezone shift.
+        if (lastCheckin.date.includes('T')) {
+            lastCheckinDate = new Date(lastCheckin.date)
+        } else {
+            lastCheckinDate = parseLocalDate(lastCheckin.date)
+        }
+        // Normalize time
+        lastCheckinDate.setHours(0, 0, 0, 0)
     }
 
-    const now = new Date();
-    // Normalize to start of day for accurate comparison
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const checkinDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    if (!client.next_checkin_date) {
+        // No scheduled date.
+        // If they have recent checkins, coach needs to define next.
+        if (lastCheckinDate) {
+            return { status: 'pending_review', date: null, labels: 'Definir Próximo', color: 'text-orange-600 font-bold' }
+        }
+        // If no checkins ever
+        return { status: 'none', date: new Date(8640000000000000), labels: 'Pendiente (Inicio)', color: 'text-yellow-600' }
+    }
 
-    const diffTime = checkinDay.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const scheduledDate = parseLocalDate(client.next_checkin_date)
+    scheduledDate.setHours(0, 0, 0, 0)
 
-    let status: CheckinStatus = 'future';
-    let color = 'text-green-600';
+    // Check if the scheduled date was ALREADY completed
+    // Logic: If last checkin was done ON or AFTER the scheduled date (or very close to it), then this date is "done".
+    // However, if the coach manually set a future date, it should be fine.
+    // Issue: If client checks in, next_checkin_date might remain as today's date (if not auto-updated).
+    if (lastCheckinDate && lastCheckinDate.getTime() >= scheduledDate.getTime()) {
+        return { status: 'pending_review', date: scheduledDate, labels: 'Definir Próximo', color: 'text-orange-600 font-bold' }
+    }
+
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+
+    const diffTime = scheduledDate.getTime() - today.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+    let status: CheckinStatus = 'future'
+    let color = 'text-green-600'
 
     if (diffDays < 0) {
-        status = 'overdue';
-        color = 'text-red-600';
-    } else if (diffDays <= 2) { // Today or < 48h (approx 2 days)
-        status = 'due_soon';
-        color = 'text-yellow-600';
+        status = 'overdue'
+        color = 'text-red-600'
+    } else if (diffDays <= 2) {
+        status = 'due_soon'
+        color = 'text-yellow-600'
     } else {
-        status = 'future';
-        color = 'text-green-600';
+        status = 'future'
+        color = 'text-green-600'
     }
 
     return {
         status,
-        date,
-        labels: format(date, 'dd/MM/yyyy', { locale: es }),
+        date: scheduledDate,
+        labels: format(scheduledDate, 'dd/MM/yyyy', { locale: es }),
         color
-    };
+    }
 }
 
-export function ClientTable({ clients, presentialWorkouts }: ClientTableProps) {
+export function ClientTable({ clients, presentialWorkouts, defaultOpenNew }: ClientTableProps) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
     const [navigatingId, setNavigatingId] = useState<string | null>(null)
@@ -183,7 +211,11 @@ export function ClientTable({ clients, presentialWorkouts }: ClientTableProps) {
             // Default sort: Next Check-in (asc)
             const checkinA = getCheckinStatus(a);
             const checkinB = getCheckinStatus(b);
-            return checkinA.date.getTime() - checkinB.date.getTime();
+            // Sort: pending review (null/urgent) first -> overdue -> soon -> future
+            // If date is null (pending definition), treat as very small (urgent)
+            const timeA = checkinA.date ? checkinA.date.getTime() : 0;
+            const timeB = checkinB.date ? checkinB.date.getTime() : 0;
+            return timeA - timeB;
         })
     }, [clients, debouncedSearch, statusFilter, goalFilter, checkinFilter])
 
@@ -274,7 +306,7 @@ export function ClientTable({ clients, presentialWorkouts }: ClientTableProps) {
                     <h3 className="font-semibold text-lg">No tienes asesorados aún</h3>
                     <p className="text-muted-foreground max-w-sm">Comenzá agregando a tu primer cliente para gestionar sus entrenamientos.</p>
                 </div>
-                <AddClientDialog />
+                <AddClientDialog defaultOpen={defaultOpenNew} />
             </div>
         )
     }
@@ -395,7 +427,7 @@ export function ClientTable({ clients, presentialWorkouts }: ClientTableProps) {
                     <PresentialCalendarDialog workouts={presentialWorkouts} />
 
                     {/* Add Client Button */}
-                    <AddClientDialog />
+                    <AddClientDialog defaultOpen={defaultOpenNew} />
                 </div>
             </div>
 

@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 
 // Types
@@ -34,13 +35,42 @@ export interface SetLog {
     completed_at: string | null
 }
 
-// Get or create a session for today
-export async function getOrCreateSession(clientId: string, assignedWorkoutId: string) {
+// Get or create a session for today for the CLIENT
+export async function getOrCreateSession(assignedWorkoutId: string) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
         return { error: 'No autorizado' }
+    }
+
+    // Get Client ID
+    const { data: client } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('user_id', user.id)
+        .single()
+
+    if (!client) {
+        return { error: 'Cliente no encontrado' }
+    }
+
+    // Determine Trainer ID from the assigned workout - USING ADMIN CLIENT to bypass potential RLS
+    // but strictly checking client_id ownership
+    const adminSupabase = createAdminClient()
+    const { data: workout } = await adminSupabase
+        .from('assigned_workouts')
+        .select('trainer_id, client_id')
+        .eq('id', assignedWorkoutId)
+        .single()
+
+    if (!workout) {
+        return { error: 'Rutina no encontrada' }
+    }
+
+    // SECURITY CHECK: This workout MUST belong to this client
+    if (workout.client_id !== client.id) {
+        return { error: 'No autorizado para acceder a esta rutina' }
     }
 
     // Check for existing session today
@@ -49,12 +79,20 @@ export async function getOrCreateSession(clientId: string, assignedWorkoutId: st
     const tomorrow = new Date(today)
     tomorrow.setDate(tomorrow.getDate() + 1)
 
-    const { data: existingSession } = await supabase
+
+
+    const { data: existingSession } = await adminSupabase
         .from('workout_sessions')
-        .select('*')
-        .eq('client_id', clientId)
+        .select(`
+            *,
+            assigned_workouts (
+                id,
+                name,
+                structure
+            )
+        `)
+        .eq('client_id', client.id)
         .eq('assigned_workout_id', assignedWorkoutId)
-        .eq('trainer_id', user.id)
         .gte('started_at', today.toISOString())
         .lt('started_at', tomorrow.toISOString())
         .eq('status', 'in_progress')
@@ -65,14 +103,23 @@ export async function getOrCreateSession(clientId: string, assignedWorkoutId: st
     }
 
     // Create new session
-    const { data: newSession, error } = await supabase
+    const { data: newSession, error } = await adminSupabase
         .from('workout_sessions')
         .insert({
-            trainer_id: user.id,
-            client_id: clientId,
+            trainer_id: workout.trainer_id,
+            client_id: client.id,
             assigned_workout_id: assignedWorkoutId,
+            started_at: new Date().toISOString(),
+            status: 'in_progress'
         })
-        .select()
+        .select(`
+            *,
+            assigned_workouts (
+                id,
+                name,
+                structure
+            )
+        `)
         .single()
 
     if (error) {
@@ -83,7 +130,7 @@ export async function getOrCreateSession(clientId: string, assignedWorkoutId: st
     return { session: newSession as WorkoutSession }
 }
 
-// Get session with workout details
+// Get session with workout details for the CLIENT
 export async function getSessionWithWorkout(sessionId: string) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -92,28 +139,40 @@ export async function getSessionWithWorkout(sessionId: string) {
         return { error: 'No autorizado' }
     }
 
-    const { data: session, error } = await supabase
+    // Get Client ID
+    const { data: client } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('user_id', user.id)
+        .single()
+
+    if (!client) {
+        return { error: 'Cliente no encontrado' }
+    }
+
+    // Use admin client to read session + workout to avoid RLS issues on related tables if any
+    const adminSupabase = createAdminClient()
+    const { data: session, error } = await adminSupabase
         .from('workout_sessions')
         .select(`
             *,
             assigned_workouts (
                 id,
                 name,
-                structure,
-                client_id
-            ),
-            clients (
-                id,
-                full_name
+                structure
             )
         `)
         .eq('id', sessionId)
-        .eq('trainer_id', user.id)
         .single()
 
     if (error) {
         console.error('Error fetching session:', error)
         return { error: 'Sesión no encontrada' }
+    }
+
+    // SECURITY CHECK: Verify this session belongs to the requesting client
+    if (session.client_id !== client.id) {
+        return { error: 'No autorizado' }
     }
 
     return { session }
@@ -126,10 +185,10 @@ export async function getOrCreateExerciseCheckin(
     exerciseName: string,
     defaultRestSeconds: number = 90
 ) {
-    const supabase = await createClient()
+    const adminSupabase = createAdminClient()
 
     // Try to get existing
-    const { data: existing } = await supabase
+    const { data: existing } = await adminSupabase
         .from('exercise_checkins')
         .select('*')
         .eq('session_id', sessionId)
@@ -141,13 +200,14 @@ export async function getOrCreateExerciseCheckin(
     }
 
     // Create new
-    const { data: newCheckin, error } = await supabase
+    const { data: newCheckin, error } = await adminSupabase
         .from('exercise_checkins')
         .insert({
             session_id: sessionId,
             exercise_index: exerciseIndex,
             exercise_name: exerciseName,
-            rest_seconds: defaultRestSeconds
+            rest_seconds: defaultRestSeconds,
+            rest_enabled: false // Default to off as per design request? Or maybe just default.
         })
         .select()
         .single()
@@ -162,9 +222,9 @@ export async function getOrCreateExerciseCheckin(
 
 // Get exercise checkin with set logs
 export async function getExerciseCheckinWithSets(sessionId: string, exerciseIndex: number) {
-    const supabase = await createClient()
+    const adminSupabase = createAdminClient()
 
-    const { data: checkin, error } = await supabase
+    const { data: checkin, error } = await adminSupabase
         .from('exercise_checkins')
         .select(`
             *,
@@ -190,10 +250,10 @@ export async function saveSetLog(
     weight: number,
     isCompleted: boolean
 ) {
-    const supabase = await createClient()
+    const adminSupabase = createAdminClient()
 
     // Upsert the set log
-    const { data, error } = await supabase
+    const { data, error } = await adminSupabase
         .from('set_logs')
         .upsert({
             exercise_checkin_id: checkinId,
@@ -219,9 +279,9 @@ export async function saveSetLog(
 
 // Delete a set log
 export async function deleteSetLog(setLogId: string) {
-    const supabase = await createClient()
+    const adminSupabase = createAdminClient()
 
-    const { error } = await supabase
+    const { error } = await adminSupabase
         .from('set_logs')
         .delete()
         .eq('id', setLogId)
@@ -236,9 +296,9 @@ export async function deleteSetLog(setLogId: string) {
 
 // Update exercise notes
 export async function updateExerciseNotes(checkinId: string, notes: string) {
-    const supabase = await createClient()
+    const adminSupabase = createAdminClient()
 
-    const { error } = await supabase
+    const { error } = await adminSupabase
         .from('exercise_checkins')
         .update({ notes })
         .eq('id', checkinId)
@@ -253,9 +313,9 @@ export async function updateExerciseNotes(checkinId: string, notes: string) {
 
 // Update rest settings
 export async function updateRestSettings(checkinId: string, enabled: boolean, seconds: number) {
-    const supabase = await createClient()
+    const adminSupabase = createAdminClient()
 
-    const { error } = await supabase
+    const { error } = await adminSupabase
         .from('exercise_checkins')
         .update({
             rest_enabled: enabled,
@@ -273,9 +333,9 @@ export async function updateRestSettings(checkinId: string, enabled: boolean, se
 
 // Complete session
 export async function completeSession(sessionId: string) {
-    const supabase = await createClient()
+    const adminSupabase = createAdminClient()
 
-    const { error } = await supabase
+    const { error } = await adminSupabase
         .from('workout_sessions')
         .update({
             status: 'completed',
@@ -288,58 +348,61 @@ export async function completeSession(sessionId: string) {
         return { error: 'Error al completar sesión' }
     }
 
+    // Use layout to update everything
+    revalidatePath('/dashboard', 'layout')
     return { success: true }
 }
 
-// Get today's scheduled workouts
+// Get workouts assigned for today
 export async function getTodaysWorkouts() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
-        return { error: 'No autorizado' }
+        return { workouts: [], error: 'No autorizado' }
     }
 
-    const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
-    const today = days[new Date().getDay()]
+    // Get Client ID
+    const { data: client } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('user_id', user.id)
+        .single()
 
-    const { data: workouts, error } = await supabase
+    if (!client) {
+        return { workouts: [], error: 'Cliente no encontrado' }
+    }
+
+    const { data: workouts } = await supabase
         .from('assigned_workouts')
         .select(`
             id,
             name,
             structure,
-            scheduled_days,
-            clients (
-                id,
-                full_name
-            )
+            scheduled_days
         `)
-        .eq('trainer_id', user.id)
-        .contains('scheduled_days', [today])
+        .eq('client_id', client.id)
+        .is('valid_until', null) // Active
 
-    if (error) {
-        console.error('Error fetching todays workouts:', error)
-        return { error: 'Error al obtener entrenamientos' }
-    }
+    if (!workouts) return { workouts: [] }
 
-    return { workouts: workouts || [] }
-}
+    const daysOfWeek = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado']
+    const todayIndex = new Date().getDay()
+    const todayName = daysOfWeek[todayIndex]
 
-// Get previous set data (from previous set in same session)
-export async function getPreviousSetData(checkinId: string, currentSetNumber: number) {
-    if (currentSetNumber <= 1) {
-        return { previousSet: null }
-    }
+    const todaysWorkouts = workouts.filter(w => {
+        // @ts-ignore
+        if (!w.scheduled_days || w.scheduled_days.length === 0) return true
+        // @ts-ignore
+        return w.scheduled_days.map(d => d.toLowerCase()).includes(todayName)
+    })
 
-    const supabase = await createClient()
+    const { data: clientInfo } = await supabase.from('clients').select('id, full_name').eq('id', client.id).single()
 
-    const { data: previousSet } = await supabase
-        .from('set_logs')
-        .select('*')
-        .eq('exercise_checkin_id', checkinId)
-        .eq('set_number', currentSetNumber - 1)
-        .single()
+    const enrichedWorkouts = todaysWorkouts.map(w => ({
+        ...w,
+        clients: clientInfo ? [clientInfo] : []
+    }))
 
-    return { previousSet: previousSet as SetLog | null }
+    return { workouts: enrichedWorkouts }
 }

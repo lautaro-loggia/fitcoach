@@ -44,7 +44,7 @@ export function MeasuresTable({ checkins, selectedMetric, onSelect }: MeasuresTa
         { key: 'measurements.hips', label: "Medida Cadera", ...getLatest("hips", true), unit: "cm" },
         { key: 'measurements.arm', label: "Medida Brazo", ...getLatest("arm", true), unit: "cm" },
         { key: 'measurements.thigh', label: "Medida Muslo", ...getLatest("thigh", true), unit: "cm" },
-        { key: 'measurements.calves', label: "Medida Gemelos", ...getLatest("calves", true), unit: "cm" },
+        { key: 'measurements.calf', label: "Medida Gemelos", ...getLatest("calf", true), unit: "cm" },
     ]
 
     return (

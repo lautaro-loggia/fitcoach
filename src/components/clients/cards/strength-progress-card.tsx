@@ -210,19 +210,22 @@ export function StrengthProgressCard({ clientId }: StrengthProgressCardProps) {
     return (
         <Card className="flex flex-col bg-white shadow-sm border border-gray-100 rounded-2xl min-h-[90px] justify-center">
             <CardContent className="p-4 py-3">
-                <div className="flex justify-between items-start">
+                {insufficientData ? (
                     <div className="space-y-0.5">
                         <h3 className="text-[17px] font-bold text-gray-900 leading-tight">Progreso en fuerza</h3>
-                        <p className="text-[15px] text-gray-400">ultimas 4 semanas</p>
+                        <p className="text-[15px] text-gray-400">Aún no se ha registrado ningún ejercicio</p>
                     </div>
-                    {insufficientData ? (
-                        <div className="text-[15px] text-gray-400 font-medium">--</div>
-                    ) : (
+                ) : (
+                    <div className="flex justify-between items-start">
+                        <div className="space-y-0.5">
+                            <h3 className="text-[17px] font-bold text-gray-900 leading-tight">Progreso en fuerza</h3>
+                            <p className="text-[15px] text-gray-400">ultimas 4 semanas</p>
+                        </div>
                         <div className="text-[18px] font-bold text-[#22C55E]">
                             {progress && progress > 0 ? '+' : ''}{progress?.toFixed(1)}%
                         </div>
-                    )}
-                </div>
+                    </div>
+                )}
             </CardContent>
         </Card>
     )

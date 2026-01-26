@@ -2,7 +2,11 @@ import { createClient } from '@/lib/supabase/server'
 import { ClientTable, Client } from '@/components/clients/client-table'
 import { Workout } from '@/components/clients/presential-calendar-dialog'
 
-export default async function ClientsPage() {
+interface ClientsPageProps {
+    searchParams: { [key: string]: string | string[] | undefined }
+}
+
+export default async function ClientsPage({ searchParams }: ClientsPageProps) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -68,6 +72,10 @@ export default async function ClientsPage() {
 
 
     return (
-        <ClientTable clients={formattedClients} presentialWorkouts={typedPresentialWorkouts} />
+        <ClientTable
+            clients={formattedClients}
+            presentialWorkouts={typedPresentialWorkouts}
+            defaultOpenNew={searchParams?.new === 'true'}
+        />
     )
 }

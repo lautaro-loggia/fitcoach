@@ -32,6 +32,7 @@ export async function updateBasicProfile(data: {
     birth_date: string // YYYY-MM-DD
     height: number
     weight: number // saved to current_weight
+    gender: string
 }) {
     const { adminSupabase, client } = await getAuthenticatedClient()
 
@@ -41,6 +42,7 @@ export async function updateBasicProfile(data: {
             birth_date: data.birth_date,
             height: data.height,
             current_weight: data.weight,
+            gender: data.gender,
             updated_at: new Date().toISOString()
         })
         .eq('id', client.id)
@@ -64,7 +66,11 @@ export async function updateGoals(data: {
             main_goal: data.main_goal,
             target_weight: data.target_weight,
             target_fat: data.target_fat,
-            goal_text: data.goal_specific
+            goal_text: data.goal_specific,
+            goals: {
+                ...(client.goals || {}), // Preserve existing goals data
+                timeframe: data.timeframe
+            }
         })
         .eq('id', client.id)
 

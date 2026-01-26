@@ -1,16 +1,14 @@
-
-import { StatsCard } from '@/components/dashboard/stats-cards'
-import { Users, AlertCircle, UserPlus, Activity, ArrowRight, UserCheck, Dumbbell, Play } from 'lucide-react'
+import { UserPlus, UserCheck } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { getDashboardStats, getUpcomingPayments, getTodayPresentialTrainings } from '@/lib/actions/dashboard'
-import { UpcomingPayments } from '@/components/dashboard/upcoming-payments'
+import { getDashboardStats, getUpcomingPayments, getTodayPresentialTrainings, getPendingCheckins } from '@/lib/actions/dashboard'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card'
-import { ClientSelectorDialog } from '@/components/dashboard/client-selector-dialog'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { PresentialTrainings } from '@/components/dashboard/presential-trainings'
-
+import { UrgentActions } from '@/components/dashboard/urgent-actions'
 import { redirect } from 'next/navigation'
+
+
 
 export default async function DashboardPage() {
     const supabase = await createClient()
@@ -52,151 +50,165 @@ export default async function DashboardPage() {
     const userName = profile?.full_name?.split(' ')[0] || 'Entrenador'
 
     // Fetch all dashboard data
-    const [stats, upcomingPayments, presentialTrainings] = await Promise.all([
+    const [stats, upcomingPayments, presentialTrainings, pendingCheckins] = await Promise.all([
         getDashboardStats(),
         getUpcomingPayments(),
-        getTodayPresentialTrainings()
+        getTodayPresentialTrainings(),
+        getPendingCheckins()
     ])
 
     const statCards = [
         {
-            title: "Asesorados Activos",
-            value: stats.activeClients.toString(),
-            description: "Total clientes activos",
-            icon: Users,
-        },
-        {
-            title: "Pagos Vencidos",
+            title: "Pagos vencidos",
             value: stats.pendingPaymentsCount.toString(),
             description: "Requieren atención inmediata",
-            icon: AlertCircle,
+            icon: () => <div className="h-2 w-2 rounded-full bg-red-500" />,
             alert: stats.pendingPaymentsCount > 0,
             variant: "destructive",
-            href: "/pagos?filter=overdue"
+            href: "/pagos?filter=overdue",
+            customStyles: {
+                value: "text-red-500",
+                description: "text-red-400"
+            }
         },
         {
-            title: "Check-ins Pendientes",
+            title: "Check-ins pendientes",
             value: stats.pendingCheckinsCount.toString(),
-            description: "Deben reportarse hoy",
-            icon: Activity,
+            description: "Esperando revisión",
+            icon: () => <div className="h-2 w-2 rounded-full bg-amber-500" />,
             alert: stats.pendingCheckinsCount > 0,
+            customStyles: {
+                value: "text-amber-500",
+                description: "text-amber-500"
+            }
         },
-        // New Clients (Already implemented in backend now)
         {
-            title: "Nuevos este mes",
-            value: stats.newClientsCount.toString(),
-            description: "Clientes registrados",
-            icon: UserPlus,
+            title: "Entrenamientos hoy",
+            value: presentialTrainings.length.toString(),
+            description: "Todo en orden",
+            icon: () => <div className="h-2 w-2 rounded-full bg-green-500" />,
+            customStyles: {
+                value: "text-foreground",
+                description: "text-green-500"
+            },
+            extraIcon: true // Hack to show check icon on right? Or we can just adapt StatsCard
         },
+        // We will adapt StatsCard component similarly or just inline the change here if needed, 
+        // but for now let's pass this structure and update StatsCard if needed or map carefully.
+        // Actually, the previous map loop used specific props. Let's look at StatsCard.
+        // StatsCard expects LucideIcon. 
     ]
 
+    // The design shows specific styling per card (Red text for red card, etc).
+    // I should probably simplify and just inline the cards implementation here or make StatsCard more flexible.
+    // Given the specific design, I'll inline the cards in the JSX for maximum control to match the image exactly.
+
     const overduePayments = upcomingPayments.filter(p => p.status === 'overdue')
-    const futurePayments = upcomingPayments.filter(p => p.status === 'pending')
 
     return (
         <div className="space-y-6 md:space-y-8">
-            <div>
-                <h2 className="text-2xl md:text-3xl font-medium tracking-tight">
-                    {greeting}, <span className="text-primary font-bold">{userName}</span>
-                </h2>
-                <p className="text-muted-foreground text-sm md:text-base">
-                    Aquí tienes el resumen de tu actividad con los asesorados.
-                </p>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h2 className="text-2xl md:text-3xl font-normal tracking-tight text-foreground">
+                        {greeting}, <span className="font-bold">{userName}</span>
+                    </h2>
+                    <p className="text-muted-foreground mt-1">
+                        Este es tu estado hoy
+                    </p>
+                </div>
+                <div className="flex items-center gap-3">
+                    <Link href="/clients?new=true">
+                        <Button variant="outline" className="gap-2 bg-white">
+                            <UserPlus className="h-4 w-4 text-muted-foreground" />
+                            Asesorado
+                        </Button>
+                    </Link>
+                </div>
             </div>
 
+            {/* Status Cards Row */}
+            <div className="grid gap-4 md:grid-cols-4">
+                {/* Active Clients Card */}
+                <Card className="shadow-sm border-none bg-white">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-blue-500" />
+                            Asesorados activos
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-4xl font-bold text-foreground">{stats.activeClients}</div>
+                        <p className="text-xs font-medium text-muted-foreground mt-1">
+                            Total clientes activos
+                        </p>
+                    </CardContent>
+                </Card>
 
+                {/* Pagos Cards */}
+                <Card className="shadow-sm border-none bg-white">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-red-500" />
+                            Pagos vencidos
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-4xl font-bold text-foreground">{stats.pendingPaymentsCount}</div>
+                        <p className="text-xs font-medium text-red-500 mt-1">
+                            Requieren atención inmediata
+                        </p>
+                    </CardContent>
+                </Card>
 
-            <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-                {statCards.map((stat, index) => (
-                    <StatsCard key={index} {...stat} />
-                ))}
+                {/* Check-ins Card */}
+                <Card className="shadow-sm border-none bg-white">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-amber-500" />
+                            Check-ins pendientes
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-4xl font-bold text-foreground">{stats.pendingCheckinsCount}</div>
+                        <p className="text-xs font-medium text-amber-500 mt-1">
+                            Esperando revisión
+                        </p>
+                    </CardContent>
+                </Card>
+
+                {/* Trainings Card */}
+                <Card className="shadow-sm border-none bg-white relative overflow-hidden">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-green-500" />
+                            Entrenamientos hoy
+                        </CardTitle>
+                        <div className="h-6 w-6 rounded-full border border-green-200 flex items-center justify-center bg-green-50">
+                            <UserCheck className="h-3 w-3 text-green-600" />
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-4xl font-bold text-foreground">{presentialTrainings.length}</div>
+                        <p className="text-xs font-medium text-green-500 mt-1">
+                            Todo en orden
+                        </p>
+                    </CardContent>
+                </Card>
             </div>
 
-            {/* Presential Trainings */}
-            <PresentialTrainings trainings={presentialTrainings} />
-
-            {/* Quick Actions Container */}
-            <Card>
-                <CardHeader className="px-4 py-3 border-b border-border">
-                    <CardTitle className="text-base font-medium">Accesos Rápidos</CardTitle>
-                </CardHeader>
-                <CardContent className="p-4">
-                    <div className="flex flex-col md:flex-row gap-3">
-                        {/* Nuevo Asesorado */}
-                        <Link href="/clients?new=true" className="flex-1 w-full">
-                            <Button variant="outline" className="w-full h-auto py-3 justify-start gap-3 border-dashed hover:border-solid hover:bg-muted/50 group">
-                                <div className="p-2 rounded-full bg-blue-50 text-blue-500 group-hover:bg-blue-100 transition-colors">
-                                    <UserPlus className="h-4 w-4" />
-                                </div>
-                                <div className="text-left">
-                                    <span className="font-medium block">Nuevo Asesorado</span>
-                                    <span className="text-xs text-muted-foreground hidden sm:block">Registrar cliente</span>
-                                </div>
-                            </Button>
-                        </Link>
-
-                        {/* Crear Rutina */}
-                        <Link href="/workouts?new=true" className="flex-1 w-full">
-                            <Button variant="outline" className="w-full h-auto py-3 justify-start gap-3 border-dashed hover:border-solid hover:bg-muted/50 group">
-                                <div className="p-2 rounded-full bg-purple-50 text-purple-500 group-hover:bg-purple-100 transition-colors">
-                                    <Dumbbell className="h-4 w-4" />
-                                </div>
-                                <div className="text-left">
-                                    <span className="font-medium block">Crear Rutina</span>
-                                    <span className="text-xs text-muted-foreground hidden sm:block">Nueva planificación</span>
-                                </div>
-                            </Button>
-                        </Link>
-
-                        {/* Registrar Check-in */}
-                        <div className="flex-1 w-full">
-                            <ClientSelectorDialog>
-                                <Button variant="outline" className="w-full h-auto py-3 justify-start gap-3 border-dashed hover:border-solid hover:bg-muted/50 group">
-                                    <div className="p-2 rounded-full bg-green-50 text-green-500 group-hover:bg-green-100 transition-colors">
-                                        <UserCheck className="h-4 w-4" />
-                                    </div>
-                                    <div className="text-left">
-                                        <span className="font-medium block">Registrar Check-in</span>
-                                        <span className="text-xs text-muted-foreground hidden sm:block">Actualizar progreso</span>
-                                    </div>
-                                </Button>
-                            </ClientSelectorDialog>
-                        </div>
-
-                        {/* Registrar Entrenamiento */}
-                        <div className="flex-1 w-full md:hidden">
-                            <ClientSelectorDialog mode="training">
-                                <Button variant="outline" className="w-full h-auto py-3 justify-start gap-3 border-dashed hover:border-solid hover:bg-muted/50 group">
-                                    <div className="p-2 rounded-full bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
-                                        <Play className="h-4 w-4" />
-                                    </div>
-                                    <div className="text-left">
-                                        <span className="font-medium block">Registrar Entrenamiento</span>
-                                        <span className="text-xs text-muted-foreground hidden sm:block">Iniciar sesión</span>
-                                    </div>
-                                </Button>
-                            </ClientSelectorDialog>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-
-            <div className="space-y-6">
-                {/* Overdue Payments */}
-                {overduePayments.length > 0 && (
-                    <UpcomingPayments
-                        clients={overduePayments}
-                        title="Pagos Vencidos"
-                        description="Requieren atención inmediata"
-                        cardClassName="border-red-200"
+            <div className="grid lg:grid-cols-12 gap-6">
+                {/* Left Column: Urgent Actions */}
+                <div className="lg:col-span-8">
+                    <UrgentActions
+                        overduePayments={overduePayments}
+                        pendingCheckins={pendingCheckins}
                     />
-                )}
+                </div>
 
-                {/* Upcoming Payments */}
-                <UpcomingPayments
-                    clients={futurePayments}
-                    title="Vencimientos Próximos"
-                />
+                {/* Right Column: Presential Trainings */}
+                <div className="lg:col-span-4">
+                    <PresentialTrainings trainings={presentialTrainings} />
+                </div>
             </div>
         </div>
     )

@@ -22,7 +22,7 @@ import {
     updateRestSettings,
     type SetLog,
     type ExerciseCheckin
-} from '@/app/(dashboard)/session/actions'
+} from '@/app/(client)/dashboard/workout/[id]/actions'
 
 interface Exercise {
     name: string

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Calendar as CalendarIcon, Download, Plus, LayoutGrid } from 'lucide-react'
 import { AssignWorkoutDialog } from '../assign-workout-dialog'
 import { deleteAssignedWorkoutAction, updateAssignedWorkoutAction } from '@/app/(dashboard)/clients/[id]/training-actions'
-import { getOrCreateSession } from '@/app/(dashboard)/session/actions'
+
 import { WorkoutCard } from '../workout-card'
 import { CalendarView } from '../calendar-view'
 import { cn } from '@/lib/utils'
@@ -89,20 +89,7 @@ export function TrainingTab({ client }: TrainingTabProps) {
         })
     }
 
-    const handleStartSession = async (workoutId: string) => {
-        try {
-            const result = await getOrCreateSession(client.id, workoutId)
-            if (result.session) {
-                router.push(`/session/${result.session.id}`)
-            } else if (result.error) {
-                console.error("Error starting session:", result.error)
-                alert("Error al iniciar sesión de entrenamiento")
-            }
-        } catch (err) {
-            console.error(err)
-            alert("Error inesperado")
-        }
-    }
+
 
     return (
         <div className="space-y-6 h-full flex flex-col">
@@ -167,7 +154,7 @@ export function TrainingTab({ client }: TrainingTabProps) {
                                 onDelete={() => handleDelete(workout.id)}
                                 onView={() => setViewingWorkout(workout)}
                                 onDownload={() => handleDownloadWorkout(workout)}
-                                onStart={() => handleStartSession(workout.id)}
+
                             />
                         ))}
                         {workouts.length === 0 && (

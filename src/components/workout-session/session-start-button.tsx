@@ -12,7 +12,7 @@ import {
     Dumbbell,
     Clock
 } from 'lucide-react'
-import { getTodaysWorkouts } from '@/app/(dashboard)/session/actions'
+import { getOrCreateSession, getTodaysWorkouts } from "@/app/(client)/dashboard/workout/[id]/actions"
 import {
     Sheet,
     SheetContent,
