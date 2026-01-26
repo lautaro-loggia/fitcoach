@@ -352,3 +352,57 @@ export async function completeSession(sessionId: string) {
     revalidatePath('/dashboard', 'layout')
     return { success: true }
 }
+
+// Get workouts assigned for today
+export async function getTodaysWorkouts() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { workouts: [], error: 'No autorizado' }
+    }
+
+    // Get Client ID
+    const { data: client } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('user_id', user.id)
+        .single()
+
+    if (!client) {
+        return { workouts: [], error: 'Cliente no encontrado' }
+    }
+
+    const { data: workouts } = await supabase
+        .from('assigned_workouts')
+        .select(`
+            id,
+            name,
+            structure,
+            scheduled_days
+        `)
+        .eq('client_id', client.id)
+        .is('valid_until', null) // Active
+
+    if (!workouts) return { workouts: [] }
+
+    const daysOfWeek = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado']
+    const todayIndex = new Date().getDay()
+    const todayName = daysOfWeek[todayIndex]
+
+    const todaysWorkouts = workouts.filter(w => {
+        // @ts-ignore
+        if (!w.scheduled_days || w.scheduled_days.length === 0) return true
+        // @ts-ignore
+        return w.scheduled_days.map(d => d.toLowerCase()).includes(todayName)
+    })
+
+    const { data: clientInfo } = await supabase.from('clients').select('id, full_name').eq('id', client.id).single()
+
+    const enrichedWorkouts = todaysWorkouts.map(w => ({
+        ...w,
+        clients: clientInfo ? [clientInfo] : []
+    }))
+
+    return { workouts: enrichedWorkouts }
+}
