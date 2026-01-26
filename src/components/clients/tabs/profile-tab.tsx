@@ -99,8 +99,11 @@ export function ProfileTab({ client }: ProfileTabProps) {
                         // Try to get path from property OR extract from URL if legacy
                         let storagePath = p.path
                         if (!storagePath && p.url && p.url.includes('/checkin-images/')) {
-                            // Extract everything after /checkin-images/
-                            storagePath = p.url.split('/checkin-images/')[1]
+                            // Extract everything after /checkin-images/ and before any query params
+                            const pathPart = p.url.split('/checkin-images/')[1]
+                            if (pathPart) {
+                                storagePath = decodeURIComponent(pathPart.split('?')[0])
+                            }
                         }
 
                         if (storagePath) {
