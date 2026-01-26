@@ -14,9 +14,10 @@ import Image from "next/image"
 interface AddCheckinDialogProps {
     clientId: string
     autoOpen?: boolean
+    trigger?: React.ReactNode
 }
 
-export function AddCheckinDialog({ clientId, autoOpen }: AddCheckinDialogProps) {
+export function AddCheckinDialog({ clientId, autoOpen, trigger }: AddCheckinDialogProps) {
     const [open, setOpen] = useState(autoOpen || false)
 
     useEffect(() => {
@@ -28,11 +29,22 @@ export function AddCheckinDialog({ clientId, autoOpen }: AddCheckinDialogProps) 
     }, [autoOpen])
 
     const [loading, setLoading] = useState(false)
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+    const [date, setDate] = useState(() => {
+        // Use local date to avoid UTC shifts
+        const d = new Date()
+        const year = d.getFullYear()
+        const month = String(d.getMonth() + 1).padStart(2, '0')
+        const day = String(d.getDate()).padStart(2, '0')
+        return `${year}-${month}-${day}`
+    })
     const [nextCheckinDate, setNextCheckinDate] = useState(() => {
         const next = new Date()
         next.setMonth(next.getMonth() + 1)
-        return next.toISOString().split('T')[0]
+        // Same here for next date default
+        const year = next.getFullYear()
+        const month = String(next.getMonth() + 1).padStart(2, '0')
+        const day = String(next.getDate()).padStart(2, '0')
+        return `${year}-${month}-${day}`
     })
     const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -153,9 +165,11 @@ export function AddCheckinDialog({ clientId, autoOpen }: AddCheckinDialogProps) 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button className="bg-primary hover:bg-primary/90 text-white">
-                    <Plus className="mr-2 h-4 w-4" /> Nuevo Check-in
-                </Button>
+                {trigger ? trigger : (
+                    <Button className="bg-primary hover:bg-primary/90 text-white">
+                        <Plus className="mr-2 h-4 w-4" /> Nuevo Check-in
+                    </Button>
+                )}
             </DialogTrigger>
             <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>

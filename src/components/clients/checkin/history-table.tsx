@@ -1,5 +1,5 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { format } from "date-fns"
+import { format, parse } from "date-fns"
 
 interface HistoryTableProps {
     data: any[] // Expects { date: string, value: number }
@@ -31,7 +31,7 @@ export function HistoryTable({ data, unit }: HistoryTableProps) {
                             sorted.map((c, i) => (
                                 <div key={i} className="flex justify-between px-6 py-4 items-center border-b border-border/40 last:border-0 hover:bg-muted/20 transition-colors">
                                     <span className="font-medium text-sm text-muted-foreground">
-                                        {format(new Date(c.date), 'dd/MM/yyyy')}
+                                        {format(parse(c.date, 'yyyy-MM-dd', new Date()), 'dd/MM/yyyy')}
                                     </span>
                                     <span className="font-semibold text-sm text-foreground/80">
                                         {c.value !== null ? `${c.value}${unit}` : '—'}

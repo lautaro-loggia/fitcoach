@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { MobileNav } from '@/components/mobile-nav'
 
 export default async function ClientLayout({
     children,
@@ -23,6 +24,7 @@ export default async function ClientLayout({
             <main className="w-full max-w-md mx-auto min-h-screen bg-white shadow-sm pb-20">
                 {/* Mobile First Container */}
                 {children}
+                <MobileNav />
             </main>
         </div>
     )

@@ -3,8 +3,22 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { AlertCircle, Calendar, Dumbbell, Utensils, LogOut, Settings as SettingsIcon } from 'lucide-react'
+import {
+    AlertCircle,
+    Calendar,
+    CheckCircle2,
+    ChevronRight,
+    Clock,
+    Dumbbell,
+    Play,
+    User,
+    Trophy,
+    Coffee,
+    ArrowRight
+} from 'lucide-react'
 import Link from 'next/link'
+import { format } from 'date-fns'
+import { es } from 'date-fns/locale'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -15,6 +29,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { UpdatePasswordDialog } from '@/components/clients/update-password-dialog'
 import { ClientLogoutButton } from '@/components/clients/client-logout-button'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 export default async function ClientDashboard() {
     const supabase = await createClient()
@@ -22,56 +37,140 @@ export default async function ClientDashboard() {
 
     if (!user) redirect('/auth/login')
 
-    const { data: client, error } = await supabase
+    const adminClient = createAdminClient()
+
+    const { data: client, error } = await adminClient
         .from('clients')
         .select('*, trainer:profiles(full_name)')
         .eq('user_id', user.id)
         .single()
 
     if (error || !client) {
-        return <div>Error loading dashboard</div>
+        return <div className="p-8 text-center text-gray-500">No se pudo cargar el dashboard.</div>
     }
 
-    // Redirect to onboarding if not completed/invited
-    if (client.onboarding_status !== 'completed') {
-        // logic...
-    }
+    // 1. Get Today's Workout
+    const todayName = format(new Date(), 'EEEE', { locale: es }).toLowerCase()
 
-    // Check for assigned plans using Admin/Service Role to bypass RLS
-    // This ensures checking for existence always works even if RLS policies are finicky
-    const adminClient = createAdminClient()
-
-    const { count: workoutCount } = await adminClient
+    // Fetch all workouts to find today's
+    const { data: workouts } = await adminClient
         .from('assigned_workouts')
-        .select('*', { count: 'exact', head: true })
+        .select('*')
         .eq('client_id', client.id)
 
-    const { count: dietCount } = await adminClient
-        .from('assigned_diets')
-        .select('*', { count: 'exact', head: true })
-        .eq('client_id', client.id)
+    const todayWorkout = workouts?.find(w =>
+        w.scheduled_days?.map((d: string) => d.toLowerCase()).includes(todayName)
+    )
 
-    const hasWorkout = workoutCount ? workoutCount > 0 : false
-    const hasDiet = dietCount ? dietCount > 0 : false
+    // 2. Check if workout is completed today
+    let isCompleted = false
+    if (todayWorkout) {
+        const { count } = await adminClient
+            .from('workout_logs')
+            .select('*', { count: 'exact', head: true })
+            .eq('client_id', client.id)
+            .eq('workout_id', todayWorkout.id)
+            .eq('date', new Date().toISOString().split('T')[0])
+
+        isCompleted = (count || 0) > 0
+    }
+
+    // 3. Check for First Check-in
+    // 3. Check for First Check-in
+    const { data: recentCheckins } = await adminClient
+        .from('checkins')
+        .select('created_at, observations')
+        .eq('client_id', client.id)
+        .order('created_at', { ascending: false })
+        .limit(2)
+
+    const lastCheckin = recentCheckins?.[0]
+    const lastCheckinDate = lastCheckin ? new Date(lastCheckin.created_at) : null
+    // Check if check-in was done TODAY (compare YYYY-MM-DD in local time or just simple string match if simpler, 
+    // but strict date comparison is better to avoid timezone edge cases if possible, though toDateString() works well for local client assumption)
+    // Actually server usage of new Date() is server time. We should be careful. 
+    // Assuming server time is reasonably aligned or we just want to ensure we don't show it immediately after.
+    const isCheckinDoneToday = lastCheckinDate && lastCheckinDate.toDateString() === new Date().toDateString()
+
+    let isFirstCheckin = false
+    if (!recentCheckins || recentCheckins.length === 0) {
+        isFirstCheckin = true
+    } else if (recentCheckins.length === 1) {
+        if (recentCheckins[0].observations === 'Check-in Inicial (Baseline)') {
+            isFirstCheckin = true
+        }
+    }
+
+    // 4. Status Helpers
+    const statusLabel: Record<string, string> = {
+        active: "Plan Activo",
+        paused: "Plan Pausado",
+        inactive: "Inactivo",
+        archived: "Archivado"
+    }
+
+    const goalLabels: Record<string, string> = {
+        'fat_loss': 'Pérdida de grasa',
+        'muscle_gain': 'Ganancia muscular',
+        'recomp': 'Recomposición corporal',
+        'performance': 'Rendimiento',
+        'health': 'Salud general'
+    }
+
+    // 5. Next Review Date Logic
+    const parseLocalDate = (dateStr: string | null | undefined) => {
+        if (!dateStr) return null
+        if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            return new Date(`${dateStr}T00:00:00`)
+        }
+        return new Date(dateStr)
+    }
+
+    const nextReview = parseLocalDate(client.next_checkin_date)
+    const isCheckinDue = !isCheckinDoneToday && nextReview && (new Date() >= nextReview)
+    const isCheckinPrioritary = isFirstCheckin || isCheckinDue
 
     return (
-        <div className="p-4 space-y-6 pb-24">
-            {/* Header */}
-            <div className="flex justify-between items-center">
-                <div>
-                    <h1 className="text-2xl font-bold">Hola, {client.full_name.split(' ')[0]}</h1>
-                    <p className="text-sm text-gray-500">Vamos por esos objetivos 💪</p>
+        <div className="p-4 space-y-6 pb-24 max-w-md mx-auto">
+            {/* 1. Header Compacto */}
+            <div className="flex justify-between items-center py-1">
+                <div className="flex items-center gap-3">
+                    <Avatar className="h-9 w-9 border border-gray-100 shadow-sm">
+                        <AvatarImage src={client.avatar_url || ""} />
+                        <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white font-medium text-xs">
+                            {client.full_name.substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col">
+                        <h1 className="text-sm font-bold text-gray-900 leading-tight">
+                            Hola, {client.full_name.split(' ')[0]}
+                        </h1>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className={`h-1.5 w-1.5 rounded-full ${client.status === 'active' ? 'bg-green-500' : 'bg-gray-300'}`} />
+                            <span className="text-[11px] text-gray-500 font-medium">
+                                {statusLabel[client.status] || client.status}
+                            </span>
+                        </div>
+                    </div>
                 </div>
 
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="rounded-full">
-                            <SettingsIcon className="h-5 w-5" />
+                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-gray-100">
+                            <div className="flex flex-col gap-[3px] items-end">
+                                <div className="h-[2px] w-4 bg-gray-800 rounded-full"></div>
+                                <div className="h-[2px] w-3 bg-gray-800 rounded-full"></div>
+                            </div>
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent align="end" className="w-56">
                         <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
                         <DropdownMenuSeparator />
+                        <Link href="/dashboard/profile">
+                            <DropdownMenuItem className="cursor-pointer">
+                                <User className="mr-2 h-4 w-4" /> Perfil
+                            </DropdownMenuItem>
+                        </Link>
                         <UpdatePasswordDialog asMenuItem />
                         <DropdownMenuSeparator />
                         <ClientLogoutButton />
@@ -79,66 +178,174 @@ export default async function ClientDashboard() {
                 </DropdownMenu>
             </div>
 
-            {/* Pending Banner */}
-            {client.planning_status === 'pending' && !hasWorkout && !hasDiet && (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex gap-3 text-amber-800">
-                    <AlertCircle className="h-5 w-5 shrink-0" />
-                    <div className="space-y-1">
-                        <p className="font-medium text-sm">Esperando planificación</p>
-                        <p className="text-xs">Tu coach está armando tu rutina. Te avisaremos cuando esté lista.</p>
-                        <Button size="sm" variant="outline" className="h-7 text-xs bg-white border-amber-200 text-amber-900 mt-2">
-                            Ya hablé con mi coach
-                        </Button>
-                    </div>
-                </div>
-            )}
+            {/* 2. Primary Action: Check-in (Solo entry point si corresponde) */}
+            {isCheckinPrioritary && (
+                <Card className="border-none shadow-lg shadow-indigo-500/20 bg-indigo-600 text-white overflow-hidden relative">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10 blur-2xl pointer-events-none"></div>
 
-            {/* Incomplete Onboarding Banner */}
-            {client.onboarding_status !== 'completed' && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex justify-between items-center text-blue-800">
-                    <div>
-                        <p className="font-medium text-sm">Perfil incompleto</p>
-                        <p className="text-xs">Terminá tu configuración inicial.</p>
-                    </div>
-                    <Link href="/onboarding">
-                        <Button size="sm" className="h-8 text-xs">Continuar</Button>
-                    </Link>
-                </div>
-            )}
+                    <div className="p-5 relative z-10">
+                        <div className="flex flex-col gap-3">
+                            <div>
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div className="bg-white/20 p-1.5 rounded-md backdrop-blur-sm">
+                                        <AlertCircle className="h-4 w-4 text-white" />
+                                    </div>
+                                    <span className="text-xs font-bold uppercase tracking-wider text-indigo-100">
+                                        {isFirstCheckin ? "Primer Paso" : "Revisión Semanal"}
+                                    </span>
+                                </div>
+                                <h2 className="text-xl font-bold mb-1">
+                                    {isFirstCheckin ? "Comenzá tu plan" : "Check-in Disponible"}
+                                </h2>
+                                <p className="text-indigo-100 text-sm leading-relaxed max-w-[90%]">
+                                    {isFirstCheckin
+                                        ? "Registrá tus datos iniciales para que construyamos tu rutina."
+                                        : "Actualizá tu progreso para que tu coach ajuste tu plan."
+                                    }
+                                </p>
+                            </div>
 
-            {/* Main Actions Grid */}
-            <div className="grid grid-cols-2 gap-4">
-                <Link href={hasWorkout ? "/dashboard/plan" : "#"} className={hasWorkout ? "block" : "block pointer-events-none"}>
-                    <Card className={`p-4 flex flex-col items-center justify-center gap-2 h-32 transition-colors ${hasWorkout ? "hover:bg-gray-50 cursor-pointer" : "opacity-50 cursor-not-allowed bg-gray-50"}`}>
-                        <div className={`p-3 rounded-full ${hasWorkout ? "bg-neutral-100" : "bg-neutral-200"}`}>
-                            <Dumbbell className={`h-6 w-6 ${hasWorkout ? "text-neutral-700" : "text-neutral-400"}`} />
+                            <Link href="/dashboard/checkin" className="w-full">
+                                <Button className="w-full bg-white text-indigo-700 hover:bg-indigo-50 hover:text-indigo-800 font-bold h-11 shadow-sm transition-all active:scale-[0.98]">
+                                    {isFirstCheckin ? "Iniciar Check-in" : "Realizar Check-in"}
+                                    <ArrowRight className="ml-2 h-4 w-4" />
+                                </Button>
+                            </Link>
                         </div>
-                        <span className="font-medium text-sm">Tu Plan</span>
-                    </Card>
-                </Link>
-
-                <Link href={hasDiet ? "/dashboard/diet" : "#"} className={hasDiet ? "block" : "block pointer-events-none"}>
-                    <Card className={`p-4 flex flex-col items-center justify-center gap-2 h-32 transition-colors ${hasDiet ? "hover:bg-gray-50 cursor-pointer" : "opacity-50 cursor-not-allowed bg-gray-50"}`}>
-                        <div className={`p-3 rounded-full ${hasDiet ? "bg-neutral-100" : "bg-neutral-200"}`}>
-                            <Utensils className={`h-6 w-6 ${hasDiet ? "text-neutral-700" : "text-neutral-400"}`} />
-                        </div>
-                        <span className="font-medium text-sm">Alimentación</span>
-                    </Card>
-                </Link>
-            </div>
-
-            {/* Check-in Action (Primary) */}
-            <Link href="/dashboard/checkin" className="block">
-                <Card className="p-6 bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-lg shadow-blue-200 cursor-pointer hover:shadow-xl transition-shadow">
-                    <div className="flex justify-between items-center">
-                        <div>
-                            <h3 className="font-bold text-lg">Cargar Check-in</h3>
-                            <p className="text-blue-100 text-sm">Registrá tu progreso semanal</p>
-                        </div>
-                        <Calendar className="h-8 w-8 text-blue-200 opacity-80" />
                     </div>
                 </Card>
-            </Link>
+            )}
+
+            {/* 3. Routine / Day Status */}
+            <div className="space-y-3">
+                <div className="flex items-center justify-between px-1">
+                    <h3 className="text-sm font-bold text-gray-900">Tu día hoy</h3>
+                    <span className="text-xs font-semibold text-gray-400 capitalize">
+                        {format(new Date(), 'EEEE d', { locale: es })}
+                    </span>
+                </div>
+
+                {client.status === 'paused' ? (
+                    <Card className="p-4 bg-amber-50 border-amber-100/50 shadow-sm flex items-center gap-4">
+                        <div className="h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                            <Clock className="h-5 w-5 text-amber-600" />
+                        </div>
+                        <div>
+                            <h4 className="font-semibold text-amber-900">Plan Pausado</h4>
+                            <p className="text-xs text-amber-700 mt-0.5">Contactá a tu coach para reactivar.</p>
+                        </div>
+                    </Card>
+                ) : todayWorkout ? (
+                    // WORKOUT DAY CARD
+                    <Card className={`border-none shadow-md overflow-hidden transition-all ${isCompleted ? 'bg-green-50 ring-1 ring-green-100' : 'bg-white ring-1 ring-gray-100'}`}>
+                        <div className="p-0">
+                            <div className="p-5 pb-4">
+                                <div className="flex justify-between items-start mb-3">
+                                    <div>
+                                        <div className={`text-[10px] font-bold uppercase tracking-wider mb-1 px-2 py-0.5 rounded-sm inline-block ${isCompleted ? 'bg-green-100 text-green-700' : 'bg-blue-50 text-blue-700'}`}>
+                                            Entrenamiento
+                                        </div>
+                                        <h3 className={`text-xl font-bold leading-tight ${isCompleted ? 'text-green-900' : 'text-gray-900'}`}>
+                                            {todayWorkout.name}
+                                        </h3>
+                                    </div>
+                                    {isCompleted && (
+                                        <div className="bg-green-100 p-2 rounded-full">
+                                            <CheckCircle2 className="h-5 w-5 text-green-600" />
+                                        </div>
+                                    )}
+                                </div>
+
+                                {!isCompleted && (
+                                    <div className="flex items-center gap-4 text-sm text-gray-500 mb-0">
+                                        <span className="flex items-center gap-1.5">
+                                            <Dumbbell className="h-4 w-4" />
+                                            <span>{todayWorkout.structure?.length || 0} ejercicios</span>
+                                        </span>
+                                        <span className="text-gray-300">•</span>
+                                        <span className="flex items-center gap-1.5">
+                                            <Clock className="h-4 w-4" />
+                                            <span>60 min aprox.</span>
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+
+                            {!isCompleted && (
+                                <Link href="/dashboard/workout">
+                                    <div className="border-t border-gray-100 bg-gray-50/50 p-3 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-blue-600 font-bold text-sm">
+                                        <Play className="h-4 w-4" fill="currentColor" />
+                                        Comenzar Rutina
+                                    </div>
+                                </Link>
+                            )}
+
+                            {isCompleted && (
+                                <div className="px-5 pb-5 pt-0 text-sm text-green-700 font-medium">
+                                    ¡Rutina completada! Buen trabajo.
+                                </div>
+                            )}
+                        </div>
+                    </Card>
+                ) : (
+                    // REST DAY CARD (Clean & Low visual weight)
+                    <Card className="p-5 bg-white border border-dashed border-gray-200 shadow-sm flex items-center gap-4">
+                        <div className="h-10 w-10 rounded-full bg-gray-50 flex items-center justify-center shrink-0">
+                            <Coffee className="h-5 w-5 text-gray-400" />
+                        </div>
+                        <div className="flex-1">
+                            <h4 className="font-semibold text-gray-700">Día de Descanso</h4>
+                            <p className="text-xs text-gray-500 mt-0.5">Hoy toca recuperar energías.</p>
+                        </div>
+                        <Link href="/dashboard/workout">
+                            <Button variant="ghost" size="sm" className="text-xs font-medium text-gray-500 hover:text-indigo-600 h-auto py-1 px-2">
+                                Ver semana
+                            </Button>
+                        </Link>
+                    </Card>
+                )}
+            </div>
+
+            {/* 4. Secondary Info Grid */}
+            <div className={`grid gap-3 ${isCheckinPrioritary ? 'grid-cols-1' : 'grid-cols-2'}`}>
+
+                {/* Check-in info card (Only if NOT active, otherwise banner covers it) */}
+                {!isCheckinPrioritary && (
+                    <Card className="p-4 bg-white border border-gray-100 shadow-sm flex flex-col justify-between h-28">
+                        <div className="flex justify-between items-start">
+                            <div className="h-8 w-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+                                <Calendar className="h-4 w-4" />
+                            </div>
+                        </div>
+                        <div>
+                            <p className="text-xs text-gray-500 font-medium mb-1">Próximo Check-in</p>
+                            {nextReview && (!isCheckinDoneToday || nextReview > new Date()) ? (
+                                <p className="text-sm font-bold text-gray-900">
+                                    {format(nextReview, 'd MMM', { locale: es })}
+                                </p>
+                            ) : (
+                                <div>
+                                    <p className="text-sm font-bold text-orange-600">A definir</p>
+                                    <p className="text-[10px] text-gray-400 mt-0.5 leading-tight">Tu coach asignará una fecha pronto.</p>
+                                </div>
+                            )}
+                        </div>
+                    </Card>
+                )}
+
+                {/* Goal Card */}
+                <Card className={`p-4 bg-white border border-gray-100 shadow-sm flex flex-col justify-between h-28 ${isCheckinPrioritary ? 'flex-row items-center h-auto' : ''}`}>
+                    <div className={`h-8 w-8 rounded-full bg-purple-50 flex items-center justify-center text-purple-600 ${isCheckinPrioritary ? 'mr-3' : 'mb-2'}`}>
+                        <Trophy className="h-4 w-4" />
+                    </div>
+                    <div className={isCheckinPrioritary ? 'flex-1' : ''}>
+                        <p className="text-xs text-gray-500 font-medium mb-1">Objetivo Actual</p>
+                        <p className="text-sm font-bold text-gray-900 leading-tight">
+                            {client.main_goal ? (goalLabels[client.main_goal] || client.main_goal) : "Sin definir"}
+                        </p>
+                    </div>
+                </Card>
+            </div>
 
         </div>
     )

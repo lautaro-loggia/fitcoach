@@ -9,6 +9,7 @@ import { WeightSummary } from '@/components/clients/checkin/weight-summary'
 import { WeightChart } from '@/components/clients/checkin/weight-chart'
 import { HistoryTable } from '@/components/clients/checkin/history-table'
 import { EditTargetDialog } from '@/components/clients/checkin/edit-target-dialog'
+import { ScheduleNextCheckinDialog } from '@/components/clients/checkin/schedule-next-checkin-dialog'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 
 export const METRICS_CONFIG: Record<string, { label: string, unit: string }> = {
@@ -20,7 +21,7 @@ export const METRICS_CONFIG: Record<string, { label: string, unit: string }> = {
     'measurements.hips': { label: 'Medida Cadera', unit: 'cm' },
     'measurements.arm': { label: 'Medida Brazo', unit: 'cm' },
     'measurements.thigh': { label: 'Medida Muslo', unit: 'cm' },
-    'measurements.calves': { label: 'Medida Gemelos', unit: 'cm' },
+    'measurements.calf': { label: 'Medida Gemelos', unit: 'cm' },
 }
 
 export function CheckinTab({ client }: { client: any }) {
@@ -120,13 +121,11 @@ export function CheckinTab({ client }: { client: any }) {
 
     const targetVal = localTargets[selectedMetric] || null
 
+
     return (
         <div className="max-w-[1400px] mx-auto space-y-6">
-            <div className="flex justify-end mb-2">
-                <AddCheckinDialog
-                    clientId={client.id}
-                    autoOpen={shouldAutoOpen}
-                />
+            <div className="flex justify-end mb-2 gap-3">
+                {/* Actions moved to header */}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">

@@ -16,12 +16,36 @@ import { Label } from '@/components/ui/label'
 import { Plus, Mail, Loader2, User } from 'lucide-react'
 import { inviteClient } from '@/actions/invite-client'
 import { toast } from 'sonner'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useEffect } from 'react'
 
-export function AddClientDialog() {
-    const [open, setOpen] = useState(false)
+interface AddClientDialogProps {
+    defaultOpen?: boolean
+}
+
+export function AddClientDialog({ defaultOpen = false }: AddClientDialogProps) {
+    const [open, setOpen] = useState(defaultOpen)
     const [loading, setLoading] = useState(false)
     const router = useRouter()
+    const searchParams = useSearchParams()
+
+    useEffect(() => {
+        if (searchParams.get('new') === 'true') {
+            setOpen(true)
+        }
+    }, [searchParams])
+
+    const handleOpenChange = (isOpen: boolean) => {
+        setOpen(isOpen)
+        if (!isOpen) {
+            // Remove the 'new' param when closing to keep URL clean and allow re-triggering
+            const params = new URLSearchParams(window.location.search)
+            if (params.get('new')) {
+                params.delete('new')
+                router.replace(`${window.location.pathname}?${params.toString()}`)
+            }
+        }
+    }
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
@@ -36,13 +60,19 @@ export function AddClientDialog() {
             toast.success('Invitación enviada correctamente')
             setOpen(false)
             router.refresh()
+            // Clean URL also on success just in case
+            const params = new URLSearchParams(window.location.search)
+            if (params.get('new')) {
+                params.delete('new')
+                router.replace(`${window.location.pathname}?${params.toString()}`)
+            }
         }
 
         setLoading(false)
     }
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogTrigger asChild>
                 <Button className="bg-primary hover:bg-primary/90 text-white shadow-md">
                     <Plus className="mr-2 h-4 w-4" /> Nuevo asesorado
@@ -88,7 +118,7 @@ export function AddClientDialog() {
                     </div>
 
                     <DialogFooter>
-                        <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading}>
+                        <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} disabled={loading}>
                             Cancelar
                         </Button>
                         <Button type="submit" disabled={loading}>

@@ -1,10 +1,10 @@
 "use client"
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { PresentialTraining } from "@/lib/actions/dashboard"
-import { MapPin, MessageCircle } from "lucide-react"
+import { Send } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 
 interface PresentialTrainingsProps {
     trainings: PresentialTraining[]
@@ -41,64 +41,58 @@ export function PresentialTrainings({ trainings }: PresentialTrainingsProps) {
         }
 
         const encodedMessage = encodeURIComponent(message)
-
-        // Remove non-numeric characters from phone and ensure it works with specialized link
-        // Ideally user should input country code, but let's clear special chars at least.
         const cleanPhone = training.clientPhone.replace(/\D/g, '')
 
         window.open(`https://wa.me/${cleanPhone}?text=${encodedMessage}`, '_blank')
     }
 
     return (
-        <Card className="bg-white">
-            <CardHeader className="pb-3">
-                <CardTitle className="text-base font-medium flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    Entrenamientos Presenciales Hoy
-                </CardTitle>
-            </CardHeader>
-            <CardContent>
-                <div className="space-y-4">
-                    {trainings.map((training) => (
-                        <div key={training.id} className="flex flex-col sm:flex-row sm:items-center justify-between bg-white p-3 rounded-lg border border-blue-100 shadow-sm gap-3">
-                            <div className="flex items-center gap-3">
-                                <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
-                                    <AvatarImage src={training.clientAvatar || undefined} />
-                                    <AvatarFallback className="bg-blue-100 text-blue-700">
-                                        {training.clientName.substring(0, 2).toUpperCase()}
-                                    </AvatarFallback>
-                                </Avatar>
-                                <div>
-                                    <p className="font-medium text-sm text-gray-900">{training.clientName}</p>
-                                    <div className="flex items-center gap-2">
-                                        <p className="text-xs text-muted-foreground">{training.workoutName}</p>
-                                        {training.startTime && (
-                                            <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
-                                                {training.startTime.substring(0, 5)}
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
+        <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-foreground">Entrenamientos presenciales hoy</h3>
+
+            <div className="space-y-3">
+                {trainings.map((training) => (
+                    <Card key={training.id} className="border-none shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                        <CardContent className="p-0 flex items-stretch">
+                            {/* Time Box */}
+                            <div className="w-16 bg-muted/30 flex flex-col items-center justify-center border-r border-border/50 py-3 px-1">
+                                <span className="text-sm font-bold text-foreground">
+                                    {training.startTime ? training.startTime.substring(0, 5) : '--:--'}
+                                </span>
                             </div>
 
-                            <div className="flex items-center gap-2">
-                                <div className="hidden sm:block text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
-                                    Presencial
+                            {/* Content */}
+                            <div className="flex-1 p-3 flex items-center justify-between min-w-0 gap-3">
+                                <div className="flex flex-col min-w-0 gap-1">
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-semibold text-sm text-foreground truncate">
+                                            {training.clientName}
+                                        </span>
+                                        <Badge variant="secondary" className="h-5 px-1.5 text-[10px] font-medium bg-green-50 text-green-700 hover:bg-green-50 border-green-100 shadow-none">
+                                            <div className="mr-1 h-1 w-1 rounded-full bg-green-500" />
+                                            Presencial
+                                        </Badge>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground truncate">
+                                        {training.workoutName}
+                                    </p>
                                 </div>
+
                                 <Button
-                                    size="sm"
-                                    className="h-8 w-8 p-0 sm:w-auto sm:px-3 sm:py-1 bg-green-500 hover:bg-green-600 text-white rounded-full sm:rounded-md"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-full shrink-0"
                                     onClick={() => handleWhatsAppClick(training)}
-                                    title="Enviar recordatorio por WhatsApp"
+                                    title="Enviar recordatorio"
                                 >
-                                    <MessageCircle className="h-4 w-4 sm:mr-1.5" />
-                                    <span className="hidden sm:inline">Enviar recordatorio</span>
+                                    <Send className="h-4 w-4" />
                                 </Button>
                             </div>
-                        </div>
-                    ))}
-                </div>
-            </CardContent>
-        </Card>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+        </div>
     )
 }
+

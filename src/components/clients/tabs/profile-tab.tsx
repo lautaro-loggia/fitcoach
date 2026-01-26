@@ -6,9 +6,10 @@ import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Eye, Plus, ArrowDown, ArrowUp, ImageIcon, TrendingDown, TrendingUp, Minus } from 'lucide-react'
 import { BarChart, Bar, AreaChart, Area, XAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts'
-import { format, subMonths, parseISO } from 'date-fns'
+import { format, subMonths, parseISO, parse } from 'date-fns'
 import { es } from 'date-fns/locale'
 import Image from 'next/image'
 import { AddCheckinDialog } from '../add-checkin-dialog'
@@ -77,22 +78,55 @@ export function ProfileTab({ client }: ProfileTabProps) {
             if (checkinsData) {
                 setCheckins(checkinsData)
 
-                // Extract photos from checkins
-                const allPhotos: any[] = []
-                checkinsData.forEach(c => {
-                    if (c.photos && Array.isArray(c.photos)) {
-                        c.photos.forEach((url: string) => {
-                            allPhotos.push({
-                                id: c.id,
-                                url,
-                                date: c.date,
-                                weight: c.weight,
-                                bodyFat: c.body_fat
-                            })
-                        })
+                // Process photos for top checkins (limit 5 for performance)
+                const sortedCheckins = [...checkinsData].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                const checkinsWithPhotos = sortedCheckins.filter(c => c.photos && Array.isArray(c.photos) && c.photos.length > 0).slice(0, 5)
+
+                const processedPhotos = await Promise.all(checkinsWithPhotos.map(async (c) => {
+                    let photos = c.photos as any[]
+                    // Fix: Parse JSON strings if photos are stored as serialized strings
+                    if (photos && photos.length > 0 && typeof photos[0] === 'string') {
+                        try {
+                            photos = photos.map(p => typeof p === 'string' ? JSON.parse(p) : p)
+                        } catch (e) {
+                            console.error('Error parsing photos JSON', e)
+                        }
                     }
-                })
-                setPhotos(allPhotos.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()))
+
+                    // Sign ALL photos in parallel to populate dialog immediately
+                    const photosWithSignedUrls = await Promise.all(photos.map(async (p) => {
+                        let signedUrl = p.url
+                        // Try to get path from property OR extract from URL if legacy
+                        let storagePath = p.path
+                        if (!storagePath && p.url && p.url.includes('/checkin-images/')) {
+                            // Extract everything after /checkin-images/
+                            storagePath = p.url.split('/checkin-images/')[1]
+                        }
+
+                        if (storagePath) {
+                            const { data } = await supabase.storage
+                                .from('checkin-images')
+                                .createSignedUrl(storagePath, 3600)
+                            if (data?.signedUrl) signedUrl = data.signedUrl
+                        }
+                        return { ...p, signedUrl }
+                    }))
+
+                    // Front photo for display
+                    const frontPhoto = photosWithSignedUrls.find(p => p.type === 'front') || photosWithSignedUrls[0]
+
+                    return {
+                        id: c.id,
+                        checkinId: c.id,
+                        displayUrl: frontPhoto.signedUrl,
+                        date: c.date,
+                        weight: c.weight,
+                        bodyFat: c.body_fat,
+                        allPhotos: photosWithSignedUrls
+                    }
+                }))
+
+                setPhotos(processedPhotos)
             }
         } catch (err) {
             console.error("Error in fetchData:", err)
@@ -101,13 +135,13 @@ export function ProfileTab({ client }: ProfileTabProps) {
 
     // -- Process Data for Charts --
     const weightData = checkins.map(c => ({
-        name: format(new Date(c.date), 'MMM', { locale: es }),
+        name: format(parse(c.date, 'yyyy-MM-dd', new Date()), 'MMM', { locale: es }),
         fullDate: c.date,
         weight: c.weight,
     })).slice(-6)
 
     const bodyFatData = checkins.map(c => ({
-        name: format(new Date(c.date), 'MMM', { locale: es }),
+        name: format(parse(c.date, 'yyyy-MM-dd', new Date()), 'MMM', { locale: es }),
         fullDate: c.date,
         fat: c.body_fat
     })).filter(d => d.fat).slice(-6)
@@ -115,7 +149,10 @@ export function ProfileTab({ client }: ProfileTabProps) {
     // -- Metrics Calculation --
     const currentWeight = checkins.length > 0 ? checkins[checkins.length - 1].weight : client.initial_weight
     const previousWeight = checkins.length > 1 ? checkins[checkins.length - 2].weight : client.initial_weight
-    const weightDiff = currentWeight - previousWeight
+
+    // Ensure previousWeight is valid before calculating diff. 
+    // If it's 0 or null, we treat it as no previous data, so diff is 0.
+    const weightDiff = (previousWeight && previousWeight > 0) ? currentWeight - previousWeight : 0
 
     // -- Mock Updates --
     const updates = checkins.slice().reverse().slice(0, 3).map(c => ({
@@ -321,9 +358,7 @@ export function ProfileTab({ client }: ProfileTabProps) {
                 <Card className="flex flex-col">
                     <CardHeader className="pb-2 flex flex-row items-center justify-between">
                         <CardTitle className="text-sm font-medium text-muted-foreground">Fotos del progreso</CardTitle>
-                        <AddCheckinDialog clientId={client.id} />
-                        {/* Note: Ideally just a small 'Add' trigger, but reusing dialog for now. 
-                      Modify AddCheckinDialog to custom trigger in future or use here. */}
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Fotos del progreso</CardTitle>
                     </CardHeader>
                     <CardContent className="flex-1 flex flex-col">
                         <div className="space-y-4 flex-1 overflow-y-auto max-h-[220px] scrollbar-hide py-2">
@@ -332,7 +367,7 @@ export function ProfileTab({ client }: ProfileTabProps) {
                             )}
                             {photos.slice(0, 3).map((photo, i, arr) => {
                                 // Calculate weight diff from previous photo (or initial weight)
-                                const prevPhoto = arr[i + 1] // Photos are sorted descending
+                                const prevPhoto = arr[i + 1]
                                 const prevWeight = prevPhoto?.weight || client.initial_weight
                                 const photoDiff = photo.weight && prevWeight ? photo.weight - prevWeight : 0
 
@@ -345,35 +380,73 @@ export function ProfileTab({ client }: ProfileTabProps) {
                                 const colorClasses = progressColorClasses[photoColor]
 
                                 return (
-                                    <div key={i} className="flex gap-3 items-center">
-                                        <div className="relative h-12 w-12 rounded-md overflow-hidden bg-muted flex-shrink-0">
-                                            <Image src={photo.url} alt="Progress" fill className="object-cover" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className="text-xs text-muted-foreground">{format(new Date(photo.date), "d 'de' MMMM, yyyy", { locale: es })}</p>
-                                            <p className="text-xs font-medium">{photo.weight ? `${photo.weight}kg` : ''}</p>
-                                        </div>
-                                        {photoDiff !== 0 && (
-                                            <Badge variant="secondary" className={`text-[10px] h-5 ${colorClasses.badge}`}>
-                                                {photoDiff > 0 ? '+' : ''}{photoDiff.toFixed(1)}kg
-                                                {photoDiff > 0 ? <ArrowUp className="h-2 w-2 ml-0.5" /> : <ArrowDown className="h-2 w-2 ml-0.5" />}
-                                            </Badge>
-                                        )}
-                                        {photoDiff === 0 && photo.weight && (
-                                            <Badge variant="secondary" className="text-[10px] h-5 bg-gray-100 text-gray-600">
-                                                0kg <Minus className="h-2 w-2 ml-0.5" />
-                                            </Badge>
-                                        )}
-                                    </div>
+                                    <Dialog key={i}>
+                                        <DialogTrigger asChild>
+                                            <div className="flex gap-3 items-center cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors group">
+                                                <div className="relative h-12 w-12 rounded-md overflow-hidden bg-muted flex-shrink-0 border border-gray-100">
+                                                    {photo.displayUrl ? (
+                                                        <Image src={photo.displayUrl} alt="Progress" fill className="object-cover" />
+                                                    ) : (
+                                                        <div className="flex items-center justify-center h-full w-full bg-gray-100">
+                                                            <ImageIcon className="h-4 w-4 text-gray-400" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <p className="text-xs text-muted-foreground">{format(parse(photo.date, 'yyyy-MM-dd', new Date()), "d 'de' MMMM, yyyy", { locale: es })}</p>
+                                                    <p className="text-xs font-medium">{photo.weight ? `${photo.weight}kg` : ''}</p>
+                                                </div>
+                                                {photoDiff !== 0 && (
+                                                    <Badge variant="secondary" className={`text-[10px] h-5 ${colorClasses.badge}`}>
+                                                        {photoDiff > 0 ? '+' : ''}{photoDiff.toFixed(1)}kg
+                                                        {photoDiff > 0 ? <ArrowUp className="h-2 w-2 ml-0.5" /> : <ArrowDown className="h-2 w-2 ml-0.5" />}
+                                                    </Badge>
+                                                )}
+                                                {photoDiff === 0 && photo.weight && (
+                                                    <Badge variant="secondary" className="text-[10px] h-5 bg-gray-100 text-gray-600">
+                                                        0kg <Minus className="h-2 w-2 ml-0.5" />
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                        </DialogTrigger>
+                                        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                                            <DialogHeader>
+                                                <DialogTitle>Check-in: {format(parse(photo.date, 'yyyy-MM-dd', new Date()), "d 'de' MMMM, yyyy", { locale: es })}</DialogTitle>
+                                            </DialogHeader>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                                                {photo.allPhotos.map((p: any, idx: number) => (
+                                                    <div key={idx} className="space-y-2">
+                                                        <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-muted border shadow-sm">
+                                                            {p.signedUrl ? (
+                                                                <Image src={p.signedUrl} alt={p.type} fill className="object-cover" />
+                                                            ) : (
+                                                                <div className="flex items-center justify-center h-full text-xs text-muted-foreground">No imagen</div>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-center text-sm font-medium capitalize text-gray-700">
+                                                            {p.type === 'front' ? 'Frente' : p.type === 'back' ? 'Espalda' : p.type === 'profile' ? 'Perfil' : 'Extra'}
+                                                        </p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </DialogContent>
+                                    </Dialog>
                                 )
                             })}
                         </div>
 
-                        <div className="flex gap-2 mt-4 pt-2 border-t">
-                            <Button variant="outline" size="sm" className="flex-1 text-xs">
-                                <Eye className="mr-2 h-3 w-3" /> Ver todo
-                            </Button>
+                        <div className="flex gap-2 mt-4 pt-2 border-t text-right justify-end">
                             <PhotoComparisonDialog photos={photos} />
+
+                            <AddCheckinDialog
+                                clientId={client.id}
+                                // @ts-ignore
+                                trigger={
+                                    <Button className="flex-1 md:flex-none text-xs bg-black hover:bg-black/90 text-white">
+                                        <Plus className="mr-2 h-3 w-3" /> Nuevo Check-in
+                                    </Button>
+                                }
+                            />
                         </div>
                     </CardContent>
                 </Card>

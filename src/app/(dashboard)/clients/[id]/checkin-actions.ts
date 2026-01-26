@@ -72,3 +72,19 @@ export async function deleteCheckinAction(id: string, clientId: string) {
     revalidatePath(`/clients/${clientId}`)
     return { success: true }
 }
+
+export async function updateNextCheckinDateAction(clientId: string, date: string) {
+    const supabase = await createClient()
+
+    const { error } = await supabase
+        .from('clients')
+        .update({ next_checkin_date: date })
+        .eq('id', clientId)
+
+    if (error) {
+        return { error: 'Error al actualizar la fecha' }
+    }
+
+    revalidatePath(`/clients/${clientId}`)
+    return { success: true }
+}
