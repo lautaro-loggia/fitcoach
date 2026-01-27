@@ -108,17 +108,28 @@ export function ProfileTab({ client }: ProfileTabProps) {
                         let signedUrl = p.url
                         // Try to get path from property OR extract from URL if legacy
                         let storagePath = p.path
-                        if (!storagePath && p.url && p.url.includes('/checkin-images/')) {
-                            // Extract everything after /checkin-images/ and before any query params
-                            const pathPart = p.url.split('/checkin-images/')[1]
-                            if (pathPart) {
-                                storagePath = decodeURIComponent(pathPart.split('?')[0])
+                        let bucketName = 'checkin-images'
+
+                        if (!storagePath && p.url) {
+                            if (p.url.includes('/checkin-images/')) {
+                                // Extract everything after /checkin-images/ and before any query params
+                                const pathPart = p.url.split('/checkin-images/')[1]
+                                if (pathPart) {
+                                    storagePath = decodeURIComponent(pathPart.split('?')[0])
+                                    bucketName = 'checkin-images'
+                                }
+                            } else if (p.url.includes('/progress-photos/')) {
+                                const pathPart = p.url.split('/progress-photos/')[1]
+                                if (pathPart) {
+                                    storagePath = decodeURIComponent(pathPart.split('?')[0])
+                                    bucketName = 'progress-photos'
+                                }
                             }
                         }
 
                         if (storagePath) {
                             const { data } = await supabase.storage
-                                .from('checkin-images')
+                                .from(bucketName)
                                 .createSignedUrl(storagePath, 3600)
                             if (data?.signedUrl) signedUrl = data.signedUrl
                         }
