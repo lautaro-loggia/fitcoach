@@ -1,13 +1,12 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { LucideIcon } from 'lucide-react'
 import Link from 'next/link'
 
 interface StatsCardProps {
     title: string
     value: string | number
     description?: string
-    icon: LucideIcon
+    icon: React.ElementType
     alert?: boolean
     href?: string
 }

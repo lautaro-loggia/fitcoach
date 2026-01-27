@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Plus, X, GripVertical, Pencil, Trash2, Check, ChevronsUpDown, ArrowLeft, Search as SearchIcon } from 'lucide-react'
+import { PlusSignIcon, Cancel01Icon, DragDropVerticalIcon, PencilEdit02Icon, Delete02Icon, Tick01Icon, ArrowUpDownIcon, ArrowLeft01Icon, Search01Icon } from 'hugeicons-react'
 import { ExerciseSelector } from './exercise-selector'
 import { createWorkoutAction, updateWorkoutAction } from '@/app/(dashboard)/workouts/actions'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -168,7 +168,7 @@ export function WorkoutDialog({
             <DialogTrigger asChild>
                 {trigger ? trigger : (
                     <Button className="bg-primary hover:bg-primary/90 text-white">
-                        <Plus className="mr-2 h-4 w-4" /> Nuevo Entrenamiento
+                        <PlusSignIcon className="mr-2 h-4 w-4" /> Nuevo Entrenamiento
                     </Button>
                 )}
             </DialogTrigger>
@@ -282,7 +282,7 @@ export function WorkoutDialog({
                                                                 className="h-8 w-8 text-primary hover:text-primary hover:bg-muted"
                                                                 onClick={() => setEditingExerciseIndex(index)}
                                                             >
-                                                                <Pencil className="h-4 w-4" />
+                                                                <PencilEdit02Icon className="h-4 w-4" />
                                                             </Button>
                                                             <Button
                                                                 variant="ghost"
@@ -290,7 +290,7 @@ export function WorkoutDialog({
                                                                 className="h-8 w-8 text-destructive hover:bg-red-50"
                                                                 onClick={() => handleRemoveExercise(index)}
                                                             >
-                                                                <Trash2 className="h-4 w-4" />
+                                                                <Delete02Icon className="h-4 w-4" />
                                                             </Button>
                                                         </div>
                                                     </TableCell>
@@ -306,7 +306,7 @@ export function WorkoutDialog({
                                 className="w-full py-6 border-dashed border-2 flex gap-2 text-muted-foreground hover:text-foreground"
                                 onClick={() => setIsAddingNewExercise(true)}
                             >
-                                <Plus className="h-5 w-5" /> Agregar nuevo ejercicio
+                                <PlusSignIcon className="h-5 w-5" /> Agregar nuevo ejercicio
                             </Button>
                         </div>
 
@@ -442,13 +442,13 @@ function ExerciseForm({
                     onClick={() => setOpenCombobox(!openCombobox)}
                 >
                     {name || "Buscar ejercicio..."}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    <ArrowUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
 
                 {openCombobox && (
                     <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-popover border rounded-md shadow-lg">
                         <div className="flex items-center gap-2 border-b px-3 py-2">
-                            <SearchIcon className="h-4 w-4 shrink-0 opacity-50" />
+                            <Search01Icon className="h-4 w-4 shrink-0 opacity-50" />
                             <input
                                 className="flex h-8 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
                                 placeholder="Buscar por nombre o grupo muscular..."
@@ -486,7 +486,7 @@ function ExerciseForm({
                                                 setSearchQuery('')
                                             }}
                                         >
-                                            <Check
+                                            <Tick01Icon
                                                 className={cn(
                                                     "mr-2 h-4 w-4",
                                                     exerciseId === ex.id ? "opacity-100" : "opacity-0"
@@ -663,7 +663,7 @@ function ExerciseForm({
                                                     onClick={() => handleRemoveSet(index)}
                                                     disabled={sets.length === 1}
                                                 >
-                                                    <Trash2 className="h-4 w-4" />
+                                                    <Delete02Icon className="h-4 w-4" />
                                                 </Button>
                                             </div>
                                         </TableCell>
@@ -673,7 +673,7 @@ function ExerciseForm({
                         </Table>
                     </div>
                     <Button variant="outline" className="w-full mt-2" onClick={handleAddSet}>
-                        <Plus className="h-4 w-4 mr-2" /> Agregar serie
+                        <PlusSignIcon className="h-4 w-4 mr-2" /> Agregar serie
                     </Button>
                 </div>
             )}

@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -6,7 +7,7 @@ import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recha
 import { formatCurrency } from "@/lib/utils"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { CalendarIcon, Loader2 } from "lucide-react"
+import { Calendar01Icon, Loading03Icon } from "hugeicons-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { format } from "date-fns"
@@ -94,7 +95,7 @@ export function IncomeChart({ initialData }: IncomeChartProps) {
                                         !date && "text-muted-foreground"
                                     )}
                                 >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    <Calendar01Icon className="mr-2 h-4 w-4" />
                                     {date?.from ? (
                                         date.to ? (
                                             <>
@@ -155,7 +156,7 @@ export function IncomeChart({ initialData }: IncomeChartProps) {
                 <div className="relative h-[350px] w-full">
                     {loading && (
                         <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-10 backdrop-blur-[1px]">
-                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                            <Loading03Icon className="h-8 w-8 animate-spin text-primary" />
                         </div>
                     )}
                     <ResponsiveContainer width="100%" height="100%">

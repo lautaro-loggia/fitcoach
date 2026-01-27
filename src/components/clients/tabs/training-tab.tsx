@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Calendar as CalendarIcon, Download, Plus, LayoutGrid } from 'lucide-react'
+import { Calendar03Icon, Download01Icon, PlusSignIcon, GridViewIcon } from 'hugeicons-react'
 import { AssignWorkoutDialog } from '../assign-workout-dialog'
 import { deleteAssignedWorkoutAction, updateAssignedWorkoutAction } from '@/app/(dashboard)/clients/[id]/training-actions'
 
@@ -104,14 +104,14 @@ export function TrainingTab({ client }: TrainingTabProps) {
                         }}
                         trigger={
                             <Button size="sm" className="bg-[#18181B] hover:bg-[#18181B]/90 text-white h-9 shadow-sm gap-2">
-                                <Plus className="h-4 w-4" /> Asignar Rutina
+                                <PlusSignIcon className="h-4 w-4" /> Asignar Rutina
                             </Button>
                         }
                     />
 
                     {workouts.length > 0 && (
                         <Button variant="outline" size="sm" className="h-9 gap-2 bg-white" onClick={handleDownloadAllWorkouts}>
-                            <Download className="h-4 w-4" /> Descargar
+                            <Download01Icon className="h-4 w-4" /> Descargar
                         </Button>
                     )}
                 </>,
@@ -130,7 +130,7 @@ export function TrainingTab({ client }: TrainingTabProps) {
                         className="text-xs h-8"
                         onClick={() => setViewMode('cards')}
                     >
-                        <LayoutGrid className="mr-2 h-3.5 w-3.5" /> Tarjetas
+                        <GridViewIcon className="mr-2 h-3.5 w-3.5" /> Tarjetas
                     </Button>
                     <Button
                         variant={viewMode === 'calendar' ? 'secondary' : 'ghost'}
@@ -138,7 +138,7 @@ export function TrainingTab({ client }: TrainingTabProps) {
                         className="text-xs h-8"
                         onClick={() => setViewMode('calendar')}
                     >
-                        <CalendarIcon className="mr-2 h-3.5 w-3.5" /> Calendario
+                        <Calendar03Icon className="mr-2 h-3.5 w-3.5" /> Calendario
                     </Button>
                 </div>
             </div>

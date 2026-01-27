@@ -13,7 +13,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Plus, Mail, Loader2, User } from 'lucide-react'
+import { PlusSignIcon, Mail01Icon, Loading03Icon, UserIcon } from 'hugeicons-react'
 import { inviteClient } from '@/actions/invite-client'
 import { toast } from 'sonner'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -75,7 +75,7 @@ export function AddClientDialog({ defaultOpen = false }: AddClientDialogProps) {
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogTrigger asChild>
                 <Button className="bg-primary hover:bg-primary/90 text-white shadow-md">
-                    <Plus className="mr-2 h-4 w-4" /> Nuevo asesorado
+                    <PlusSignIcon className="mr-2 h-4 w-4" /> Nuevo asesorado
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
@@ -91,7 +91,7 @@ export function AddClientDialog({ defaultOpen = false }: AddClientDialogProps) {
                         <div className="grid gap-2">
                             <Label htmlFor="fullName">Nombre completo</Label>
                             <div className="relative">
-                                <User className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                                <UserIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
                                 <Input
                                     id="fullName"
                                     name="fullName"
@@ -104,7 +104,7 @@ export function AddClientDialog({ defaultOpen = false }: AddClientDialogProps) {
                         <div className="grid gap-2">
                             <Label htmlFor="email">Email</Label>
                             <div className="relative">
-                                <Mail className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                                <Mail01Icon className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
                                 <Input
                                     id="email"
                                     name="email"
@@ -122,7 +122,7 @@ export function AddClientDialog({ defaultOpen = false }: AddClientDialogProps) {
                             Cancelar
                         </Button>
                         <Button type="submit" disabled={loading}>
-                            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            {loading ? <Loading03Icon className="mr-2 h-4 w-4 animate-spin" /> : null}
                             Enviar Invitación
                         </Button>
                     </DialogFooter>

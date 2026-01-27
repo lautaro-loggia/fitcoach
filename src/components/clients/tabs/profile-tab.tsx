@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Eye, Plus, ArrowDown, ArrowUp, ImageIcon, TrendingDown, TrendingUp, Minus } from 'lucide-react'
+import { ViewIcon, PlusSignIcon, ArrowDown01Icon, ArrowUp01Icon, Image01Icon, ChartDecreaseIcon, ChartIncreaseIcon, MinusSignIcon } from 'hugeicons-react'
 import { BarChart, Bar, AreaChart, Area, XAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts'
 import { format, subMonths, parseISO, parse } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -229,7 +229,7 @@ export function ProfileTab({ client }: ProfileTabProps) {
                                         className={`${colorClasses.badge} mb-1 flex items-center gap-1`}
                                     >
                                         {Math.abs(weightDiff).toFixed(1)}kg
-                                        {weightDiff > 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+                                        {weightDiff > 0 ? <ArrowUp01Icon className="h-3 w-3" /> : <ArrowDown01Icon className="h-3 w-3" />}
                                     </Badge>
                                 )
                             })()}
@@ -237,7 +237,7 @@ export function ProfileTab({ client }: ProfileTabProps) {
                         <div className="h-[150px] w-full mt-auto">
                             {checkins.length === 0 ? (
                                 <div className="h-full w-full flex flex-col items-center justify-center bg-muted/30 rounded-lg border border-dashed border-muted-foreground/20">
-                                    <TrendingDown className="h-6 w-6 text-muted-foreground/30 mb-2" />
+                                    <ChartDecreaseIcon className="h-6 w-6 text-muted-foreground/30 mb-2" />
                                     <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium text-center px-4">
                                         Esperando primer check-in
                                     </p>
@@ -309,7 +309,7 @@ export function ProfileTab({ client }: ProfileTabProps) {
                                         className={`${badgeColor} mb-1 flex items-center gap-1`}
                                     >
                                         {Math.abs(diff).toFixed(1)}%
-                                        {diff > 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+                                        {diff > 0 ? <ArrowUp01Icon className="h-3 w-3" /> : <ArrowDown01Icon className="h-3 w-3" />}
                                     </Badge>
                                 )
                             })()}
@@ -317,7 +317,7 @@ export function ProfileTab({ client }: ProfileTabProps) {
                         <div className="h-[150px] w-full mt-auto">
                             {!bodyFatData || bodyFatData.length === 0 ? (
                                 <div className="h-full w-full flex flex-col items-center justify-center bg-muted/30 rounded-lg border border-dashed border-muted-foreground/20">
-                                    <TrendingDown className="h-6 w-6 text-muted-foreground/30 mb-2" />
+                                    <ChartDecreaseIcon className="h-6 w-6 text-muted-foreground/30 mb-2" />
                                     <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium text-center px-4">
                                         Faltan datos de grasa
                                     </p>
@@ -391,7 +391,7 @@ export function ProfileTab({ client }: ProfileTabProps) {
                                                         <Image src={photo.displayUrl} alt="Progress" fill className="object-cover" />
                                                     ) : (
                                                         <div className="flex items-center justify-center h-full w-full bg-gray-100">
-                                                            <ImageIcon className="h-4 w-4 text-gray-400" />
+                                                            <Image01Icon className="h-4 w-4 text-gray-400" />
                                                         </div>
                                                     )}
                                                 </div>
@@ -402,12 +402,12 @@ export function ProfileTab({ client }: ProfileTabProps) {
                                                 {photoDiff !== 0 && (
                                                     <Badge variant="secondary" className={`text-[10px] h-5 ${colorClasses.badge}`}>
                                                         {photoDiff > 0 ? '+' : ''}{photoDiff.toFixed(1)}kg
-                                                        {photoDiff > 0 ? <ArrowUp className="h-2 w-2 ml-0.5" /> : <ArrowDown className="h-2 w-2 ml-0.5" />}
+                                                        {photoDiff > 0 ? <ArrowUp01Icon className="h-2 w-2 ml-0.5" /> : <ArrowDown01Icon className="h-2 w-2 ml-0.5" />}
                                                     </Badge>
                                                 )}
                                                 {photoDiff === 0 && photo.weight && (
                                                     <Badge variant="secondary" className="text-[10px] h-5 bg-gray-100 text-gray-600">
-                                                        0kg <Minus className="h-2 w-2 ml-0.5" />
+                                                        0kg <MinusSignIcon className="h-2 w-2 ml-0.5" />
                                                     </Badge>
                                                 )}
                                             </div>
@@ -446,7 +446,7 @@ export function ProfileTab({ client }: ProfileTabProps) {
                                 // @ts-ignore
                                 trigger={
                                     <Button className="flex-1 md:flex-none text-xs bg-black hover:bg-black/90 text-white">
-                                        <Plus className="mr-2 h-3 w-3" /> Nuevo Check-in
+                                        <PlusSignIcon className="mr-2 h-3 w-3" /> Nuevo Check-in
                                     </Button>
                                 }
                             />

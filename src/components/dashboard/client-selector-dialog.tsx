@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { ClientAvatar } from '@/components/clients/client-avatar'
-import { Search, UserCheck } from 'lucide-react'
+import { Search01Icon, UserAccountIcon } from 'hugeicons-react'
 import { createClient } from '@/lib/supabase/client'
 
 export function ClientSelectorDialog({
@@ -58,7 +58,7 @@ export function ClientSelectorDialog({
             <DialogTrigger asChild>
                 {children ? children : (
                     <Button className={triggerClass}>
-                        <UserCheck className="mr-2 h-4 w-4" /> Registrar Check-in
+                        <UserAccountIcon className="mr-2 h-4 w-4" /> Registrar Check-in
                     </Button>
                 )}
             </DialogTrigger>
@@ -68,7 +68,7 @@ export function ClientSelectorDialog({
                 </DialogHeader>
 
                 <div className="relative my-2">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Search01Icon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                         placeholder="Buscar asesorado..."
                         className="pl-9"

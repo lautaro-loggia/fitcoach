@@ -5,28 +5,28 @@ import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import {
-    Users,
-    Home,
-    Utensils,
-    Dumbbell,
-    CreditCard,
-    Settings,
-    LogOut,
-    PanelLeftClose,
-    PanelLeftOpen,
-} from 'lucide-react'
+    UserGroupIcon,
+    Home01Icon,
+    KitchenUtensilsIcon,
+    Dumbbell01Icon,
+    CreditCardIcon,
+    Settings01Icon,
+    Logout01Icon,
+    PanelLeftCloseIcon,
+    PanelLeftOpenIcon,
+} from 'hugeicons-react'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
 import { useSidebar } from './sidebar-context'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 
 const navigation = [
-    { name: 'Inicio', href: '/', icon: Home },
-    { name: 'Mis asesorados', href: '/clients', icon: Users },
-    { name: 'Recetas', href: '/recipes', icon: Utensils },
-    { name: 'Planes de entrenamiento', href: '/workouts', icon: Dumbbell },
-    { name: 'Pagos y Planes', href: '/pagos', icon: CreditCard },
-    { name: 'Ajustes', href: '/settings', icon: Settings },
+    { name: 'Inicio', href: '/', icon: Home01Icon },
+    { name: 'Mis asesorados', href: '/clients', icon: UserGroupIcon },
+    { name: 'Recetas', href: '/recipes', icon: KitchenUtensilsIcon },
+    { name: 'Planes de entrenamiento', href: '/workouts', icon: Dumbbell01Icon },
+    { name: 'Pagos y Planes', href: '/pagos', icon: CreditCardIcon },
+    { name: 'Ajustes', href: '/settings', icon: Settings01Icon },
 ]
 
 function SidebarContent({ collapsed, onNavigate, toggleSidebar }: { collapsed: boolean; onNavigate?: () => void; toggleSidebar?: () => void }) {
@@ -56,14 +56,14 @@ function SidebarContent({ collapsed, onNavigate, toggleSidebar }: { collapsed: b
                         </div>
                         {toggleSidebar && (
                             <Button variant="ghost" size="icon" onClick={toggleSidebar} className="h-6 w-6 text-muted-foreground hover:text-primary">
-                                <PanelLeftClose className="h-4 w-4" />
+                                <PanelLeftCloseIcon className="h-4 w-4" />
                             </Button>
                         )}
                     </>
                 )}
                 {collapsed && toggleSidebar && (
                     <Button variant="ghost" size="icon" onClick={toggleSidebar} className="h-8 w-8 text-muted-foreground hover:text-primary">
-                        <PanelLeftOpen className="h-4 w-4" />
+                        <PanelLeftOpenIcon className="h-4 w-4" />
                     </Button>
                 )}
                 {collapsed && !toggleSidebar && (
@@ -111,7 +111,7 @@ function SidebarContent({ collapsed, onNavigate, toggleSidebar }: { collapsed: b
                     onClick={handleSignOut}
                     title={collapsed ? "Cerrar sesión" : undefined}
                 >
-                    <LogOut className={cn("h-4 w-4", !collapsed && "mr-2")} />
+                    <Logout01Icon className={cn("h-4 w-4", !collapsed && "mr-2")} />
                     {!collapsed && "Cerrar sesión"}
                 </Button>
             </div>
@@ -127,7 +127,7 @@ export function Sidebar() {
             {/* Desktop Sidebar */}
             <div
                 className={cn(
-                    "hidden md:flex h-full flex-col bg-[#F9F9FA] border-r border-sidebar-border transition-all duration-300 ease-in-out",
+                    "hidden md:flex h-full flex-col bg-sidebar border-r border-sidebar-border transition-all duration-300 ease-in-out",
                     collapsed ? "w-[70px]" : "w-64"
                 )}
             >
@@ -136,7 +136,7 @@ export function Sidebar() {
 
             {/* Mobile Sidebar - Sheet */}
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-                <SheetContent side="left" className="w-64 p-0 bg-[#F9F9FA]">
+                <SheetContent side="left" className="w-64 p-0 bg-sidebar">
                     <SheetTitle className="sr-only">Menú de navegación</SheetTitle>
                     <SidebarContent collapsed={false} onNavigate={() => setMobileOpen(false)} />
                 </SheetContent>
@@ -144,4 +144,5 @@ export function Sidebar() {
         </>
     )
 }
+
 

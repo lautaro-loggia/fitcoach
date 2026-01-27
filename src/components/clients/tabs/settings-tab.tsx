@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { updateClientAction, deleteClientAction } from "@/app/(dashboard)/clients/actions"
-import { Loader2, Save, Trash2, AlertTriangle } from "lucide-react"
+import { Loading03Icon, FloppyDiskIcon, Delete02Icon, Alert02Icon } from "hugeicons-react"
 import { AllergenSelector } from "../allergen-selector"
 import { ClientAvatarUpload } from "../client-avatar-upload"
 import {
@@ -303,7 +303,7 @@ export function SettingsTab({ client }: { client: any }) {
                     {/* Botón Guardar */}
                     <div className="flex justify-end">
                         <Button type="submit" disabled={loading} className="w-full md:w-auto">
-                            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                            {loading ? <Loading03Icon className="mr-2 h-4 w-4 animate-spin" /> : <FloppyDiskIcon className="mr-2 h-4 w-4" />}
                             Guardar Cambios
                         </Button>
                     </div>
@@ -332,7 +332,7 @@ export function SettingsTab({ client }: { client: any }) {
                 <Card className="border-destructive/50 bg-destructive/5">
                     <CardHeader>
                         <CardTitle className="text-destructive flex items-center">
-                            <AlertTriangle className="mr-2 h-5 w-5" /> Zona de Peligro
+                            <Alert02Icon className="mr-2 h-5 w-5" /> Zona de Peligro
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -342,7 +342,7 @@ export function SettingsTab({ client }: { client: any }) {
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
                                 <Button variant="destructive" disabled={loading}>
-                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    <Delete02Icon className="mr-2 h-4 w-4" />
                                     Eliminar Asesorado
                                 </Button>
                             </AlertDialogTrigger>

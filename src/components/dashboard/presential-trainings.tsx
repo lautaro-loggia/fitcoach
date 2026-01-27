@@ -3,7 +3,7 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { PresentialTraining } from "@/lib/actions/dashboard"
-import { Send } from "lucide-react"
+import { Message01Icon } from "hugeicons-react"
 import { Badge } from "@/components/ui/badge"
 
 interface PresentialTrainingsProps {
@@ -85,7 +85,7 @@ export function PresentialTrainings({ trainings }: PresentialTrainingsProps) {
                                     onClick={() => handleWhatsAppClick(training)}
                                     title="Enviar recordatorio"
                                 >
-                                    <Send className="h-4 w-4" />
+                                    <Message01Icon className="h-4 w-4" />
                                 </Button>
                             </div>
                         </CardContent>

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Plus, Ruler, Scale, Camera, X } from "lucide-react"
+import { PlusSignIcon, RulerIcon, BalanceScaleIcon, Camera01Icon, Cancel01Icon } from "hugeicons-react"
 import { createCheckinAction } from "@/app/(dashboard)/clients/[id]/checkin-actions"
 import { createClient } from "@/lib/supabase/client"
 import Image from "next/image"
@@ -167,7 +167,7 @@ export function AddCheckinDialog({ clientId, autoOpen, trigger }: AddCheckinDial
             <DialogTrigger asChild>
                 {trigger ? trigger : (
                     <Button className="bg-primary hover:bg-primary/90 text-white">
-                        <Plus className="mr-2 h-4 w-4" /> Nuevo Check-in
+                        <PlusSignIcon className="mr-2 h-4 w-4" /> Nuevo Check-in
                     </Button>
                 )}
             </DialogTrigger>
@@ -264,13 +264,13 @@ export function AddCheckinDialog({ clientId, autoOpen, trigger }: AddCheckinDial
                                             handleRemovePhoto()
                                         }}
                                     >
-                                        <X className="h-3 w-3" />
+                                        <Cancel01Icon className="h-3 w-3" />
                                     </Button>
                                 </div>
                             ) : (
                                 <>
                                     <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                                        Subir foto del estado actual <Camera className="h-4 w-4" />
+                                        Subir foto del estado actual <Camera01Icon className="h-4 w-4" />
                                     </div>
                                 </>
                             )}

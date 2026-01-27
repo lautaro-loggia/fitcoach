@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useTransition, useState, useMemo } from 'react'
-import { MoreHorizontal, FileText, Trash, UserCog, Loader2, Search, X, ChevronDown, Calendar, SlidersHorizontal, Filter, Check } from 'lucide-react'
+import { MoreHorizontalIcon, File01Icon, Delete02Icon, UserSettings01Icon, Loading03Icon, Search01Icon, Cancel01Icon, ArrowDown01Icon, Calendar03Icon, FilterHorizontalIcon, Tick01Icon } from 'hugeicons-react'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -263,20 +263,20 @@ export function ClientTable({ clients, presentialWorkouts, defaultOpenNew }: Cli
                     <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                         <Button variant="ghost" className="h-8 w-8 p-0">
                             <span className="sr-only">Abrir menú</span>
-                            <MoreHorizontal className="h-4 w-4" />
+                            <MoreHorizontalIcon className="h-4 w-4" />
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                         <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                         <DropdownMenuItem onClick={() => handleRowClick(client.id)}>
-                            <FileText className="mr-2 h-4 w-4" /> Ver perfil
+                            <File01Icon className="mr-2 h-4 w-4" /> Ver perfil
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={(e) => handleEditProfile(e, client.id)}>
-                            <UserCog className="mr-2 h-4 w-4" /> Editar perfil
+                            <UserSettings01Icon className="mr-2 h-4 w-4" /> Editar perfil
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); setShowDeleteDialog(true) }}>
-                            <Trash className="mr-2 h-4 w-4" /> Eliminar
+                            <Delete02Icon className="mr-2 h-4 w-4" /> Eliminar
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
@@ -300,7 +300,7 @@ export function ClientTable({ clients, presentialWorkouts, defaultOpenNew }: Cli
         return (
             <div className="flex flex-col items-center justify-center p-8 space-y-4 text-center border rounded-md bg-muted/10 h-64">
                 <div className="p-3 bg-primary/10 rounded-full">
-                    <UserCog className="w-6 h-6 text-primary" />
+                    <UserSettings01Icon className="w-6 h-6 text-primary" />
                 </div>
                 <div className="space-y-2">
                     <h3 className="font-semibold text-lg">No tienes asesorados aún</h3>
@@ -325,7 +325,7 @@ export function ClientTable({ clients, presentialWorkouts, defaultOpenNew }: Cli
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto">
                     {/* Search */}
                     <div className="relative flex-1 md:w-[320px]">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Search01Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                             placeholder="Buscar por nombre, email u objetivo"
                             value={searchQuery}
@@ -334,7 +334,7 @@ export function ClientTable({ clients, presentialWorkouts, defaultOpenNew }: Cli
                         />
                         {searchQuery && (
                             <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                                <X className="h-4 w-4" />
+                                <Cancel01Icon className="h-4 w-4" />
                             </button>
                         )}
                     </div>
@@ -343,7 +343,7 @@ export function ClientTable({ clients, presentialWorkouts, defaultOpenNew }: Cli
                     <Popover>
                         <PopoverTrigger asChild>
                             <Button variant="outline" size="icon" className="shrink-0" title="Filtros">
-                                <SlidersHorizontal className="h-4 w-4" />
+                                <FilterHorizontalIcon className="h-4 w-4" />
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-80" align="end">
@@ -437,19 +437,19 @@ export function ClientTable({ clients, presentialWorkouts, defaultOpenNew }: Cli
                     {statusFilter !== 'all' && (
                         <Badge variant="secondary" className="gap-1 pr-1">
                             Estado: {statusFilter === 'active' ? 'Activo' : 'Inactivo'}
-                            <button onClick={() => removeFilter('status')} className="ml-1 hover:text-foreground"><X className="h-3 w-3" /></button>
+                            <button onClick={() => removeFilter('status')} className="ml-1 hover:text-foreground"><Cancel01Icon className="h-3 w-3" /></button>
                         </Badge>
                     )}
                     {goalFilter !== 'all' && (
                         <Badge variant="secondary" className="gap-1 pr-1">
                             Objetivo: {getGoalLabel(goalFilter)}
-                            <button onClick={() => removeFilter('goal')} className="ml-1 hover:text-foreground"><X className="h-3 w-3" /></button>
+                            <button onClick={() => removeFilter('goal')} className="ml-1 hover:text-foreground"><Cancel01Icon className="h-3 w-3" /></button>
                         </Badge>
                     )}
                     {checkinFilter !== 'all' && (
                         <Badge variant="secondary" className="gap-1 pr-1">
                             Check-in: {checkinFilter === 'overdue' ? 'Vencido' : checkinFilter === 'due_soon' ? 'Próximo' : 'Futuro'}
-                            <button onClick={() => removeFilter('checkin')} className="ml-1 hover:text-foreground"><X className="h-3 w-3" /></button>
+                            <button onClick={() => removeFilter('checkin')} className="ml-1 hover:text-foreground"><Cancel01Icon className="h-3 w-3" /></button>
                         </Badge>
                     )}
                     <Button variant="ghost" size="sm" onClick={clearFilters} className="h-6 text-xs text-muted-foreground">
@@ -477,7 +477,7 @@ export function ClientTable({ clients, presentialWorkouts, defaultOpenNew }: Cli
                     <div className="hidden md:block rounded-md border relative">
                         {isPending && !navigatingId && (
                             <div className="absolute inset-0 bg-background/50 backdrop-blur-[1px] z-10 flex items-center justify-center rounded-md">
-                                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                                <Loading03Icon className="h-8 w-8 animate-spin text-primary" />
                             </div>
                         )}
                         <Table>
@@ -507,7 +507,7 @@ export function ClientTable({ clients, presentialWorkouts, defaultOpenNew }: Cli
                                                         <span className="text-xs text-muted-foreground">{client.email || '-'}</span>
                                                     </div>
                                                     {isPending && navigatingId === client.id && (
-                                                        <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                                                        <Loading03Icon className="h-3 w-3 animate-spin text-muted-foreground" />
                                                     )}
                                                 </div>
                                             </TableCell>

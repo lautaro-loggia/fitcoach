@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { formatCurrency } from "@/lib/utils"
 import { ClientDue, CheckinDue } from "@/lib/actions/dashboard"
-import { Wallet, Mail, AlertCircle } from "lucide-react"
+import { Wallet01Icon, Mail01Icon, AlertCircleIcon } from "hugeicons-react"
 import Link from "next/link"
 
 interface UrgentActionsProps {
@@ -62,7 +62,7 @@ export function UrgentActions({ overduePayments, pendingCheckins }: UrgentAction
                                         className="h-10 w-10 sm:h-12 sm:w-12 border border-border/50"
                                     />
                                     <div className="absolute -bottom-1 -right-1 bg-red-500 rounded-full p-0.5 border-2 border-white">
-                                        <AlertCircle className="h-3 w-3 text-white" />
+                                        <AlertCircleIcon className="h-3 w-3 text-white" />
                                     </div>
                                 </div>
                                 <div className="flex flex-col min-w-0 gap-1">
@@ -86,7 +86,7 @@ export function UrgentActions({ overduePayments, pendingCheckins }: UrgentAction
                                 <Button
                                     className="w-full sm:w-auto bg-[#0F172A] hover:bg-[#1E293B] text-white font-medium h-9 text-xs sm:text-sm shadow-sm"
                                 >
-                                    <Wallet className="mr-2 h-3.5 w-3.5" />
+                                    <Wallet01Icon className="mr-2 h-3.5 w-3.5" />
                                     Registrar pago
                                 </Button>
                             </Link>
@@ -105,7 +105,7 @@ export function UrgentActions({ overduePayments, pendingCheckins }: UrgentAction
                                         className="h-10 w-10 sm:h-12 sm:w-12 border border-border/50"
                                     />
                                     <div className="absolute -bottom-1 -right-1 bg-amber-500 rounded-full p-0.5 border-2 border-white">
-                                        <AlertCircle className="h-3 w-3 text-white" />
+                                        <AlertCircleIcon className="h-3 w-3 text-white" />
                                     </div>
                                 </div>
                                 <div className="flex flex-col min-w-0 gap-1">
@@ -128,7 +128,7 @@ export function UrgentActions({ overduePayments, pendingCheckins }: UrgentAction
                                 className="w-full sm:w-auto h-9 text-xs sm:text-sm font-medium"
                                 onClick={() => handleSendReminder(client.full_name, 'checkin')}
                             >
-                                <Mail className="mr-2 h-3.5 w-3.5" />
+                                <Mail01Icon className="mr-2 h-3.5 w-3.5" />
                                 Enviar recordatorio
                             </Button>
                         </div>

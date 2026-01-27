@@ -8,7 +8,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, Edit2, Eye, Trash2, Download, Play, Calendar as CalendarIcon } from "lucide-react"
+import { MoreHorizontalIcon, PencilEdit01Icon, ViewIcon, Delete02Icon, Download01Icon, PlayIcon, Calendar03Icon } from "hugeicons-react"
 import { format, parse } from "date-fns"
 import { es } from "date-fns/locale"
 
@@ -57,27 +57,27 @@ export function WorkoutCard({ workout, onEdit, onDelete, onView, onDownload, onS
                                     onStart();
                                 }}
                             >
-                                <Play className="h-3.5 w-3.5" fill="currentColor" />
+                                <PlayIcon className="h-3.5 w-3.5" fill="currentColor" />
                             </Button>
                         )}
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                                    <MoreHorizontal className="h-4 w-4" />
+                                    <MoreHorizontalIcon className="h-4 w-4" />
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuItem onClick={onView}>
-                                    <Eye className="mr-2 h-4 w-4" /> Ver detalle
+                                    <ViewIcon className="mr-2 h-4 w-4" /> Ver detalle
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={onDownload}>
-                                    <Download className="mr-2 h-4 w-4" /> Descargar PDF
+                                    <Download01Icon className="mr-2 h-4 w-4" /> Descargar PDF
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={onEdit}>
-                                    <Edit2 className="mr-2 h-4 w-4" /> Editar
+                                    <PencilEdit01Icon className="mr-2 h-4 w-4" /> Editar
                                 </DropdownMenuItem>
                                 <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={onDelete}>
-                                    <Trash2 className="mr-2 h-4 w-4" /> Eliminar
+                                    <Delete02Icon className="mr-2 h-4 w-4" /> Eliminar
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -97,7 +97,7 @@ export function WorkoutCard({ workout, onEdit, onDelete, onView, onDownload, onS
 
                     {workout.valid_until && (
                         <div className="text-[11px] text-muted-foreground flex items-center gap-1">
-                            <CalendarIcon className="h-3 w-3 opacity-50" />
+                            <Calendar03Icon className="h-3 w-3 opacity-50" />
                             {format(parse(workout.valid_until, 'yyyy-MM-dd', new Date()), "d MMM", { locale: es })}
                         </div>
                     )}

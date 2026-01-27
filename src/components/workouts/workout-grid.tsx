@@ -6,7 +6,7 @@ import { WorkoutDetailDialog } from "@/components/clients/workout-detail-dialog"
 import { AssignWorkoutToClientsDialog } from "./assign-workout-to-clients-dialog"
 import { deleteWorkoutAction } from "@/app/(dashboard)/workouts/actions"
 import { useRouter } from "next/navigation"
-import { Dumbbell } from "lucide-react"
+import { Dumbbell01Icon } from "hugeicons-react"
 import { WorkoutDialog } from "./add-workout-dialog"
 
 interface WorkoutGridProps {
@@ -39,7 +39,7 @@ export function WorkoutGrid({ workouts }: WorkoutGridProps) {
     if (!workouts || workouts.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed rounded-lg bg-muted/5">
-                <Dumbbell className="h-12 w-12 text-muted-foreground mb-4" />
+                <Dumbbell01Icon className="h-12 w-12 text-muted-foreground mb-4" />
                 <h3 className="text-lg font-semibold">No hay rutinas creadas</h3>
                 <p className="text-muted-foreground mb-4">Empezá creando tu primera rutina de entrenamiento.</p>
             </div>
