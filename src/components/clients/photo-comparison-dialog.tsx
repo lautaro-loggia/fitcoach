@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
-import { Check, ArrowRightLeft, Calendar, Info, AlertCircle } from "lucide-react"
+import { Tick01Icon, Exchange01Icon, Calendar03Icon, InformationCircleIcon, AlertCircleIcon } from "hugeicons-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { Badge } from "@/components/ui/badge"
@@ -88,7 +88,7 @@ export function PhotoComparisonDialog({ photos }: PhotoComparisonDialogProps) {
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2">
-                    <ArrowRightLeft className="h-4 w-4" />
+                    <Exchange01Icon className="h-4 w-4" />
                     Comparar
                 </Button>
             </DialogTrigger>
@@ -96,7 +96,7 @@ export function PhotoComparisonDialog({ photos }: PhotoComparisonDialogProps) {
                 <DialogTitle className="sr-only">Comparación de Progreso</DialogTitle>
 
                 {/* Header */}
-                <div className="flex flex-col md:flex-row items-center justify-between px-4 py-3 border-b gap-4 bg-white z-10">
+                <div className="flex flex-col md:flex-<Exchange01Iconms-center justify-between px-4 py-3 border-b gap-4 bg-white z-10">
                     <div className="flex items-center gap-4 w-full md:w-auto overflow-x-auto no-scrollbar">
                         <h2 className="text-lg font-bold hidden md:block">Comparar</h2>
                         <Tabs value={selectedPose} onValueChange={(v: any) => setSelectedPose(v)} className="w-full md:w-auto">
@@ -139,7 +139,7 @@ export function PhotoComparisonDialog({ photos }: PhotoComparisonDialogProps) {
                                     alt="Empty"
                                     className="opacity-20 mb-2 hidden" // Optional placeholder
                                 />
-                                <AlertCircle className="h-8 w-8 opacity-20" />
+                                <AlertCircleIcon className="h-8 w-8 opacity-20" />
                                 <p className="text-sm">No hay fotos de <br /><span className="font-semibold capitalize">{selectedPose}</span></p>
                             </div>
                         ) : (
@@ -173,7 +173,7 @@ export function PhotoComparisonDialog({ photos }: PhotoComparisonDialogProps) {
                                                     {isSelected && (
                                                         <div className="absolute inset-0 bg-indigo-600/20 md:bg-transparent flex items-center justify-center">
                                                             <div className="bg-indigo-600 text-white rounded-full p-1 shadow-sm md:absolute md:top-1 md:left-1">
-                                                                <Check className="h-3 w-3" />
+                                                                <Tick01Icon className="h-3 w-3" />
                                                             </div>
                                                         </div>
                                                     )}
@@ -201,7 +201,7 @@ export function PhotoComparisonDialog({ photos }: PhotoComparisonDialogProps) {
                         {!canCompare ? (
                             <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center text-muted-foreground">
                                 <div className="bg-white p-6 rounded-full shadow-sm mb-4">
-                                    <ArrowRightLeft className="h-10 w-10 text-indigo-200" />
+                                    <Exchange01Icon className="h-10 w-10 text-indigo-200" />
                                 </div>
                                 <h3 className="text-lg font-semibold text-gray-700">Modo Comparación</h3>
                                 <p className="max-w-xs mt-2 text-sm">

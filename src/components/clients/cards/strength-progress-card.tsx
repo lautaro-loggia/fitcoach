@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { ArrowUp, ArrowDown, Info, Dumbbell } from 'lucide-react'
+import { ArrowUp01Icon, ArrowDown01Icon, InformationCircleIcon, Dumbbell01Icon } from 'hugeicons-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { createClient } from '@/lib/supabase/client'
 import { progressColorClasses } from '@/lib/utils/progress-colors'
@@ -199,8 +199,8 @@ export function StrengthProgressCard({ clientId }: StrengthProgressCardProps) {
 
     // Determine color and icon
     const getProgressState = (value: number) => {
-        if (value > 0.5) return { color: "text-green-600", badge: "bg-green-100 text-green-700", icon: ArrowUp }
-        if (value < -0.5) return { color: "text-red-500", badge: "bg-red-100 text-red-700", icon: ArrowDown }
+        if (value > 0.5) return { color: "text-green-600", badge: "bg-green-100 text-green-700", icon: ArrowUp01Icon }
+        if (value < -0.5) return { color: "text-red-500", badge: "bg-red-100 text-red-700", icon: ArrowDown01Icon }
         return { color: "text-muted-foreground", badge: "bg-gray-100 text-gray-700", icon: null }
     }
 

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus, X, GripVertical, Save, ArrowLeft, Pencil, CalendarIcon, Trash2, Check, ChevronsUpDown, ChevronLeft, Info } from 'lucide-react'
+import { PlusSignIcon, Cancel01Icon, DragDropVerticalIcon, FloppyDiskIcon, ArrowLeft01Icon, PencilEdit01Icon, Calendar03Icon, Delete02Icon, Tick01Icon, ArrowUpDownIcon, InformationCircleIcon } from 'hugeicons-react'
 import { createClient } from '@/lib/supabase/client'
 import { assignWorkoutAction, updateAssignedWorkoutAction } from '@/app/(dashboard)/clients/[id]/training-actions'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -239,7 +239,7 @@ export function AssignWorkoutDialog({
             <DialogTrigger asChild>
                 {trigger ? trigger : (
                     <Button className="bg-primary hover:bg-primary/90 text-white">
-                        <Plus className="mr-2 h-4 w-4" /> Asignar Rutina
+                        <PlusSignIcon className="mr-2 h-4 w-4" /> Asignar Rutina
                     </Button>
                 )}
             </DialogTrigger>
@@ -257,7 +257,7 @@ export function AssignWorkoutDialog({
                     </DialogTitle>
                     {clientName && (existingWorkout || step === 'edit') && !isEditingExercise && (
                         <div className="flex items-center gap-2 px-3 py-2 mt-2 rounded-md bg-blue-50 border border-blue-200 text-blue-700 text-sm">
-                            <Info className="h-4 w-4 flex-shrink-0" />
+                            <InformationCircleIcon className="h-4 w-4 flex-shrink-0" />
                             <span>Los cambios en esta rutina solo se aplicarán al perfil de <strong>{clientName}</strong>.</span>
                         </div>
                     )}
@@ -309,7 +309,7 @@ export function AssignWorkoutDialog({
                                 {!existingWorkout && (
                                     <div className="flex items-center gap-2 mb-4">
                                         <Button variant="ghost" size="sm" onClick={() => setStep('select')}>
-                                            <ArrowLeft className="h-4 w-4 mr-1" /> Volver
+                                            <ArrowLeft01Icon className="h-4 w-4 mr-1" /> Volver
                                         </Button>
                                     </div>
                                 )}
@@ -388,7 +388,7 @@ export function AssignWorkoutDialog({
                                         <Popover>
                                             <PopoverTrigger asChild>
                                                 <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !validUntil && "text-muted-foreground")}>
-                                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                                    <Calendar03Icon className="mr-2 h-4 w-4" />
                                                     {validUntil ? format(validUntil, "PPP", { locale: es }) : <span>Seleccionar fecha *</span>}
                                                 </Button>
                                             </PopoverTrigger>
@@ -485,7 +485,7 @@ export function AssignWorkoutDialog({
                                                                         className="h-8 w-8 text-primary hover:text-primary hover:bg-muted"
                                                                         onClick={() => setEditingExerciseIndex(index)}
                                                                     >
-                                                                        <Pencil className="h-4 w-4" />
+                                                                        <PencilEdit01Icon className="h-4 w-4" />
                                                                     </Button>
                                                                     <Button
                                                                         variant="ghost"
@@ -493,7 +493,7 @@ export function AssignWorkoutDialog({
                                                                         className="h-8 w-8 text-destructive hover:bg-red-50"
                                                                         onClick={() => handleRemoveExercise(index)}
                                                                     >
-                                                                        <Trash2 className="h-4 w-4" />
+                                                                        <Delete02Icon className="h-4 w-4" />
                                                                     </Button>
                                                                 </div>
                                                             </TableCell>
@@ -509,7 +509,7 @@ export function AssignWorkoutDialog({
                                         className="w-full py-6 border-dashed border-2 flex gap-2 text-muted-foreground hover:text-foreground"
                                         onClick={() => setIsAddingNewExercise(true)}
                                     >
-                                        <Plus className="h-5 w-5" /> Agregar nuevo ejercicio
+                                        <PlusSignIcon className="h-5 w-5" /> Agregar nuevo ejercicio
                                     </Button>
                                 </div>
 
@@ -644,7 +644,7 @@ function ExerciseForm({
                             className={`w-full justify-between font-normal text-left ${!name ? 'text-muted-foreground' : ''}`}
                         >
                             {name || "Buscar ejercicio..."}
-                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            <ArrowUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-[600px] p-0" align="start">
@@ -675,7 +675,7 @@ function ExerciseForm({
                                                 setOpenCombobox(false)
                                             }}
                                         >
-                                            <Check
+                                            <Tick01Icon
                                                 className={cn(
                                                     "mr-2 h-4 w-4",
                                                     exerciseId === ex.id ? "opacity-100" : "opacity-0"
@@ -852,7 +852,7 @@ function ExerciseForm({
                                                     onClick={() => handleRemoveSet(index)}
                                                     disabled={sets.length === 1}
                                                 >
-                                                    <Trash2 className="h-4 w-4" />
+                                                    <Delete02Icon className="h-4 w-4" />
                                                 </Button>
                                             </div>
                                         </TableCell>
@@ -862,7 +862,7 @@ function ExerciseForm({
                         </Table>
                     </div>
                     <Button variant="outline" className="w-full mt-2" onClick={handleAddSet}>
-                        <Plus className="h-4 w-4 mr-2" /> Agregar serie
+                        <PlusSignIcon className="h-4 w-4 mr-2" /> Agregar serie
                     </Button>
                 </div>
             )}

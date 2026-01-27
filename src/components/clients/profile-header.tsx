@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft02Icon } from 'hugeicons-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
@@ -38,7 +38,7 @@ export function ProfileHeader({ client, allClients = [], className }: ProfileHea
         <div className={cn("flex items-center gap-3 md:gap-4", className)}>
             <Button variant="ghost" size="icon" className="-ml-2" asChild>
                 <Link href="/clients">
-                    <ArrowLeft className="h-5 w-5" />
+                    <ArrowLeft02Icon className="h-5 w-5" />
                 </Link>
             </Button>
 

@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Dumbbell, Utensils, LineChart } from "lucide-react"
+import { Home01Icon, Dumbbell01Icon, KitchenUtensilsIcon, ChartIncreaseIcon } from "hugeicons-react"
 import { cn } from "@/lib/utils"
 
 export function MobileNav() {
@@ -12,25 +12,25 @@ export function MobileNav() {
         {
             href: "/dashboard",
             label: "Inicio",
-            icon: Home,
+            icon: Home01Icon,
             isActive: (path: string) => path === "/dashboard" || path === "/dashboard/"
         },
         {
             href: "/dashboard/workout",
             label: "Entrenar",
-            icon: Dumbbell,
+            icon: Dumbbell01Icon,
             isActive: (path: string) => path.startsWith("/dashboard/workout")
         },
         {
             href: "/dashboard/diet",
             label: "Nutrición",
-            icon: Utensils,
+            icon: KitchenUtensilsIcon,
             isActive: (path: string) => path.startsWith("/dashboard/diet")
         },
         {
             href: "/dashboard/progress",
             label: "Progreso",
-            icon: LineChart,
+            icon: ChartIncreaseIcon,
             isActive: (path: string) => path.startsWith("/dashboard/progress")
         }
     ]

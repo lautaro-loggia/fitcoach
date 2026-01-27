@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
-import { Loader2 } from "lucide-react"
+import { Loading03Icon } from "hugeicons-react"
 import { assignWorkoutToClientsAction } from "@/app/(dashboard)/workouts/actions"
 import { ClientAvatar } from "@/components/clients/client-avatar"
 
@@ -85,7 +85,7 @@ export function AssignWorkoutToClientsDialog({ open, onOpenChange, workout }: As
 
                     {loading ? (
                         <div className="flex justify-center py-8">
-                            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                            <Loading03Icon className="h-6 w-6 animate-spin text-muted-foreground" />
                         </div>
                     ) : (
                         <div className="border rounded-md divide-y max-h-[400px] overflow-y-auto">
@@ -136,7 +136,7 @@ export function AssignWorkoutToClientsDialog({ open, onOpenChange, workout }: As
                             disabled={assigning || selectedClients.length === 0}
                             className="bg-primary hover:bg-primary/90 text-white"
                         >
-                            {assigning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {assigning && <Loading03Icon className="mr-2 h-4 w-4 animate-spin" />}
                             Asignar
                         </Button>
                     </div>

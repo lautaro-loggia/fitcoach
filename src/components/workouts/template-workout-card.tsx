@@ -3,7 +3,7 @@
 import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
-import { Dumbbell, MoreVertical, Edit, Trash2, UserPlus } from "lucide-react"
+import { Dumbbell01Icon, MoreVerticalIcon, PencilEdit02Icon, Delete02Icon, UserAdd01Icon } from "hugeicons-react"
 import { format } from "date-fns"
 
 interface TemplateWorkoutCardProps {
@@ -27,18 +27,18 @@ export function TemplateWorkoutCard({ workout, onClick, onEdit, onDelete, onAssi
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                            <MoreVertical className="h-4 w-4" />
+                            <MoreVerticalIcon className="h-4 w-4" />
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={onAssign}>
-                            <UserPlus className="mr-2 h-4 w-4" /> Asignar a...
+                            <UserAdd01Icon className="mr-2 h-4 w-4" /> Asignar a...
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={onEdit}>
-                            <Edit className="mr-2 h-4 w-4" /> Editar
+                            <PencilEdit02Icon className="mr-2 h-4 w-4" /> Editar
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
-                            <Trash2 className="mr-2 h-4 w-4" /> Eliminar
+                            <Delete02Icon className="mr-2 h-4 w-4" /> Eliminar
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
@@ -47,7 +47,7 @@ export function TemplateWorkoutCard({ workout, onClick, onEdit, onDelete, onAssi
             <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                     <div className="p-2 bg-muted/50 rounded-lg text-primary mb-3">
-                        <Dumbbell className="h-6 w-6" />
+                        <Dumbbell01Icon className="h-6 w-6" />
                     </div>
                 </div>
                 <CardTitle className="text-lg font-bold group-hover:text-primary transition-colors pr-8">

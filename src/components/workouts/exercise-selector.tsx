@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Check, ChevronsUpDown, Plus, Trash2 } from 'lucide-react'
+import { Tick01Icon, ArrowUpDownIcon, PlusSignIcon, Delete02Icon } from 'hugeicons-react'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -94,7 +94,7 @@ export function ExerciseSelector({ onAdd }: ExerciseSelectorProps) {
                             className="w-full justify-between"
                         >
                             {selectedExercise ? selectedExercise.name : "Buscar ejercicio..."}
-                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            <ArrowUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-[400px] p-0">
@@ -112,7 +112,7 @@ export function ExerciseSelector({ onAdd }: ExerciseSelectorProps) {
                                                 setOpen(false)
                                             }}
                                         >
-                                            <Check
+                                            <Tick01Icon
                                                 className={cn(
                                                     "mr-2 h-4 w-4",
                                                     selectedExercise?.id === ex.id ? "opacity-100" : "opacity-0"
@@ -186,7 +186,7 @@ export function ExerciseSelector({ onAdd }: ExerciseSelectorProps) {
                                                 className="h-8 w-8 text-muted-foreground hover:text-destructive"
                                                 disabled={sets.length === 1}
                                             >
-                                                <Trash2 className="h-4 w-4" />
+                                                <Delete02Icon className="h-4 w-4" />
                                             </Button>
                                         </TableCell>
                                     </TableRow>
@@ -203,7 +203,7 @@ export function ExerciseSelector({ onAdd }: ExerciseSelectorProps) {
                             onClick={handleAddSet}
                             className="w-full dashed border-primary/20 text-primary hover:bg-primary/5"
                         >
-                            <Plus className="mr-2 h-3 w-3" /> Agregar Serie
+                            <PlusSignIcon className="mr-2 h-3 w-3" /> Agregar Serie
                         </Button>
                     </div>
                 </div>
@@ -215,7 +215,7 @@ export function ExerciseSelector({ onAdd }: ExerciseSelectorProps) {
                 disabled={!selectedExercise}
                 className="w-full bg-primary hover:bg-primary/90 text-white mt-4"
             >
-                <Plus className="mr-2 h-4 w-4" /> Agregar a la rutina
+                <PlusSignIcon className="mr-2 h-4 w-4" /> Agregar a la rutina
             </Button>
         </div>
     )

@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Loader2, Save } from "lucide-react"
+import { Loading03Icon, FloppyDiskIcon } from "hugeicons-react"
 
 export const ALLERGEN_OPTIONS = [
     { id: "huevo", label: "Huevo" },
@@ -119,7 +119,7 @@ export function AllergenSelector({ initialAllergens, initialPreference, onSave }
                         className={isModified ? "bg-primary hover:bg-primary/90" : ""}
                         variant={isModified ? "default" : "outline"}
                     >
-                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {loading && <Loading03Icon className="mr-2 h-4 w-4 animate-spin" />}
                         {loading ? "Guardando..." : "Guardar Preferencias"}
                     </Button>
                 </div>
