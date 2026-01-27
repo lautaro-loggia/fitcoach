@@ -11,7 +11,7 @@ interface ClientAvatarUploadProps {
     clientName: string
     currentAvatarUrl?: string | null
     className?: string
-    size?: "sm" | "default" | "lg" | "xl"
+    size?: "sm" | "default" | "md" | "lg" | "xl"
     showButton?: boolean
     onUploadSuccess?: (url: string) => void
 }
@@ -103,6 +103,7 @@ export function ClientAvatarUpload({
     const sizeClasses = {
         sm: "h-8 w-8 text-xs",
         default: "h-10 w-10 text-sm",
+        md: "h-16 w-16 text-lg",
         lg: "h-24 w-24 text-xl",
         xl: "h-32 w-32 text-2xl"
     }
