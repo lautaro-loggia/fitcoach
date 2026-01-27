@@ -85,12 +85,22 @@ export function ProfileTab({ client }: ProfileTabProps) {
                 const processedPhotos = await Promise.all(checkinsWithPhotos.map(async (c) => {
                     let photos = c.photos as any[]
                     // Fix: Parse JSON strings if photos are stored as serialized strings
-                    if (photos && photos.length > 0 && typeof photos[0] === 'string') {
-                        try {
-                            photos = photos.map(p => typeof p === 'string' ? JSON.parse(p) : p)
-                        } catch (e) {
-                            console.error('Error parsing photos JSON', e)
-                        }
+                    if (photos && photos.length > 0) {
+                        photos = photos.map(p => {
+                            if (typeof p === 'string') {
+                                // If it looks like a JSON object, try to parse it
+                                if (p.trim().startsWith('{')) {
+                                    try {
+                                        return JSON.parse(p)
+                                    } catch (e) {
+                                        return { url: p, type: 'front' }
+                                    }
+                                }
+                                // Otherwise treat as simple URL
+                                return { url: p, type: 'front' }
+                            }
+                            return p
+                        })
                     }
 
                     // Sign ALL photos in parallel to populate dialog immediately
@@ -361,7 +371,7 @@ export function ProfileTab({ client }: ProfileTabProps) {
                 <Card className="flex flex-col">
                     <CardHeader className="pb-2 flex flex-row items-center justify-between">
                         <CardTitle className="text-sm font-medium text-muted-foreground">Fotos del progreso</CardTitle>
-                        <CardTitle className="text-sm font-medium text-muted-foreground">Fotos del progreso</CardTitle>
+
                     </CardHeader>
                     <CardContent className="flex-1 flex flex-col">
                         <div className="space-y-4 flex-1 overflow-y-auto max-h-[220px] scrollbar-hide py-2">
