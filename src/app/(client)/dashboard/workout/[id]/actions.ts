@@ -55,14 +55,43 @@ export async function getOrCreateSession(assignedWorkoutId: string) {
         return { error: 'Cliente no encontrado' }
     }
 
-    // Determine Trainer ID from the assigned workout - USING ADMIN CLIENT to bypass potential RLS
-    // but strictly checking client_id ownership
+    // Determine Trainer ID and check for existing session in PARALLEL
     const adminSupabase = createAdminClient()
-    const { data: workout } = await adminSupabase
-        .from('assigned_workouts')
-        .select('trainer_id, client_id')
-        .eq('id', assignedWorkoutId)
-        .single()
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const tomorrow = new Date(today)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+
+    const [workoutResult, existingSessionResult] = await Promise.all([
+        adminSupabase
+            .from('assigned_workouts')
+            .select('trainer_id, client_id')
+            .eq('id', assignedWorkoutId)
+            .single(),
+        adminSupabase
+            .from('workout_sessions')
+            .select(`
+                *,
+                assigned_workouts (
+                    id,
+                    name,
+                    structure
+                )
+            `)
+            .eq('client_id', client.id)
+            .eq('assigned_workout_id', assignedWorkoutId)
+            .gte('started_at', today.toISOString())
+            .lt('started_at', tomorrow.toISOString())
+            .eq('status', 'in_progress')
+            .single()
+    ])
+
+    const workout = workoutResult.data
+    const existingSession = existingSessionResult.data
+
+    if (existingSession) {
+        return { session: existingSession as WorkoutSession }
+    }
 
     if (!workout) {
         return { error: 'Rutina no encontrada' }
@@ -71,35 +100,6 @@ export async function getOrCreateSession(assignedWorkoutId: string) {
     // SECURITY CHECK: This workout MUST belong to this client
     if (workout.client_id !== client.id) {
         return { error: 'No autorizado para acceder a esta rutina' }
-    }
-
-    // Check for existing session today
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const tomorrow = new Date(today)
-    tomorrow.setDate(tomorrow.getDate() + 1)
-
-
-
-    const { data: existingSession } = await adminSupabase
-        .from('workout_sessions')
-        .select(`
-            *,
-            assigned_workouts (
-                id,
-                name,
-                structure
-            )
-        `)
-        .eq('client_id', client.id)
-        .eq('assigned_workout_id', assignedWorkoutId)
-        .gte('started_at', today.toISOString())
-        .lt('started_at', tomorrow.toISOString())
-        .eq('status', 'in_progress')
-        .single()
-
-    if (existingSession) {
-        return { session: existingSession as WorkoutSession }
     }
 
     // Create new session

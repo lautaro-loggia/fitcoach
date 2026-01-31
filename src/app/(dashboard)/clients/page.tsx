@@ -1,6 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { ClientTable, Client } from '@/components/clients/client-table'
 import { Workout } from '@/components/clients/presential-calendar-dialog'
+import { DashboardTopBar } from '@/components/layout/dashboard-top-bar'
+import { AddClientDialog } from '@/components/clients/add-client-dialog'
+import { PresentialCalendarDialog } from '@/components/clients/presential-calendar-dialog'
 
 interface ClientsPageProps {
     searchParams: { [key: string]: string | string[] | undefined }
@@ -13,8 +16,6 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
     if (!user) return null
 
     // Fetch clients
-    // We also want checkins to calculate next date.
-    // We just need the latest checkin date.
     const { data: clients, error } = await supabase
         .from('clients')
         .select(`
@@ -26,16 +27,10 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
     `)
         .order('created_at', { ascending: false })
 
-    // Sort checkins in the application layer if not sorted by database relation (limit in relation is tricky in supabase-js simple query)
-    // Usually .select('*, checkins(date).order(date, {ascending: false}).limit(1)') works in advanced API but basic js client syntax is sometimes restricted.
-    // Let's assume we get all dates and sort in JS for MVP since data volume is low.
-    // Actually, better to just fetch them.
-
     if (error) {
         console.error("Error fetching clients", error)
     }
 
-    // Pre-process clients to sort checkins if needed, or pass as is.
     const formattedClients: Client[] = clients?.map(client => ({
         ...client,
         checkins: client.checkins ? client.checkins.sort((a: { date: string }, b: { date: string }) => new Date(b.date).getTime() - new Date(a.date).getTime()) : []
@@ -55,14 +50,7 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
         .eq('trainer_id', user.id)
         .eq('is_presential', true)
 
-    // Map workouts to match expected interface (Supabase returns array for single relation sometimes if not properly typed)
-    const typedPresentialWorkouts: Workout[] = presentialWorkouts?.map((w: {
-        id: string
-        created_at: string
-        valid_until: string | null
-        scheduled_days: string[]
-        client: { id: string; full_name: string; avatar_url: string | null } | { id: string; full_name: string; avatar_url: string | null }[]
-    }) => ({
+    const typedPresentialWorkouts: Workout[] = presentialWorkouts?.map((w: any) => ({
         id: w.id,
         created_at: w.created_at,
         valid_until: w.valid_until,

@@ -13,7 +13,7 @@ interface WeightSummaryProps {
 
 export function WeightSummary({ current, start, target, label, unit, onEditTarget }: WeightSummaryProps) {
     return (
-        <div className="bg-white rounded-xl border border-muted/60 shadow-sm p-6 mb-6">
+        <div className="bg-white rounded-xl border p-6 mb-6">
             <h3 className="text-base font-semibold mb-4">{label}</h3>
             <div className="flex gap-12">
                 <div>

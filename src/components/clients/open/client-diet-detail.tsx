@@ -55,7 +55,7 @@ export default function ClientDietDetail({ diet }: { diet: Diet }) {
 
             {/* Macros Summary Card */}
             {macros.total_calories > 0 && (
-                <Card className="p-4 bg-white shadow-sm border-gray-200">
+                <Card className="p-4 bg-white">
                     <h2 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                         <PieChart className="h-4 w-4" /> Resumen Nutricional
                     </h2>

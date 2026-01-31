@@ -48,7 +48,7 @@ export function UrgentActions({ overduePayments, pendingCheckins }: UrgentAction
                 </Badge>
             </div>
 
-            <Card className="border-none shadow-sm bg-white">
+            <Card className="border bg-white">
                 <CardContent className="p-0 divide-y divide-border/50">
                     {/* Overdue Payments */}
                     {overduePayments.map((client) => (
@@ -84,7 +84,7 @@ export function UrgentActions({ overduePayments, pendingCheckins }: UrgentAction
 
                             <Link href={`/clients/${client.id}?tab=billing`}>
                                 <Button
-                                    className="w-full sm:w-auto bg-[#0F172A] hover:bg-[#1E293B] text-white font-medium h-9 text-xs sm:text-sm shadow-sm"
+                                    className="w-full sm:w-auto bg-[#0F172A] hover:bg-[#1E293B] text-white font-medium h-9 text-xs sm:text-sm"
                                 >
                                     <Wallet01Icon className="mr-2 h-3.5 w-3.5" />
                                     Registrar pago

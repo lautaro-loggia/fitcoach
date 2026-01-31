@@ -28,26 +28,29 @@ interface ProfileHeaderProps {
         full_name: string
         status: string
     }[],
+    isCompact?: boolean,
     className?: string
 }
 
-export function ProfileHeader({ client, allClients = [], className }: ProfileHeaderProps) {
+export function ProfileHeader({ client, allClients = [], isCompact = false, className }: ProfileHeaderProps) {
     const router = useRouter()
 
     return (
         <div className={cn("flex items-center gap-3 md:gap-4", className)}>
-            <Button variant="ghost" size="icon" className="-ml-2" asChild>
-                <Link href="/clients">
-                    <ArrowLeft02Icon className="h-5 w-5" />
-                </Link>
-            </Button>
+            {!isCompact && (
+                <Button variant="ghost" size="icon" className="-ml-2" asChild>
+                    <Link href="/clients">
+                        <ArrowLeft02Icon className="h-5 w-5" />
+                    </Link>
+                </Button>
+            )}
 
             {/* Avatar del cliente */}
             <ClientAvatarUpload
                 clientId={client.id}
                 clientName={client.full_name}
                 currentAvatarUrl={client.avatar_url}
-                size="md"
+                size={isCompact ? "sm" : "md"}
                 showButton={false}
             />
 
@@ -58,7 +61,10 @@ export function ProfileHeader({ client, allClients = [], className }: ProfileHea
                             defaultValue={client.id}
                             onValueChange={(value) => router.push(`/clients/${value}`)}
                         >
-                            <SelectTrigger className="w-auto h-auto p-0 border-0 text-xl md:text-2xl font-bold tracking-tight bg-transparent shadow-none hover:bg-transparent focus:ring-0 gap-2 px-1">
+                            <SelectTrigger className={cn(
+                                "w-auto h-auto p-0 border-0 font-bold tracking-tight bg-transparent shadow-none hover:bg-transparent focus:ring-0 gap-2 px-1",
+                                isCompact ? "text-lg md:text-xl" : "text-xl md:text-2xl"
+                            )}>
                                 <SelectValue placeholder={client.full_name} />
                             </SelectTrigger>
                             <SelectContent>
@@ -70,15 +76,23 @@ export function ProfileHeader({ client, allClients = [], className }: ProfileHea
                             </SelectContent>
                         </Select>
                     ) : (
-                        <h2 className="text-xl md:text-2xl font-bold tracking-tight truncate">{client.full_name}</h2>
+                        <h2 className={cn(
+                            "font-bold tracking-tight truncate",
+                            isCompact ? "text-lg md:text-xl" : "text-xl md:text-2xl"
+                        )}>{client.full_name}</h2>
                     )}
-                    <Badge variant={client.status === 'active' ? 'secondary' : 'outline'} className={client.status === 'active' ? "bg-green-100 text-green-700 hover:bg-green-100" : ""}>
+                    <Badge variant={client.status === 'active' ? 'secondary' : 'outline'} className={cn(
+                        "text-[10px] px-1.5 h-5",
+                        client.status === 'active' ? "bg-green-100 text-green-700 hover:bg-green-100" : ""
+                    )}>
                         {client.status === 'active' ? 'ACTIVO' : 'INACTIVO'}
                     </Badge>
                 </div>
-                <p className="text-sm text-muted-foreground mt-0.5">
-                    Perfil completo del asesorado
-                </p>
+                {!isCompact && (
+                    <p className="text-sm text-muted-foreground mt-0.5">
+                        Perfil completo del asesorado
+                    </p>
+                )}
             </div>
         </div>
     )
