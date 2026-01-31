@@ -51,7 +51,7 @@
 :root {
   --radius: 0.5rem;
   /* 8px rounded */
-  --background: #FFFFFF;
+  --background: #F9F9FA;
   --foreground: #0E0E0E;
   --card: #FFFFFF;
   --card-foreground: #0E0E0E;
@@ -62,9 +62,9 @@
   --primary-foreground: #FFFFFF;
   --secondary: #F4F4F5;
   --secondary-foreground: #0E0E0E;
-  --muted: #F9F9FA;
+  --muted: #F1F1F2;
   --muted-foreground: #8C929C;
-  --accent: #F9F9FA;
+  --accent: #F1F1F2;
   --accent-foreground: #0E0E0E;
   --destructive: #ef4444;
   --destructive-foreground: #FFFFFF;
@@ -76,7 +76,7 @@
   --chart-3: #8C929C;
   --chart-4: #0E0E0E;
   --chart-5: #E6E6E6;
-  --sidebar: #F9F9FA;
+  --sidebar: #FFFFFF;
   /* White Sidebar */
   --sidebar-foreground: #09090b;
   /* Zinc 950 text */

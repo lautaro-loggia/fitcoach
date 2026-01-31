@@ -106,108 +106,110 @@ export default async function DashboardPage() {
     const overduePayments = upcomingPayments.filter(p => p.status === 'overdue')
 
     return (
-        <div className="space-y-6 md:space-y-8">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h2 className="text-2xl md:text-3xl font-normal tracking-tight text-foreground">
-                        {greeting}, <span className="font-bold">{userName}</span>
-                    </h2>
-                    <p className="text-muted-foreground mt-1">
-                        Este es tu estado hoy
-                    </p>
-                </div>
-                <div className="flex items-center gap-3">
-                    <Link href="/clients?new=true">
-                        <Button variant="outline" className="gap-2 bg-white">
-                            <UserPlus className="h-4 w-4 text-muted-foreground" />
-                            Asesorado
-                        </Button>
-                    </Link>
-                </div>
-            </div>
-
-            {/* Status Cards Row */}
-            <div className="grid gap-4 md:grid-cols-4">
-                {/* Active Clients Card */}
-                <Card className="shadow-sm border-none bg-white">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                            <div className="h-2 w-2 rounded-full bg-blue-500" />
-                            Asesorados activos
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-4xl font-bold text-foreground">{stats.activeClients}</div>
-                        <p className="text-xs font-medium text-muted-foreground mt-1">
-                            Total clientes activos
+        <div className="p-4 md:p-8 pt-20 md:pt-8">
+            <div className="space-y-6 md:space-y-8">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <h2 className="text-2xl md:text-3xl font-normal tracking-tight text-foreground">
+                            {greeting}, <span className="font-bold">{userName}</span>
+                        </h2>
+                        <p className="text-muted-foreground mt-1">
+                            Este es tu estado hoy
                         </p>
-                    </CardContent>
-                </Card>
-
-                {/* Pagos Cards */}
-                <Card className="shadow-sm border-none bg-white">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                            <div className="h-2 w-2 rounded-full bg-red-500" />
-                            Pagos vencidos
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-4xl font-bold text-foreground">{stats.pendingPaymentsCount}</div>
-                        <p className="text-xs font-medium text-red-500 mt-1">
-                            Requieren atención inmediata
-                        </p>
-                    </CardContent>
-                </Card>
-
-                {/* Check-ins Card */}
-                <Card className="shadow-sm border-none bg-white">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                            <div className="h-2 w-2 rounded-full bg-amber-500" />
-                            Check-ins pendientes
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-4xl font-bold text-foreground">{stats.pendingCheckinsCount}</div>
-                        <p className="text-xs font-medium text-amber-500 mt-1">
-                            Esperando revisión
-                        </p>
-                    </CardContent>
-                </Card>
-
-                {/* Trainings Card */}
-                <Card className="shadow-sm border-none bg-white relative overflow-hidden">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                            <div className="h-2 w-2 rounded-full bg-green-500" />
-                            Entrenamientos hoy
-                        </CardTitle>
-                        <div className="h-6 w-6 rounded-full border border-green-200 flex items-center justify-center bg-green-50">
-                            <UserCheck className="h-3 w-3 text-green-600" />
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-4xl font-bold text-foreground">{presentialTrainings.length}</div>
-                        <p className="text-xs font-medium text-green-500 mt-1">
-                            Todo en orden
-                        </p>
-                    </CardContent>
-                </Card>
-            </div>
-
-            <div className="grid lg:grid-cols-12 gap-6">
-                {/* Left Column: Urgent Actions */}
-                <div className="lg:col-span-8">
-                    <UrgentActions
-                        overduePayments={overduePayments}
-                        pendingCheckins={pendingCheckins}
-                    />
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <Link href="/clients?new=true">
+                            <Button variant="outline" className="gap-2 bg-white">
+                                <UserPlus className="h-4 w-4 text-muted-foreground" />
+                                Asesorado
+                            </Button>
+                        </Link>
+                    </div>
                 </div>
 
-                {/* Right Column: Presential Trainings */}
-                <div className="lg:col-span-4">
-                    <PresentialTrainings trainings={presentialTrainings} />
+                {/* Status Cards Row */}
+                <div className="grid gap-4 md:grid-cols-4">
+                    {/* Active Clients Card */}
+                    <Card className="border bg-white">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                                <div className="h-2 w-2 rounded-full bg-blue-500" />
+                                Asesorados activos
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-4xl font-bold text-foreground">{stats.activeClients}</div>
+                            <p className="text-xs font-medium text-muted-foreground mt-1">
+                                Total clientes activos
+                            </p>
+                        </CardContent>
+                    </Card>
+
+                    {/* Pagos Cards */}
+                    <Card className="border bg-white">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                                <div className="h-2 w-2 rounded-full bg-red-500" />
+                                Pagos vencidos
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-4xl font-bold text-foreground">{stats.pendingPaymentsCount}</div>
+                            <p className="text-xs font-medium text-red-500 mt-1">
+                                Requieren atención inmediata
+                            </p>
+                        </CardContent>
+                    </Card>
+
+                    {/* Check-ins Card */}
+                    <Card className="border bg-white">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                                <div className="h-2 w-2 rounded-full bg-amber-500" />
+                                Check-ins pendientes
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-4xl font-bold text-foreground">{stats.pendingCheckinsCount}</div>
+                            <p className="text-xs font-medium text-amber-500 mt-1">
+                                Esperando revisión
+                            </p>
+                        </CardContent>
+                    </Card>
+
+                    {/* Trainings Card */}
+                    <Card className="border bg-white relative overflow-hidden">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                                <div className="h-2 w-2 rounded-full bg-green-500" />
+                                Entrenamientos hoy
+                            </CardTitle>
+                            <div className="h-6 w-6 rounded-full border border-green-200 flex items-center justify-center bg-green-50">
+                                <UserCheck className="h-3 w-3 text-green-600" />
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-4xl font-bold text-foreground">{presentialTrainings.length}</div>
+                            <p className="text-xs font-medium text-green-500 mt-1">
+                                Todo en orden
+                            </p>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                <div className="grid lg:grid-cols-12 gap-6">
+                    {/* Left Column: Urgent Actions */}
+                    <div className="lg:col-span-8">
+                        <UrgentActions
+                            overduePayments={overduePayments}
+                            pendingCheckins={pendingCheckins}
+                        />
+                    </div>
+
+                    {/* Right Column: Presential Trainings */}
+                    <div className="lg:col-span-4">
+                        <PresentialTrainings trainings={presentialTrainings} />
+                    </div>
                 </div>
             </div>
         </div>

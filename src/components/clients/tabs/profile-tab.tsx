@@ -192,7 +192,7 @@ export function ProfileTab({ client }: ProfileTabProps) {
             <div className="grid gap-3 grid-cols-1 md:grid-cols-3">
                 <StrengthProgressCard clientId={client.id} />
 
-                <Card className="bg-white shadow-sm border border-gray-100 rounded-2xl flex flex-col justify-center p-4">
+                <Card className="bg-white rounded-2xl flex flex-col justify-center p-4">
                     <div className="space-y-0.5">
                         <h3 className="text-[17px] font-bold text-gray-900 leading-tight">Objetivo</h3>
                         <p className="text-[15px] text-gray-400 leading-snug">
@@ -202,7 +202,7 @@ export function ProfileTab({ client }: ProfileTabProps) {
                     </div>
                 </Card>
 
-                <Card className="bg-white shadow-sm border border-gray-100 rounded-2xl flex flex-col justify-center p-4">
+                <Card className="bg-white rounded-2xl flex flex-col justify-center p-4">
                     <div className="space-y-0.5">
                         <h3 className="text-[17px] font-bold text-gray-900 leading-tight">Nivel de actividad</h3>
                         <p className="text-[15px] text-gray-400 leading-snug">
@@ -219,7 +219,7 @@ export function ProfileTab({ client }: ProfileTabProps) {
             <div className="grid gap-3 grid-cols-1 md:grid-cols-3">
 
                 {/* Weight Card */}
-                <Card className="flex flex-col">
+                <Card className="flex flex-col md:h-[320px]">
                     <CardHeader className="pb-2 flex flex-row items-center justify-between">
                         <CardTitle className="text-sm font-medium text-muted-foreground">Peso Actual</CardTitle>
                         {client.target_weight && (
@@ -292,7 +292,7 @@ export function ProfileTab({ client }: ProfileTabProps) {
                 </Card>
 
                 {/* Body Fat Card */}
-                <Card className="flex flex-col">
+                <Card className="flex flex-col md:h-[320px]">
                     <CardHeader className="pb-2 flex flex-row items-center justify-between">
                         <CardTitle className="text-sm font-medium text-muted-foreground">Grasa corporal</CardTitle>
                         {client.target_body_fat && (
@@ -379,17 +379,17 @@ export function ProfileTab({ client }: ProfileTabProps) {
                 </Card>
 
                 {/* Photos Card */}
-                <Card className="flex flex-col">
+                <Card className="flex flex-col md:h-[320px]">
                     <CardHeader className="pb-2 flex flex-row items-center justify-between">
                         <CardTitle className="text-sm font-medium text-muted-foreground">Fotos del progreso</CardTitle>
 
                     </CardHeader>
-                    <CardContent className="flex-1 flex flex-col">
-                        <div className="space-y-4 flex-1 overflow-y-auto max-h-[220px] scrollbar-hide py-2">
+                    <CardContent className="flex-1 flex flex-col min-h-0">
+                        <div className="space-y-4 flex-1 overflow-y-auto scrollbar-hide py-2">
                             {photos.length === 0 && (
                                 <p className="text-xs text-muted-foreground text-center py-8">Sin fotos aún</p>
                             )}
-                            {photos.slice(0, 3).map((photo, i, arr) => {
+                            {photos.map((photo, i, arr) => {
                                 // Calculate weight diff from previous photo (or initial weight)
                                 const prevPhoto = arr[i + 1]
                                 const prevWeight = prevPhoto?.weight || client.initial_weight
@@ -440,7 +440,7 @@ export function ProfileTab({ client }: ProfileTabProps) {
                                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                                                 {photo.allPhotos.map((p: any, idx: number) => (
                                                     <div key={idx} className="space-y-2">
-                                                        <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-muted border shadow-sm">
+                                                        <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-muted border">
                                                             {p.signedUrl ? (
                                                                 <Image src={p.signedUrl} alt={p.type} fill className="object-cover" />
                                                             ) : (

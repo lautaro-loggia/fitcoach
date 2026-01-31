@@ -12,7 +12,7 @@ export function HistoryTable({ data, unit }: HistoryTableProps) {
     const sorted = [...data].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
     return (
-        <Card className="border-muted/60 shadow-sm">
+        <Card>
             <CardHeader className="pb-4">
                 <CardTitle className="text-lg font-bold">Historial del progreso</CardTitle>
             </CardHeader>

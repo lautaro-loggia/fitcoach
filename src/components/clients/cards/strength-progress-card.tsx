@@ -208,7 +208,7 @@ export function StrengthProgressCard({ clientId }: StrengthProgressCardProps) {
     const Icon = state.icon
 
     return (
-        <Card className="flex flex-col bg-white shadow-sm border border-gray-100 rounded-2xl min-h-[90px] justify-center">
+        <Card className="flex flex-col bg-white rounded-2xl min-h-[90px] justify-center">
             <CardContent className="p-4 py-3">
                 {insufficientData ? (
                     <div className="space-y-0.5">

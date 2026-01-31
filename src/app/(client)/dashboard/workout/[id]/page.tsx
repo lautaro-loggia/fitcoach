@@ -25,7 +25,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     return (
         <div className="min-h-screen bg-background pb-24">
             {/* Header - Fixed on mobile, proper stacking - Adapted for Client */}
-            <div className="fixed top-14 left-0 right-0 z-30 bg-background border-b px-4 py-4 md:static md:border-b-0 md:bg-transparent md:mb-6 md:p-0">
+            <div className="fixed top-0 left-0 right-0 z-30 bg-background border-b px-4 py-4 md:static md:border-b-0 md:bg-transparent md:mb-6 md:p-0">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <Link href="/dashboard/workout">

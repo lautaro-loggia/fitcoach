@@ -37,7 +37,7 @@ export function WorkoutCard({ workout, onEdit, onDelete, onView, onDownload, onS
 
     return (
         <Card
-            className="relative hover:shadow-md transition-all cursor-pointer group flex flex-col h-full bg-white border-gray-100"
+            className="relative transition-all cursor-pointer group flex flex-col h-full bg-white border-gray-100"
             onClick={onView}
         >
             <CardHeader className="p-4 space-y-0 flex-1">
@@ -50,7 +50,7 @@ export function WorkoutCard({ workout, onEdit, onDelete, onView, onDownload, onS
                         {onStart && (
                             <Button
                                 size="icon"
-                                className="h-8 w-8 bg-[#5254D9] hover:bg-[#4547b8] text-white shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="h-8 w-8 bg-[#5254D9] hover:bg-[#4547b8] text-white opacity-0 group-hover:opacity-100 transition-opacity"
                                 title="Comenzar entrenamiento"
                                 onClick={(e) => {
                                     e.stopPropagation();

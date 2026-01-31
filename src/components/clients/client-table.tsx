@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useDebounce } from "@/hooks/use-debounce"
+import { DashboardTopBar } from '@/components/layout/dashboard-top-bar'
 
 import {
     DropdownMenu,
@@ -23,6 +24,15 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger,
+    SheetFooter,
+    SheetClose,
+} from "@/components/ui/sheet"
 import {
     Table,
     TableBody,
@@ -47,6 +57,7 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
+import { cn } from '@/lib/utils'
 
 // We define a type for the client data we expect
 export interface Client {
@@ -76,6 +87,7 @@ interface ClientTableProps {
     clients: Client[]
     presentialWorkouts: Workout[]
     defaultOpenNew?: boolean
+    hideHeader?: boolean
 }
 
 function getGoalLabel(goal: string | null) {
@@ -163,7 +175,7 @@ function getCheckinStatus(client: Client): { status: CheckinStatus | 'pending_re
     }
 }
 
-export function ClientTable({ clients, presentialWorkouts, defaultOpenNew }: ClientTableProps) {
+export function ClientTable({ clients, presentialWorkouts, defaultOpenNew, hideHeader }: ClientTableProps) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
     const [navigatingId, setNavigatingId] = useState<string | null>(null)
@@ -311,263 +323,319 @@ export function ClientTable({ clients, presentialWorkouts, defaultOpenNew }: Cli
         )
     }
 
-    return (
-        <div className="space-y-6 md:space-y-8">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div>
-                    <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Mis Asesorados</h2>
-                    <p className="text-muted-foreground">
-                        Gestioná tus clientes, sus planes y seguimiento.
-                    </p>
-                </div>
 
-                {/* Actions */}
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto">
-                    {/* Search */}
-                    <div className="relative flex-1 md:w-[320px]">
-                        <Search01Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            placeholder="Buscar por nombre, email u objetivo"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-9 pr-9"
-                        />
-                        {searchQuery && (
-                            <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                                <Cancel01Icon className="h-4 w-4" />
-                            </button>
-                        )}
-                    </div>
 
-                    {/* Filter Button */}
-                    <Popover>
-                        <PopoverTrigger asChild>
-                            <Button variant="outline" size="icon" className="shrink-0" title="Filtros">
-                                <FilterHorizontalIcon className="h-4 w-4" />
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-80" align="end">
-                            <div className="space-y-4">
-                                <h4 className="font-medium leading-none">Filtros</h4>
+    const FilterContent = () => (
+        <div className="space-y-6 py-4">
+            <div className="space-y-3">
+                <Label className="text-sm font-bold text-gray-900">Estado del Cliente</Label>
+                <RadioGroup value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)} className="grid grid-cols-1 gap-2">
+                    {[
+                        { id: 'all', label: 'Todos los estados' },
+                        { id: 'active', label: 'Activos' },
+                        { id: 'inactive', label: 'Inactivos' }
+                    ].map((opt) => (
+                        <Label
+                            key={opt.id}
+                            htmlFor={`status-${opt.id}`}
+                            className={cn(
+                                "flex items-center justify-between px-5 py-4 border-2 rounded-xl cursor-pointer transition-all hover:bg-muted/50",
+                                statusFilter === opt.id ? "border-primary bg-primary/5" : "border-transparent bg-muted/30"
+                            )}
+                        >
+                            <span className="font-medium">{opt.label}</span>
+                            <RadioGroupItem value={opt.id} id={`status-${opt.id}`} className="sr-only" />
+                            {statusFilter === opt.id && <Tick01Icon className="w-5 h-5 text-primary" />}
+                        </Label>
+                    ))}
+                </RadioGroup>
+            </div>
 
-                                <div className="space-y-2">
-                                    <Label>Estado</Label>
-                                    <RadioGroup value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
-                                        <div className="flex items-center space-x-2">
-                                            <RadioGroupItem value="all" id="s-all" />
-                                            <Label htmlFor="s-all">Todos</Label>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <RadioGroupItem value="active" id="s-active" />
-                                            <Label htmlFor="s-active">Activos</Label>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <RadioGroupItem value="inactive" id="s-inactive" />
-                                            <Label htmlFor="s-inactive">Inactivos</Label>
-                                        </div>
-                                    </RadioGroup>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label>Objetivo</Label>
-                                    <RadioGroup value={goalFilter} onValueChange={(v) => setGoalFilter(v as GoalFilter)}>
-                                        <div className="flex items-center space-x-2">
-                                            <RadioGroupItem value="all" id="g-all" />
-                                            <Label htmlFor="g-all">Todos</Label>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <RadioGroupItem value="fat_loss" id="g-lose" />
-                                            <Label htmlFor="g-lose">Pérdida de grasa</Label>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <RadioGroupItem value="muscle_gain" id="g-gain" />
-                                            <Label htmlFor="g-gain">Ganancia muscular</Label>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <RadioGroupItem value="recomp" id="g-recomp" />
-                                            <Label htmlFor="g-recomp">Recomposición</Label>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <RadioGroupItem value="performance" id="g-perf" />
-                                            <Label htmlFor="g-perf">Rendimiento</Label>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <RadioGroupItem value="health" id="g-health" />
-                                            <Label htmlFor="g-health">Salud</Label>
-                                        </div>
-                                    </RadioGroup>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label>Próximo Check-in</Label>
-                                    <RadioGroup value={checkinFilter} onValueChange={(v) => setCheckinFilter(v as CheckinStatus)}>
-                                        <div className="flex items-center space-x-2">
-                                            <RadioGroupItem value="all" id="c-all" />
-                                            <Label htmlFor="c-all">Todos</Label>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <RadioGroupItem value="overdue" id="c-overdue" />
-                                            <Label htmlFor="c-overdue" className="text-red-600">Vencido</Label>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <RadioGroupItem value="due_soon" id="c-soon" />
-                                            <Label htmlFor="c-soon" className="text-yellow-600">Hoy o &lt;48h</Label>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <RadioGroupItem value="future" id="c-future" />
-                                            <Label htmlFor="c-future" className="text-green-600">Mayor a 48h</Label>
-                                        </div>
-                                    </RadioGroup>
-                                </div>
-                            </div>
-                        </PopoverContent>
-                    </Popover>
-
-                    {/* Calendar Button */}
-                    <PresentialCalendarDialog workouts={presentialWorkouts} />
-
-                    {/* Add Client Button */}
-                    <AddClientDialog defaultOpen={defaultOpenNew} />
+            <div className="space-y-3">
+                <Label className="text-sm font-bold text-gray-900">Objetivo Principal</Label>
+                <div className="grid grid-cols-1 gap-2">
+                    {[
+                        { id: 'all', label: 'Todos los objetivos' },
+                        { id: 'fat_loss', label: 'Pérdida de grasa' },
+                        { id: 'muscle_gain', label: 'Ganancia muscular' },
+                        { id: 'recomp', label: 'Recomposición' },
+                        { id: 'performance', label: 'Rendimiento' },
+                        { id: 'health', label: 'Salud' }
+                    ].map((opt) => (
+                        <button
+                            key={opt.id}
+                            onClick={() => setGoalFilter(opt.id as GoalFilter)}
+                            className={cn(
+                                "flex items-center justify-between px-5 py-4 border-2 rounded-xl text-left transition-all hover:bg-muted/50 text-sm",
+                                goalFilter === opt.id ? "border-primary bg-primary/5 font-semibold" : "border-transparent bg-muted/30"
+                            )}
+                        >
+                            {opt.label}
+                            {goalFilter === opt.id && <Tick01Icon className="w-5 h-5 text-primary" />}
+                        </button>
+                    ))}
                 </div>
             </div>
 
-            {/* Active Filters Chips */}
-            {hasActiveFilters && (
-                <div className="flex flex-wrap gap-2 items-center">
-                    {statusFilter !== 'all' && (
-                        <Badge variant="secondary" className="gap-1 pr-1">
-                            Estado: {statusFilter === 'active' ? 'Activo' : 'Inactivo'}
-                            <button onClick={() => removeFilter('status')} className="ml-1 hover:text-foreground"><Cancel01Icon className="h-3 w-3" /></button>
-                        </Badge>
-                    )}
-                    {goalFilter !== 'all' && (
-                        <Badge variant="secondary" className="gap-1 pr-1">
-                            Objetivo: {getGoalLabel(goalFilter)}
-                            <button onClick={() => removeFilter('goal')} className="ml-1 hover:text-foreground"><Cancel01Icon className="h-3 w-3" /></button>
-                        </Badge>
-                    )}
-                    {checkinFilter !== 'all' && (
-                        <Badge variant="secondary" className="gap-1 pr-1">
-                            Check-in: {checkinFilter === 'overdue' ? 'Vencido' : checkinFilter === 'due_soon' ? 'Próximo' : 'Futuro'}
-                            <button onClick={() => removeFilter('checkin')} className="ml-1 hover:text-foreground"><Cancel01Icon className="h-3 w-3" /></button>
-                        </Badge>
-                    )}
-                    <Button variant="ghost" size="sm" onClick={clearFilters} className="h-6 text-xs text-muted-foreground">
-                        Limpiar todo
-                    </Button>
-                </div>
-            )}
+            <div className="space-y-3">
+                <Label className="text-sm font-bold text-gray-900">Próximo Check-in</Label>
+                <RadioGroup value={checkinFilter} onValueChange={(v) => setCheckinFilter(v as CheckinStatus)} className="grid grid-cols-1 gap-2">
+                    {[
+                        { id: 'all', label: 'Cualquier fecha' },
+                        { id: 'overdue', label: 'Vencidos', color: 'text-red-600' },
+                        { id: 'due_soon', label: 'Hoy o mañana', color: 'text-amber-600' },
+                        { id: 'future', label: 'A tiempo', color: 'text-emerald-600' }
+                    ].map((opt) => (
+                        <Label
+                            key={opt.id}
+                            htmlFor={`check-${opt.id}`}
+                            className={cn(
+                                "flex items-center justify-between px-5 py-4 border-2 rounded-xl cursor-pointer transition-all hover:bg-muted/50",
+                                checkinFilter === opt.id ? "border-primary bg-primary/5" : "border-transparent bg-muted/30"
+                            )}
+                        >
+                            <span className={cn("font-medium", (opt as any).color)}>{opt.label}</span>
+                            <RadioGroupItem value={opt.id} id={`check-${opt.id}`} className="sr-only" />
+                            {checkinFilter === opt.id && <Tick01Icon className="w-5 h-5 text-primary" />}
+                        </Label>
+                    ))}
+                </RadioGroup>
+            </div>
+        </div>
+    )
 
+    return (
+        <div className="flex flex-col">
+            {!hideHeader && (
+                <DashboardTopBar
+                    title="Mis Asesorados"
+                    subtitle="Gestioná tus clientes, sus planes y seguimiento"
+                >
+                    <div className="flex items-center gap-2 md:gap-4">
+                        {/* Search in Header */}
+                        <div className="relative w-48 md:w-80">
+                            <Search01Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                placeholder="Buscar..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="pl-10 pr-10 h-10 text-sm border-gray-200 focus:border-primary rounded-xl"
+                            />
+                            {searchQuery && (
+                                <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                                    <Cancel01Icon className="h-4 w-4" />
+                                </button>
+                            )}
+                        </div>
 
+                        {/* Filter Sheet Trigger */}
+                        <Sheet>
+                            <SheetTrigger asChild>
+                                <Button variant="outline" className="h-10 px-4 gap-2 border-gray-200 rounded-xl hover:bg-gray-50 shrink-0">
+                                    <FilterHorizontalIcon className="h-4 w-4" />
+                                    <span className="hidden md:inline">Filtros</span>
+                                    {hasActiveFilters && (
+                                        <Badge className="ml-1 h-5 w-5 p-0 flex items-center justify-center rounded-full bg-primary text-white text-[10px]">
+                                            {(statusFilter !== 'all' ? 1 : 0) + (goalFilter !== 'all' ? 1 : 0) + (checkinFilter !== 'all' ? 1 : 0)}
+                                        </Badge>
+                                    )}
+                                </Button>
+                            </SheetTrigger>
+                            <SheetContent className="w-full sm:max-w-md overflow-y-auto">
+                                <SheetHeader className="pb-4 border-b">
+                                    <SheetTitle className="text-xl font-bold">Filtros Avanzados</SheetTitle>
+                                    <p className="text-sm text-muted-foreground">Personalizá tu vista de clientes</p>
+                                </SheetHeader>
 
+                                <FilterContent />
 
-
-            {filteredClients.length === 0 ? (
-                <div className="rounded-md border p-8 text-center text-muted-foreground">
-                    <p className="text-lg font-medium text-foreground">No se encontraron resultados</p>
-                    <p className="mb-4">Intenta ajustar los filtros o la búsqueda.</p>
-                    <div className="flex justify-center gap-4">
-                        <Button variant="outline" onClick={clearFilters}>Limpiar filtros</Button>
-                        <AddClientDialog />
-                    </div>
-                </div>
-            ) : (
-                <>
-                    {/* Desktop Table */}
-                    <div className="hidden md:block rounded-md border relative">
-                        {isPending && !navigatingId && (
-                            <div className="absolute inset-0 bg-background/50 backdrop-blur-[1px] z-10 flex items-center justify-center rounded-md">
-                                <Loading03Icon className="h-8 w-8 animate-spin text-primary" />
-                            </div>
-                        )}
-                        <Table>
-                            <TableHeader>
-                                <TableRow className="hover:bg-transparent cursor-default">
-                                    <TableHead className="w-[300px]">Asesorado</TableHead>
-                                    <TableHead>Estado</TableHead>
-                                    <TableHead>Objetivo</TableHead>
-                                    <TableHead>Próximo Check-in</TableHead>
-                                    <TableHead className="text-right">Acciones</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {filteredClients.map((client) => {
-                                    const checkinInfo = getCheckinStatus(client);
-                                    return (
-                                        <TableRow
-                                            key={client.id}
-                                            className="cursor-pointer hover:bg-muted/50 transition-colors"
-                                            onClick={() => handleRowClick(client.id)}
+                                <SheetFooter className="mt-8 flex-col gap-2 pt-6 border-t sm:flex-col">
+                                    <SheetClose asChild>
+                                        <Button className="w-full h-11 rounded-xl font-bold">Aplicar Filtros</Button>
+                                    </SheetClose>
+                                    {hasActiveFilters && (
+                                        <Button
+                                            variant="ghost"
+                                            onClick={clearFilters}
+                                            className="w-full h-11 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded-xl"
                                         >
-                                            <TableCell>
-                                                <div className="flex items-center gap-3">
-                                                    <ClientAvatar name={client.full_name} avatarUrl={client.avatar_url} size="md" />
-                                                    <div className="flex flex-col">
-                                                        <span className="font-medium">{client.full_name}</span>
-                                                        <span className="text-xs text-muted-foreground">{client.email || '-'}</span>
-                                                    </div>
-                                                    {isPending && navigatingId === client.id && (
-                                                        <Loading03Icon className="h-3 w-3 animate-spin text-muted-foreground" />
-                                                    )}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex items-center gap-2">
-                                                    <div className={`h-2.5 w-2.5 rounded-full ${client.status === 'active' ? 'bg-green-500' : 'bg-gray-300'}`} />
-                                                    <span className="text-sm">{client.status === 'active' ? 'Activo' : 'Inactivo'}</span>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Badge variant="secondary" className="font-normal border-transparent bg-muted text-muted-foreground hover:bg-muted">
-                                                    {getGoalLabel(client.main_goal)}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell>
-                                                <span className={`font-medium ${checkinInfo.color}`}>
-                                                    {checkinInfo.labels}
-                                                </span>
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <ActionMenu client={client} />
-                                            </TableCell>
-                                        </TableRow>
-                                    )
-                                })}
-                            </TableBody>
-                        </Table>
-                    </div>
+                                            Limpiar todos los filtros
+                                        </Button>
+                                    )}
+                                </SheetFooter>
+                            </SheetContent>
+                        </Sheet>
 
-                    {/* Mobile Cards (Simplified for consistency, though user asked for Table improvements, Mobile usually falls back to cards) */}
-                    <div className="md:hidden space-y-3">
-                        {filteredClients.map((client) => {
-                            const checkinInfo = getCheckinStatus(client);
-                            return (
-                                <div key={client.id} className="flex flex-col gap-3 p-4 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleRowClick(client.id)}>
-                                    <div className="flex justify-between items-start">
-                                        <div className="flex items-center gap-3">
-                                            <ClientAvatar name={client.full_name} avatarUrl={client.avatar_url} size="md" />
-                                            <div>
-                                                <p className="font-medium">{client.full_name}</p>
-                                                <p className="text-sm text-muted-foreground">{getGoalLabel(client.main_goal)}</p>
-                                            </div>
-                                        </div>
-                                        <ActionMenu client={client} />
-                                    </div>
-                                    <div className="flex items-center justify-between text-sm">
-                                        <div className="flex items-center gap-2">
-                                            <div className={`h-2.5 w-2.5 rounded-full ${client.status === 'active' ? 'bg-green-500' : 'bg-gray-300'}`} />
-                                            <span>{client.status === 'active' ? 'Activo' : 'Inactivo'}</span>
-                                        </div>
-                                        <span className={`${checkinInfo.color}`}>
-                                            Check-in: {checkinInfo.labels}
-                                        </span>
-                                    </div>
-                                </div>
-                            )
-                        })}
+                        <PresentialCalendarDialog workouts={presentialWorkouts} />
+                        <AddClientDialog defaultOpen={defaultOpenNew} />
                     </div>
-                </>
+                </DashboardTopBar>
             )}
+
+            <div className={cn("p-4 md:p-8 space-y-6 md:space-y-8", hideHeader && "mt-0")}>
+                {/* Active Filters Chips Layout - Cleaner */}
+                {hasActiveFilters && (
+                    <div className="flex flex-wrap gap-2 items-center -mt-2">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mr-1">Activos:</span>
+                        {statusFilter !== 'all' && (
+                            <Badge variant="secondary" className="px-2 py-1 gap-1 text-xs border-transparent bg-primary/5 text-primary hover:bg-primary/10">
+                                {statusFilter === 'active' ? 'Activos' : 'Inactivos'}
+                                <button onClick={() => removeFilter('status')} className="ml-1 hover:text-red-600 transition-colors"><Cancel01Icon className="h-3 w-3" /></button>
+                            </Badge>
+                        )}
+                        {goalFilter !== 'all' && (
+                            <Badge variant="secondary" className="px-2 py-1 gap-1 text-xs border-transparent bg-primary/5 text-primary hover:bg-primary/10">
+                                {getGoalLabel(goalFilter)}
+                                <button onClick={() => removeFilter('goal')} className="ml-1 hover:text-red-600 transition-colors"><Cancel01Icon className="h-3 w-3" /></button>
+                            </Badge>
+                        )}
+                        {checkinFilter !== 'all' && (
+                            <Badge variant="secondary" className="px-2 py-1 gap-1 text-xs border-transparent bg-primary/5 text-primary hover:bg-primary/10">
+                                {checkinFilter === 'overdue' ? 'Vencidos' : checkinFilter === 'due_soon' ? 'Próximos' : 'A tiempo'}
+                                <button onClick={() => removeFilter('checkin')} className="ml-1 hover:text-red-600 transition-colors"><Cancel01Icon className="h-3 w-3" /></button>
+                            </Badge>
+                        )}
+                    </div>
+                )}
+
+                {/* Active Filters Chips */}
+                {hasActiveFilters && (
+                    <div className="flex flex-wrap gap-2 items-center">
+                        {statusFilter !== 'all' && (
+                            <Badge variant="secondary" className="gap-1 pr-1">
+                                Estado: {statusFilter === 'active' ? 'Activo' : 'Inactivo'}
+                                <button onClick={() => removeFilter('status')} className="ml-1 hover:text-foreground"><Cancel01Icon className="h-3 w-3" /></button>
+                            </Badge>
+                        )}
+                        {goalFilter !== 'all' && (
+                            <Badge variant="secondary" className="gap-1 pr-1">
+                                Objetivo: {getGoalLabel(goalFilter)}
+                                <button onClick={() => removeFilter('goal')} className="ml-1 hover:text-foreground"><Cancel01Icon className="h-3 w-3" /></button>
+                            </Badge>
+                        )}
+                        {checkinFilter !== 'all' && (
+                            <Badge variant="secondary" className="gap-1 pr-1">
+                                Check-in: {checkinFilter === 'overdue' ? 'Vencido' : checkinFilter === 'due_soon' ? 'Próximo' : 'Futuro'}
+                                <button onClick={() => removeFilter('checkin')} className="ml-1 hover:text-foreground"><Cancel01Icon className="h-3 w-3" /></button>
+                            </Badge>
+                        )}
+                        <Button variant="ghost" size="sm" onClick={clearFilters} className="h-6 text-xs text-muted-foreground">
+                            Limpiar todo
+                        </Button>
+                    </div>
+                )}
+
+
+
+
+
+                {filteredClients.length === 0 ? (
+                    <div className="rounded-md border p-8 text-center text-muted-foreground">
+                        <p className="text-lg font-medium text-foreground">No se encontraron resultados</p>
+                        <p className="mb-4">Intenta ajustar los filtros o la búsqueda.</p>
+                        <div className="flex justify-center gap-4">
+                            <Button variant="outline" onClick={clearFilters}>Limpiar filtros</Button>
+                            <AddClientDialog />
+                        </div>
+                    </div>
+                ) : (
+                    <>
+                        {/* Desktop Table */}
+                        <div className="hidden md:block rounded-xl border bg-white shadow-sm relative overflow-hidden">
+                            {isPending && !navigatingId && (
+                                <div className="absolute inset-0 bg-background/50 backdrop-blur-[1px] z-10 flex items-center justify-center rounded-md">
+                                    <Loading03Icon className="h-8 w-8 animate-spin text-primary" />
+                                </div>
+                            )}
+                            <Table>
+                                <TableHeader>
+                                    <TableRow className="hover:bg-transparent cursor-default">
+                                        <TableHead className="w-[300px]">Asesorado</TableHead>
+                                        <TableHead>Estado</TableHead>
+                                        <TableHead>Objetivo</TableHead>
+                                        <TableHead>Próximo Check-in</TableHead>
+                                        <TableHead className="text-right">Acciones</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {filteredClients.map((client) => {
+                                        const checkinInfo = getCheckinStatus(client);
+                                        return (
+                                            <TableRow
+                                                key={client.id}
+                                                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                                                onClick={() => handleRowClick(client.id)}
+                                            >
+                                                <TableCell>
+                                                    <div className="flex items-center gap-3">
+                                                        <ClientAvatar name={client.full_name} avatarUrl={client.avatar_url} size="md" />
+                                                        <div className="flex flex-col">
+                                                            <span className="font-medium">{client.full_name}</span>
+                                                            <span className="text-xs text-muted-foreground">{client.email || '-'}</span>
+                                                        </div>
+                                                        {isPending && navigatingId === client.id && (
+                                                            <Loading03Icon className="h-3 w-3 animate-spin text-muted-foreground" />
+                                                        )}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`h-2.5 w-2.5 rounded-full ${client.status === 'active' ? 'bg-green-500' : 'bg-gray-300'}`} />
+                                                        <span className="text-sm">{client.status === 'active' ? 'Activo' : 'Inactivo'}</span>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Badge variant="secondary" className="font-normal border-transparent bg-muted text-muted-foreground hover:bg-muted">
+                                                        {getGoalLabel(client.main_goal)}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <span className={`font-medium ${checkinInfo.color}`}>
+                                                        {checkinInfo.labels}
+                                                    </span>
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    <ActionMenu client={client} />
+                                                </TableCell>
+                                            </TableRow>
+                                        )
+                                    })}
+                                </TableBody>
+                            </Table>
+                        </div>
+
+                        {/* Mobile Cards (Simplified for consistency, though user asked for Table improvements, Mobile usually falls back to cards) */}
+                        <div className="md:hidden space-y-3">
+                            {filteredClients.map((client) => {
+                                const checkinInfo = getCheckinStatus(client);
+                                return (
+                                    <div key={client.id} className="flex flex-col gap-3 p-4 border rounded-xl bg-white shadow-sm cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => handleRowClick(client.id)}>
+                                        <div className="flex justify-between items-start">
+                                            <div className="flex items-center gap-3">
+                                                <ClientAvatar name={client.full_name} avatarUrl={client.avatar_url} size="md" />
+                                                <div>
+                                                    <p className="font-medium">{client.full_name}</p>
+                                                    <p className="text-sm text-muted-foreground">{getGoalLabel(client.main_goal)}</p>
+                                                </div>
+                                            </div>
+                                            <ActionMenu client={client} />
+                                        </div>
+                                        <div className="flex items-center justify-between text-sm">
+                                            <div className="flex items-center gap-2">
+                                                <div className={`h-2.5 w-2.5 rounded-full ${client.status === 'active' ? 'bg-green-500' : 'bg-gray-300'}`} />
+                                                <span>{client.status === 'active' ? 'Activo' : 'Inactivo'}</span>
+                                            </div>
+                                            <span className={`${checkinInfo.color}`}>
+                                                Check-in: {checkinInfo.labels}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </>
+                )}
+            </div>
         </div>
     )
 }

@@ -52,7 +52,7 @@ export function PresentialTrainings({ trainings }: PresentialTrainingsProps) {
 
             <div className="space-y-3">
                 {trainings.map((training) => (
-                    <Card key={training.id} className="border-none shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                    <Card key={training.id} className="border overflow-hidden transition-shadow">
                         <CardContent className="p-0 flex items-stretch">
                             {/* Time Box */}
                             <div className="w-16 bg-muted/30 flex flex-col items-center justify-center border-r border-border/50 py-3 px-1">

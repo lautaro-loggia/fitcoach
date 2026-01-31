@@ -19,7 +19,7 @@ export function WeightChart({ data, target, unit }: WeightChartProps) {
     }))
 
     return (
-        <Card className="border-muted/60 shadow-sm mb-6">
+        <Card className="mb-6">
             <CardContent className="p-6">
                 <div className="h-[300px] w-full">
                     {data.length > 0 ? (

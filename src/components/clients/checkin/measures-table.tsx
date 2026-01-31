@@ -48,7 +48,7 @@ export function MeasuresTable({ checkins, selectedMetric, onSelect }: MeasuresTa
     ]
 
     return (
-        <Card className="h-full border-muted/60 shadow-sm">
+        <Card className="h-full">
             <CardHeader className="pb-4">
                 <CardTitle className="text-lg font-bold">Medidas corporales</CardTitle>
             </CardHeader>
