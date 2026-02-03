@@ -93,7 +93,16 @@ export function ExerciseCheckinMobile({
     const handleSaveSet = async (setNumber: number, reps: number, weight: number, isCompleted: boolean) => {
         if (!checkin) return
 
-        const { setLog } = await saveSetLog(checkin.id, setNumber, reps, weight, isCompleted)
+        const { setLog } = await saveSetLog(
+            checkin.id,
+            sessionId,
+            exerciseIndex,
+            exercise.name,
+            setNumber,
+            reps,
+            weight,
+            isCompleted
+        )
 
         if (setLog) {
             setSetLogs(prev => {
