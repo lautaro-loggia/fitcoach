@@ -7,12 +7,8 @@ import { Loader2, Calendar, Utensils, Download } from 'lucide-react'
 import { WeekStrip } from './week-strip'
 import { DayView } from './day-view'
 import { PlanWizard } from './plan-wizard'
-import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
-import { Calendar as CalendarComponent } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { generateWeeklyPlanPDF } from './pdf-generator'
 import { Badge } from '@/components/ui/badge'
+import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { DietaryCard } from '../cards/dietary-card'
 
@@ -57,17 +53,7 @@ export function WeeklyMealPlanContainer({ client }: WeeklyMealPlanContainerProps
         }
     }
 
-    const handleUpdateReviewDate = async (date: Date | undefined) => {
-        if (!plan) return
-        const dateStr = date ? format(date, 'yyyy-MM-dd') : null
-        await updateReviewDate(plan.id, client.id, dateStr)
-        setPlan({ ...plan, review_date: dateStr })
-    }
 
-    const handleDownloadPDF = () => {
-        if (!plan) return
-        generateWeeklyPlanPDF(plan, client.full_name)
-    }
 
     // Daily Stats Calculation
     const dailyStats = useMemo(() => {
@@ -133,65 +119,37 @@ export function WeeklyMealPlanContainer({ client }: WeeklyMealPlanContainerProps
 
     return (
         <div className="space-y-6">
-            {/* 1. Header & Actions */}
-            <div className="flex justify-between items-end border-b pb-4">
-                <div>
-                    <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon" className="-ml-3 h-8 w-8 hidden md:flex">
-                            <span className="text-xl">‹</span> {/* Back arrow placeholder if navigation needed */}
-                        </Button>
-                        <h1 className="text-2xl font-bold tracking-tight">Plan nutricional</h1>
-                    </div>
-                    <p className="text-muted-foreground text-sm ml-0 md:ml-7">Gestiona el plan semanal de tus asesorados</p>
-                </div>
+            {/* Removed internal header to use global page header */}
 
-                <div className="flex items-center gap-2">
-                    {/* Secondary Actions: PDF & Revision - Kept minimal as per new design focus, possibly moved to 'Ajustes' tab in real mockup but keeping here for functionality */}
-                    <div className="flex items-center gap-1 text-sm bg-muted/50 p-1 rounded-md">
-                        <Button variant="ghost" size="sm" className="h-7 px-2 text-muted-foreground" onClick={handleDownloadPDF}>PDF</Button>
-                        <div className="w-px h-3 bg-border"></div>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button variant="ghost" size="sm" className="h-7 px-2 text-muted-foreground">
-                                    {plan.review_date ? format(new Date(plan.review_date), 'dd MMM', { locale: es }) : "Revisión"}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="end"><CalendarComponent mode="single" selected={plan.review_date ? new Date(plan.review_date) : undefined} onSelect={handleUpdateReviewDate} initialFocus /></PopoverContent>
-                        </Popover>
-                    </div>
-                </div>
-            </div>
 
             {/* 2. Top Bar: Info & Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-stretch">
                 <DietaryCard client={client} />
 
-                <div className="md:col-span-2 flex flex-col justify-center h-full">
-                    <div className="bg-white rounded-xl border p-4 h-full flex flex-col justify-center">
-                        <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                            Objetivos Diarios
-                        </h3>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="md:col-span-2">
+                    <Card className="bg-white p-4 h-[96px] flex flex-col justify-center py-0">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
                             <div className="flex flex-col">
-                                <span className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Calorías</span>
-                                <span className="text-2xl font-bold text-gray-900">{targetKcal} <span className="text-sm font-normal text-gray-500">kcal</span></span>
+                                <span className="text-[10px] text-muted-foreground uppercase tracking-wider leading-none mb-1">Calorías</span>
+                                <span className="text-xl font-bold text-gray-900 leading-none">{targetKcal} <span className="text-xs font-normal text-gray-400">kcal</span></span>
                             </div>
                             <div className="flex flex-col">
-                                <span className="text-xs text-blue-600 font-medium uppercase tracking-wider mb-1">Proteínas</span>
-                                <span className="text-2xl font-bold text-gray-900">{targetProt}g</span>
+                                <span className="text-[10px] text-blue-600 font-bold uppercase tracking-wider leading-none mb-1">Proteínas</span>
+                                <span className="text-xl font-bold text-gray-900 leading-none">{targetProt}g</span>
                             </div>
                             <div className="flex flex-col">
-                                <span className="text-xs text-yellow-600 font-medium uppercase tracking-wider mb-1">Carbohidratos</span>
-                                <span className="text-2xl font-bold text-gray-900">{targetCarbs}g</span>
+                                <span className="text-[10px] text-yellow-600 font-bold uppercase tracking-wider leading-none mb-1">Carbohidratos</span>
+                                <span className="text-xl font-bold text-gray-900 leading-none">{targetCarbs}g</span>
                             </div>
                             <div className="flex flex-col">
-                                <span className="text-xs text-red-600 font-medium uppercase tracking-wider mb-1">Grasas</span>
-                                <span className="text-2xl font-bold text-gray-900">{targetFats}g</span>
+                                <span className="text-[10px] text-red-600 font-bold uppercase tracking-wider leading-none mb-1">Grasas</span>
+                                <span className="text-xl font-bold text-gray-900 leading-none">{targetFats}g</span>
                             </div>
                         </div>
-                    </div>
+                    </Card>
                 </div>
             </div>
+
 
             {/* 3. Week Strip */}
             <WeekStrip

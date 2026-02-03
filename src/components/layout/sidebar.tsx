@@ -89,9 +89,10 @@ function SidebarContent({ collapsed, onNavigate, toggleSidebar }: { collapsed: b
                                 "flex items-center rounded-lg py-2.5 text-sm font-medium transition-colors w-full text-left",
                                 collapsed ? "justify-center px-2" : "px-3 gap-3",
                                 isActive
-                                    ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
+                                    ? "bg-sidebar-primary text-sidebar-primary-foreground"
                                     : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                            )}
+                            )
+                            }
                             title={collapsed ? item.name : undefined}
                         >
                             <item.icon className={cn("h-5 w-5", !collapsed && "mr-1")} />
@@ -99,7 +100,7 @@ function SidebarContent({ collapsed, onNavigate, toggleSidebar }: { collapsed: b
                         </Link>
                     )
                 })}
-            </div>
+            </div >
 
             <div className="p-2 border-t border-sidebar-border">
                 <Button

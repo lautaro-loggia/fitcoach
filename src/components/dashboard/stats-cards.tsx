@@ -13,7 +13,7 @@ interface StatsCardProps {
 
 export function StatsCard({ title, value, description, icon: Icon, alert, href }: StatsCardProps) {
     const cardContent = (
-        <Card className={`${alert ? "border-destructive/50" : ""} ${href ? "cursor-pointer transition-shadow hover:shadow-md" : ""}`}>
+        <Card className={`${alert ? "border-destructive/50" : ""} ${href ? "cursor-pointer transition-shadow hover:border-gray-300" : ""}`}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
                     {title}

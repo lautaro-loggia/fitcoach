@@ -20,7 +20,7 @@ export function TemplateWorkoutCard({ workout, onClick, onEdit, onDelete, onAssi
 
     return (
         <Card
-            className="h-full group hover:border-violet-primary/50 hover:shadow-md transition-all cursor-pointer relative"
+            className="h-full group hover:border-violet-primary/50 transition-all cursor-pointer relative"
             onClick={onClick}
         >
             <div className="absolute top-4 right-4 z-10" onClick={(e) => e.stopPropagation()}>

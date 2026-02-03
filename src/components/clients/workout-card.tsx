@@ -37,7 +37,7 @@ export function WorkoutCard({ workout, onEdit, onDelete, onView, onDownload, onS
 
     return (
         <Card
-            className="relative transition-all cursor-pointer group flex flex-col h-full bg-white border-gray-100"
+            className="relative transition-all cursor-pointer group flex flex-col h-full bg-white"
             onClick={onView}
         >
             <CardHeader className="p-4 space-y-0 flex-1">

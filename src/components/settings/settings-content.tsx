@@ -16,7 +16,7 @@ export function SettingsContent({ user, profile }: SettingsContentProps) {
     const [activeTab, setActiveTab] = useState('account')
 
     return (
-        <div className="flex flex-col min-h-screen">
+        <div className="flex flex-col">
             <DashboardTopBar
                 title="Ajustes"
                 subtitle="Gestiona tu cuenta y preferencias"
@@ -27,7 +27,7 @@ export function SettingsContent({ user, profile }: SettingsContentProps) {
                 ]}
             />
 
-            <main className="flex-1 p-4 md:p-8 pt-6">
+            <div className="flex-1 p-4 md:p-8 pt-6">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                     <TabsContent value="account" className="space-y-4">
                         <AccountForm userId={user.id} />
@@ -41,7 +41,7 @@ export function SettingsContent({ user, profile }: SettingsContentProps) {
                         />
                     </TabsContent>
                 </Tabs>
-            </main>
+            </div>
         </div>
     )
 }

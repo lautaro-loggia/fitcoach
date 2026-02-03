@@ -1,117 +1,170 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { Camera, Loader2, UploadCloud } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Camera, Image as ImageIcon, Check, Loader2, Plus, X } from 'lucide-react'
 import { toast } from 'sonner'
-import { logMeal } from '@/app/(client)/dashboard/diet/actions'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Label } from '@/components/ui/label'
+import { registerMealLog } from '@/app/(dashboard)/clients/[id]/meal-plan-actions'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import Image from 'next/image'
 
-export function MealLogger({ clientId }: { clientId: string }) {
-    const [isUploading, setIsUploading] = useState(false)
-    const [isOpen, setIsOpen] = useState(false)
-    const [selectedFile, setSelectedFile] = useState<File | null>(null)
-    const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-    const [mealType, setMealType] = useState<string>('almuerzo')
+interface MealLoggerProps {
+    clientId: string
+    mealName: string
+    existingLogs: any[] // From Supabase
+}
 
+export function MealLogger({ clientId, mealName, existingLogs }: MealLoggerProps) {
     const fileInputRef = useRef<HTMLInputElement>(null)
+    const [isUploading, setIsUploading] = useState(false)
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+    const [selectedFile, setSelectedFile] = useState<File | null>(null)
+    const [confirmOpen, setConfirmOpen] = useState(false)
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0]
+        const file = e.target.files?.[0]
+        if (file) {
             setSelectedFile(file)
-            setPreviewUrl(URL.createObjectURL(file))
-            setIsOpen(true) // Open dialog to confirm/select type
+            const url = URL.createObjectURL(file)
+            setPreviewUrl(url)
+            setConfirmOpen(true)
         }
+        // Reset input
+        if (fileInputRef.current) fileInputRef.current.value = ''
     }
 
-    const handleUpload = async () => {
+    const handleConfirmUpload = async () => {
         if (!selectedFile) return
 
         setIsUploading(true)
         const formData = new FormData()
-        formData.append('photo', selectedFile)
-        formData.append('mealType', mealType)
-        formData.append('clientId', clientId)
+        formData.append('file', selectedFile)
 
-        const result = await logMeal(formData)
-
-        if (result.error) {
-            toast.error(result.error)
-        } else {
-            toast.success('¡Comida registrada!')
-            setIsOpen(false)
-            setSelectedFile(null)
-            setPreviewUrl(null)
+        try {
+            const result = await registerMealLog(clientId, mealName, formData)
+            if (result?.error) {
+                toast.error(result.error)
+            } else {
+                toast.success('Comida registrada exitosamente')
+                setConfirmOpen(false)
+                setSelectedFile(null)
+                setPreviewUrl(null)
+            }
+        } catch (error) {
+            toast.error('Error al subir la comida')
+        } finally {
+            setIsUploading(false)
         }
-        setIsUploading(false)
     }
 
+    const handleCancel = () => {
+        setConfirmOpen(false)
+        setSelectedFile(null)
+        setPreviewUrl(null)
+    }
+
+    const triggerFileRead = () => {
+        fileInputRef.current?.click()
+    }
+
+    // Filter logs for this specific meal (case sensitive? Usually mealName matches what is stored)
+    // The logs passed in should already be filtered or we filter here if we pass all daily logs.
+    // Let's assume parent passes logs filtered for this meal or we filter here.
+    // For simplicity, let's assume the parent passes ALL daily logs and we filter.
+    const myLogs = existingLogs.filter(log => log.meal_type === mealName)
+
+    const hasLogs = myLogs.length > 0
+
     return (
-        <>
+        <div className="mt-4 pt-3 border-t border-gray-100">
+            {/* Hidden Input */}
             <input
                 type="file"
-                accept="image/*"
-                capture="environment"
-                className="hidden"
                 ref={fileInputRef}
+                accept="image/*"
+                capture="environment" // Prefer back camera on mobile
+                className="hidden"
                 onChange={handleFileSelect}
             />
 
-            <Button
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-12 shadow-md"
-            >
-                <Camera className="mr-2 h-5 w-5" />
-                Registrar Comida
-            </Button>
-
-            <Dialog open={isOpen} onOpenChange={setIsOpen}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Confirmar Foto</DialogTitle>
-                    </DialogHeader>
-
-                    <div className="space-y-4">
-                        {previewUrl && (
-                            <div className="relative aspect-video w-full overflow-hidden rounded-lg border bg-gray-100">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src={previewUrl} alt="Preview" className="object-cover w-full h-full" />
-                            </div>
-                        )}
-
-                        <div className="space-y-2">
-                            <Label>¿Qué comida es?</Label>
-                            <Select value={mealType} onValueChange={setMealType}>
-                                <SelectTrigger>
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="desayuno">Desayuno</SelectItem>
-                                    <SelectItem value="almuerzo">Almuerzo</SelectItem>
-                                    <SelectItem value="merienda">Merienda</SelectItem>
-                                    <SelectItem value="cena">Cena</SelectItem>
-                                    <SelectItem value="snack">Snack / Otro</SelectItem>
-                                </SelectContent>
-                            </Select>
+            {/* Existing Logs Visualization */}
+            {hasLogs && (
+                <div className="flex gap-2 mb-3 overflow-x-auto pb-2">
+                    {myLogs.map((log) => (
+                        <div key={log.id} className="relative h-16 w-16 shrink-0 rounded-lg overflow-hidden border border-gray-200">
+                            <Image
+                                src={log.signedUrl || '/placeholder.png'}
+                                alt="Comida registrada"
+                                fill
+                                className="object-cover"
+                            />
+                            {/* Badge count if multiple? Requirement: "Si hay varias fotos... mostrar 1 thumbnail + badge +2" 
+                                The mockup/req implies we can show thumbnails or collapse.
+                                "Después de registrar: mostrar thumbnail pequeño de la foto"
+                                "Si hay varias fotos... mostrar 1 thumbnail + badge +2"
+                            */}
                         </div>
+                    ))}
+                </div>
+            )}
 
+            {/* CTA Button */}
+            <div className="flex items-center justify-between">
+                {(!hasLogs) && (
+                    <span className="text-xs text-gray-500 italic">Sin comidas registradas</span>
+                )}
+                {hasLogs && <span className="text-xs text-green-600 font-medium flex items-center gap-1"><Check className="h-3 w-3" /> Registrado</span>}
+
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={triggerFileRead}
+                    disabled={isUploading}
+                    className="ml-auto gap-2 text-blue-600 border-blue-200 hover:bg-blue-50"
+                >
+                    <Camera className="h-4 w-4" />
+                    {hasLogs ? "Registrar otra" : "Registrar comida"}
+                </Button>
+            </div>
+
+            {/* Confirmation Dialog */}
+            <Dialog open={confirmOpen} onOpenChange={(open) => !isUploading && !open && handleCancel()}>
+                <DialogContent className="sm:max-w-md p-0 overflow-hidden rounded-2xl gap-0">
+                    <div className="relative w-full aspect-[4/3] bg-black">
+                        {previewUrl && (
+                            <Image
+                                src={previewUrl}
+                                alt="Preview"
+                                fill
+                                className="object-contain"
+                            />
+                        )}
                         <Button
-                            onClick={handleUpload}
-                            disabled={isUploading}
-                            className="w-full"
+                            size="icon"
+                            variant="ghost"
+                            className="absolute top-2 right-2 text-white hover:bg-white/20 rounded-full"
+                            onClick={handleCancel}
                         >
-                            {isUploading ? (
-                                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Subiendo...</>
-                            ) : (
-                                <><UploadCloud className="mr-2 h-4 w-4" /> Guardar</>
-                            )}
+                            <X className="h-5 w-5" />
                         </Button>
+                    </div>
+                    <div className="p-4 space-y-4 bg-white">
+                        <div>
+                            <DialogTitle className="text-lg font-bold text-gray-900">Confirmar comida</DialogTitle>
+                            <DialogDescription className="text-sm text-gray-500">¿Estás registrando tu {mealName}?</DialogDescription>
+                        </div>
+                        <div className="flex gap-3">
+                            <Button variant="outline" className="flex-1" onClick={handleCancel}>
+                                Cancelar
+                            </Button>
+                            <Button className="flex-1" onClick={handleConfirmUpload} disabled={isUploading}>
+                                {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                {isUploading ? 'Subiendo...' : 'Confirmar'}
+                            </Button>
+                        </div>
                     </div>
                 </DialogContent>
             </Dialog>
-        </>
+        </div>
     )
 }

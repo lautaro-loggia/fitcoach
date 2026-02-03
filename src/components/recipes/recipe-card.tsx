@@ -146,9 +146,9 @@ export function RecipeCard({ recipe, isAdmin, onSelect, isSelected }: RecipeCard
     return (
         <>
             <Card
-                className={`group overflow-hidden rounded-2xl border bg-card text-card-foreground shadow-sm transition-all cursor-pointer p-4 pb-4 ${isSelected
+                className={`group overflow-hidden rounded-2xl border bg-card text-card-foreground transition-all cursor-pointer p-4 pb-4 ${isSelected
                     ? 'border-primary ring-2 ring-primary ring-offset-2'
-                    : 'hover:shadow-md hover:border-border'
+                    : 'hover:border-border'
                     }`}
                 onClick={handleCardClick}
             >
@@ -240,7 +240,7 @@ export function RecipeCard({ recipe, isAdmin, onSelect, isSelected }: RecipeCard
                             {isAdmin && (
                                 <Button
                                     variant="outline"
-                                    className="h-11 w-11 rounded-xl border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-900 shadow-sm p-0 shrink-0"
+                                    className="h-11 w-11 rounded-xl border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-900 p-0 shrink-0"
                                     onClick={(e) => {
                                         e.stopPropagation()
                                         router.push(`/recipes/${recipe.id}`)
@@ -252,7 +252,7 @@ export function RecipeCard({ recipe, isAdmin, onSelect, isSelected }: RecipeCard
                             )}
 
                             <Button
-                                className="h-11 w-11 rounded-xl bg-primary hover:bg-primary/90 text-white shadow-sm p-0 shrink-0"
+                                className="h-11 w-11 rounded-xl bg-primary hover:bg-primary/90 text-white p-0 shrink-0"
                                 onClick={(e) => {
                                     e.stopPropagation()
                                     setShowAssignDialog(true)

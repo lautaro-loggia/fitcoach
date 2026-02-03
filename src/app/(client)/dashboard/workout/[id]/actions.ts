@@ -220,7 +220,28 @@ export async function getOrCreateExerciseCheckin(
     return { checkin: newCheckin as ExerciseCheckin }
 }
 
-// Get exercise checkin with set logs
+// Get all exercise checkins for the session with sets
+export async function getSessionCheckins(sessionId: string) {
+    const adminSupabase = createAdminClient()
+
+    const { data: checkins, error } = await adminSupabase
+        .from('exercise_checkins')
+        .select(`
+            *,
+            set_logs (*)
+        `)
+        .eq('session_id', sessionId)
+        .order('exercise_index')
+
+    if (error) {
+        console.error('Error fetching session checkins:', error)
+        return []
+    }
+
+    return checkins || []
+}
+
+// Get exercise checkin with set logs (Legacy single fetch, keeping for compatibility if needed or specific refreshes)
 export async function getExerciseCheckinWithSets(sessionId: string, exerciseIndex: number) {
     const adminSupabase = createAdminClient()
 
@@ -244,19 +265,57 @@ export async function getExerciseCheckinWithSets(sessionId: string, exerciseInde
 
 // Save or update a set log
 export async function saveSetLog(
-    checkinId: string,
+    checkinId: string | null, // Allow null for lazy creation
+    sessionId: string,
+    exerciseIndex: number,
+    exerciseName: string,
     setNumber: number,
     reps: number,
     weight: number,
     isCompleted: boolean
 ) {
     const adminSupabase = createAdminClient()
+    let finalCheckinId = checkinId
+
+    // 1. If no checkinId, create the checkin first
+    if (!finalCheckinId) {
+        // Double check if it exists (race condition)
+        const { data: existing } = await adminSupabase
+            .from('exercise_checkins')
+            .select('id')
+            .eq('session_id', sessionId)
+            .eq('exercise_index', exerciseIndex)
+            .single()
+
+        if (existing) {
+            finalCheckinId = existing.id
+        } else {
+            // Create
+            const { data: newCheckin, error: createError } = await adminSupabase
+                .from('exercise_checkins')
+                .insert({
+                    session_id: sessionId,
+                    exercise_index: exerciseIndex,
+                    exercise_name: exerciseName,
+                    rest_seconds: 90, // Default
+                    rest_enabled: false
+                })
+                .select('id')
+                .single()
+
+            if (createError || !newCheckin) {
+                console.error('Error creating checkin lazily:', createError)
+                return { error: 'Error al crear la sesión del ejercicio' }
+            }
+            finalCheckinId = newCheckin.id
+        }
+    }
 
     // Upsert the set log
     const { data, error } = await adminSupabase
         .from('set_logs')
         .upsert({
-            exercise_checkin_id: checkinId,
+            exercise_checkin_id: finalCheckinId,
             set_number: setNumber,
             reps,
             weight,
@@ -274,7 +333,7 @@ export async function saveSetLog(
         return { error: 'Error al guardar serie' }
     }
 
-    return { setLog: data as SetLog }
+    return { setLog: data as SetLog, checkinId: finalCheckinId }
 }
 
 // Delete a set log

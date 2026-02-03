@@ -30,6 +30,8 @@ import {
 import { UpdatePasswordDialog } from '@/components/clients/update-password-dialog'
 import { ClientLogoutButton } from '@/components/clients/client-logout-button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { WeeklyProgress } from '@/components/clients/weekly-progress'
+import { NextMilestone } from '@/components/clients/next-milestone'
 
 export default async function ClientDashboard() {
     const supabase = await createClient()
@@ -75,11 +77,35 @@ export default async function ClientDashboard() {
         isCompleted = (count || 0) > 0
     }
 
-    // 3. Check for First Check-in
+
+    // 3. Weekly Adherence Logic
+    const oneWeekAgo = new Date()
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
+
+    // Count workout logs in last 7 days
+    const { count: weeklyLogsCount } = await adminClient
+        .from('workout_logs')
+        .select('*', { count: 'exact', head: true })
+        .eq('client_id', client.id)
+        .gte('date', oneWeekAgo.toISOString().split('T')[0])
+
+    // Calculate Target (sum of days assigned across all active workouts)
+    // This is an estimation. If they have 2 workouts assigned, one 3 days, one 2 days -> 5 days target.
+    let weeklyTarget = 0
+    workouts?.forEach(w => {
+        if (w.scheduled_days) {
+            weeklyTarget += w.scheduled_days.length
+        }
+    })
+    if (weeklyTarget === 0) weeklyTarget = 3 // Fallback default
+
+    const adherenceRate = Math.min(((weeklyLogsCount || 0) / weeklyTarget) * 100, 100)
+
+    // 4. Check for First Check-in
     // 3. Check for First Check-in
     const { data: recentCheckins } = await adminClient
         .from('checkins')
-        .select('created_at, observations')
+        .select('created_at, observations, weight')
         .eq('client_id', client.id)
         .order('created_at', { ascending: false })
         .limit(2)
@@ -101,7 +127,7 @@ export default async function ClientDashboard() {
         }
     }
 
-    // 4. Status Helpers
+    // 5. Status Helpers
     const statusLabel: Record<string, string> = {
         active: "Plan Activo",
         paused: "Plan Pausado",
@@ -117,7 +143,7 @@ export default async function ClientDashboard() {
         'health': 'Salud general'
     }
 
-    // 5. Next Review Date Logic
+    // 6. Next Review Date Logic
     const parseLocalDate = (dateStr: string | null | undefined) => {
         if (!dateStr) return null
         if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
@@ -216,6 +242,29 @@ export default async function ClientDashboard() {
                 </Card>
             )}
 
+            {/* NEW: Weekly Progress Block */}
+            {!isFirstCheckin && (
+                <WeeklyProgress
+                    currentWeight={lastCheckin?.weight || client.current_weight || 0}
+                    previousWeight={recentCheckins?.[1]?.weight || null}
+                    completedWorkouts={weeklyLogsCount || 0}
+                    totalScheduledWorkouts={weeklyTarget}
+                    workoutAdherence={adherenceRate}
+                />
+            )}
+
+            {/* NEW: Next Milestone Block */}
+            {nextReview && !isCheckinDoneToday && (
+                <NextMilestone
+                    nextCheckinDate={client.next_checkin_date}
+                    weeklyGoalText={
+                        client.target_weight
+                            ? `Meta: Llegar a ${client.target_weight} kg`
+                            : client.goal_text || (goalLabels[client.main_goal || ''] || "Mantener hábitos")
+                    }
+                />
+            )}
+
             {/* 3. Routine / Day Status */}
             <div className="space-y-3">
                 <div className="flex items-center justify-between px-1">
@@ -307,38 +356,14 @@ export default async function ClientDashboard() {
             </div>
 
             {/* 4. Secondary Info Grid */}
-            <div className={`grid gap-3 ${isCheckinPrioritary ? 'grid-cols-1' : 'grid-cols-2'}`}>
-
-                {/* Check-in info card (Only if NOT active, otherwise banner covers it) */}
-                {!isCheckinPrioritary && (
-                    <Card className="p-4 bg-white border border-gray-100 shadow-sm flex flex-col justify-between h-28">
-                        <div className="flex justify-between items-start">
-                            <div className="h-8 w-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
-                                <Calendar className="h-4 w-4" />
-                            </div>
-                        </div>
-                        <div>
-                            <p className="text-xs text-gray-500 font-medium mb-1">Próximo Check-in</p>
-                            {nextReview && (!isCheckinDoneToday || nextReview > new Date()) ? (
-                                <p className="text-sm font-bold text-gray-900">
-                                    {format(nextReview, 'd MMM', { locale: es })}
-                                </p>
-                            ) : (
-                                <div>
-                                    <p className="text-sm font-bold text-orange-600">A definir</p>
-                                    <p className="text-[10px] text-gray-400 mt-0.5 leading-tight">Tu coach asignará una fecha pronto.</p>
-                                </div>
-                            )}
-                        </div>
-                    </Card>
-                )}
+            <div className="grid gap-3 grid-cols-1">
 
                 {/* Goal Card */}
-                <Card className={`p-4 bg-white border border-gray-100 shadow-sm flex flex-col justify-between h-28 ${isCheckinPrioritary ? 'flex-row items-center h-auto' : ''}`}>
-                    <div className={`h-8 w-8 rounded-full bg-purple-50 flex items-center justify-center text-purple-600 ${isCheckinPrioritary ? 'mr-3' : 'mb-2'}`}>
+                <Card className="p-4 bg-white border border-gray-100 shadow-sm flex flex-row items-center h-auto justify-between">
+                    <div className="h-8 w-8 rounded-full bg-purple-50 flex items-center justify-center text-purple-600 mr-3">
                         <Trophy className="h-4 w-4" />
                     </div>
-                    <div className={isCheckinPrioritary ? 'flex-1' : ''}>
+                    <div className="flex-1">
                         <p className="text-xs text-gray-500 font-medium mb-1">Objetivo Actual</p>
                         <p className="text-sm font-bold text-gray-900 leading-tight">
                             {client.main_goal ? (goalLabels[client.main_goal] || client.main_goal) : "Sin definir"}
