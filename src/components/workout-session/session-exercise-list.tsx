@@ -36,56 +36,63 @@ interface ExerciseCardProps {
     sessionId: string
     exerciseIndex: number
     exercise: Exercise
+    initialCheckin: ExerciseCheckin | null
 }
 
-function ExerciseCard({ sessionId, exerciseIndex, exercise }: ExerciseCardProps) {
-    const [checkin, setCheckin] = useState<ExerciseCheckin | null>(null)
-    const [setLogs, setSetLogs] = useState<SetLog[]>([])
-    const [notes, setNotes] = useState('')
-    const [restEnabled, setRestEnabled] = useState(false)
-    const [restSeconds, setRestSeconds] = useState(90)
+function ExerciseCard({ sessionId, exerciseIndex, exercise, initialCheckin }: ExerciseCardProps) {
+    // If initialCheckin is provided, we use it directly. Otherwise null (lazy create)
+    const [checkin, setCheckin] = useState<ExerciseCheckin | null>(initialCheckin)
+    const [setLogs, setSetLogs] = useState<SetLog[]>((initialCheckin as any)?.set_logs || [])
+
+    // Initialize state from existing checkin if present
+    const [notes, setNotes] = useState(initialCheckin?.notes || '')
+    const [restEnabled, setRestEnabled] = useState(initialCheckin?.rest_enabled || false)
+    const [restSeconds, setRestSeconds] = useState(initialCheckin?.rest_seconds || 90)
+
     const [sets, setSets] = useState(exercise.sets_detail || [])
-    const [loading, setLoading] = useState(true)
+
+    // We assume data is loaded if we have initialCheckin OR if we're just starting empty (lazy)
+    // No more loading spinner needed per card because data comes from parent
+    const [loading, setLoading] = useState(false)
+
     // autoStartTimer state can be kept if we want to auto-open the rest modal, 
     // but the design just shows "Descanso: APAGADO". We will keep the prop connected.
     const [autoStartTimer, setAutoStartTimer] = useState(false)
 
-    useEffect(() => {
-        loadCheckin()
-    }, [sessionId, exerciseIndex])
+    // No useEffect fetch anymore!
 
-    const loadCheckin = async () => {
-        setLoading(true)
-        const defaultRest = parseInt(exercise.sets_detail?.[0]?.rest || '1') * 60
-
-        const { checkin: existingCheckin } = await getExerciseCheckinWithSets(sessionId, exerciseIndex)
-
-        if (existingCheckin) {
-            setCheckin(existingCheckin as any)
-            setNotes(existingCheckin.notes || '')
-            setRestEnabled(existingCheckin.rest_enabled)
-            setRestSeconds(existingCheckin.rest_seconds)
-            setSetLogs((existingCheckin as any).set_logs || [])
-        } else {
-            const { checkin: newCheckin } = await getOrCreateExerciseCheckin(
-                sessionId,
-                exerciseIndex,
-                exercise.name,
-                defaultRest
-            )
-            if (newCheckin) {
-                setCheckin(newCheckin)
-                setRestSeconds(newCheckin.rest_seconds)
-            }
-        }
-
-        setLoading(false)
-    }
 
     const handleSaveSet = async (setNumber: number, reps: number, weight: number, isCompleted: boolean) => {
-        if (!checkin) return
 
-        const { setLog } = await saveSetLog(checkin.id, setNumber, reps, weight, isCompleted)
+        // Pass checkin?.id (might be null) and let server handle creation
+        const { setLog, checkinId, error } = await saveSetLog(
+            checkin?.id || null,
+            sessionId,
+            exerciseIndex,
+            exercise.name,
+            setNumber,
+            reps,
+            weight,
+            isCompleted
+        )
+
+        if (error) {
+            alert(error)
+            return
+        }
+
+        // If we just created the checkin, update local state
+        if (checkinId && !checkin) {
+            setCheckin({
+                id: checkinId,
+                session_id: sessionId,
+                exercise_index: exerciseIndex,
+                exercise_name: exercise.name,
+                rest_enabled: false,
+                rest_seconds: 90,
+                notes: ''
+            } as ExerciseCheckin)
+        }
 
         if (setLog) {
             setSetLogs(prev => {
@@ -303,13 +310,16 @@ interface SessionExerciseListProps {
     exercises: Exercise[]
     clientName: string
     workoutName: string
+    initialCheckins: ExerciseCheckin[]
 }
 
-export function SessionExerciseList({ sessionId, exercises, clientName, workoutName }: SessionExerciseListProps) {
+export function SessionExerciseList({ sessionId, exercises, clientName, workoutName, initialCheckins }: SessionExerciseListProps) {
     return (
         <div className="space-y-6 pb-20">
             {exercises.map((exercise, index) => {
                 const isCardio = exercise.category === 'Cardio'
+                // Find matching checkin or null
+                const existingCheckin = initialCheckins.find(c => c.exercise_index === index) || null
 
                 if (isCardio) {
                     return (
@@ -326,6 +336,7 @@ export function SessionExerciseList({ sessionId, exercises, clientName, workoutN
                         sessionId={sessionId}
                         exerciseIndex={index}
                         exercise={exercise}
+                        initialCheckin={existingCheckin}
                     />
                 )
             })}

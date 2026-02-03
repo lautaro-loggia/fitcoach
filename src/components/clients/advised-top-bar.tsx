@@ -55,17 +55,7 @@ export function AdvisedTopBar({ client, allClients = [], activeTab }: AdvisedTop
                     >
                         <ArrowLeft02Icon className="h-5 w-5" />
                     </Button>
-                    <div className="hidden lg:flex items-center text-sm font-medium">
-                        <Link href="/clients" className="text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">
-                            Mis asesorados
-                        </Link>
-                        <span className="mx-2 text-muted-foreground/50">/</span>
-                        <span className="text-foreground">Perfil</span>
-                    </div>
                 </div>
-
-                {/* Separador vertical */}
-                <div className="h-8 w-px bg-border hidden md:block mx-1" />
 
                 {/* 2. Identity Section */}
                 <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1 md:flex-initial">

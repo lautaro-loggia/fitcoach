@@ -21,7 +21,7 @@ const WEEKDAYS = [
 export function WeekStrip({ days, selectedDay, onSelectDay }: WeekStripProps) {
 
     return (
-        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide py-2">
+        <div className="grid grid-cols-7 gap-2 md:gap-4 py-2">
             {WEEKDAYS.map((day) => {
                 const isSelected = selectedDay === day.id
 
@@ -30,14 +30,18 @@ export function WeekStrip({ days, selectedDay, onSelectDay }: WeekStripProps) {
                         key={day.id}
                         onClick={() => onSelectDay(day.id)}
                         className={cn(
-                            "flex items-start justify-center pt-4 min-w-[8rem] h-28 rounded-xl border transition-all duration-200",
+                            "flex flex-col items-center justify-center py-4 rounded-xl border transition-all duration-200",
                             isSelected
-                                ? "border-2 border-primary bg-background shadow-sm"
+                                ? "border-2 border-primary bg-background"
                                 : "border-border bg-card hover:border-primary/50"
                         )}
                     >
-                        <span className="font-bold text-sm text-foreground">
-                            {day.label}
+                        <span className={cn(
+                            "font-bold text-xs md:text-sm",
+                            isSelected ? "text-foreground" : "text-muted-foreground"
+                        )}>
+                            {day.label.substring(0, 3)}
+                            <span className="hidden md:inline">{day.label.substring(3)}</span>
                         </span>
                     </button>
                 )

@@ -46,12 +46,12 @@ export function MobileNav() {
                             href={item.href}
                             className={cn(
                                 "flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors duration-200",
-                                active ? "text-blue-600" : "text-gray-400 hover:text-gray-600"
+                                active ? "text-black" : "text-gray-400 hover:text-gray-600"
                             )}
                         >
                             <item.icon
                                 className={cn("h-6 w-6 transition-transform duration-200", active && "scale-110")}
-                                strokeWidth={active ? 2.5 : 2}
+                                strokeWidth={active ? 2 : 1.5}
                             />
                             <span className="text-[10px] font-medium">{item.label}</span>
                         </Link>

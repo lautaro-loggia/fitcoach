@@ -80,10 +80,10 @@ export function DashboardTabs({
             </div>
 
             {/* 2. Main Section Header (Changes with Tabs) */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 px-1">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-1">
                 <div className="space-y-1">
                     <h1 className="text-3xl font-bold tracking-tight text-gray-900">{currentHeader.title}</h1>
-                    <p className="text-gray-500 font-medium">{currentHeader.subtitle}</p>
+                    <p className="text-gray-500 font-medium leading-none">{currentHeader.subtitle}</p>
                 </div>
 
                 {/* Dynamic Action Button Area */}

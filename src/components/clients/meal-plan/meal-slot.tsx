@@ -50,7 +50,7 @@ export function MealSlot({ meal, dayName, clientId, clientAllergens, clientPrefe
 
     return (
         <Card className={cn(
-            "flex flex-col h-[320px] shadow-sm transition-all overflow-hidden border-border/60", // Fixed height or min-height to match mockup uniformity
+            "flex flex-col h-[320px] transition-all overflow-hidden border-border/60", // Fixed height or min-height to match mockup uniformity
             isSkipped && "opacity-50 bg-muted/40"
         )}>
             <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">

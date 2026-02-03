@@ -190,3 +190,91 @@ export async function copyDay(sourceDayId: string, targetDayId: string, clientId
     revalidatePath(`/clients/${clientId}`)
     return { success: true }
 }
+
+// 6. Register Meal Log (Photo)
+export async function registerMealLog(clientId: string, mealType: string, formData: FormData) {
+    const supabase = await createClient()
+    const file = formData.get('file') as File
+
+    if (!file) return { error: 'No se encontró archivo' }
+
+    // 1. Upload to Storage
+    // Path: client_id/date/timestamp_filename
+    const dateStr = new Date().toISOString().split('T')[0]
+    const timestamp = Date.now()
+    const fileExt = file.name.split('.').pop()
+    const filePath = `${clientId}/${dateStr}/${timestamp}.${fileExt}`
+
+    const { error: uploadError } = await supabase.storage
+        .from('meal-logs')
+        .upload(filePath, file)
+
+    if (uploadError) {
+        console.error('Upload error:', uploadError)
+        return { error: 'Error al subir imagen' }
+    }
+
+    // 2. Insert into DB
+    const { error: dbError } = await supabase
+        .from('meal_logs')
+        .insert({
+            client_id: clientId,
+            image_path: filePath,
+            meal_type: mealType,
+            status: 'pending'
+        })
+
+    if (dbError) {
+        console.error('DB error:', dbError)
+        return { error: 'Error al guardar registro' }
+    }
+
+    revalidatePath(`/dashboard/diet`) // Client view
+    revalidatePath(`/clients/${clientId}`) // Coach view
+    return { success: true }
+}
+
+// 7. Get Daily Meal Logs
+export async function getDailyMealLogs(clientId: string, date: string) {
+    const supabase = await createClient()
+
+    // date format YYYY-MM-DD
+    // Filter logs created on that date (using created_at)
+    // created_at is timestamptz. 
+    const startOfDay = `${date} 00:00:00`
+    const endOfDay = `${date} 23:59:59`
+
+    const { data: logs } = await supabase
+        .from('meal_logs')
+        .select('*')
+        .eq('client_id', clientId)
+        .gte('created_at', startOfDay)
+        .lte('created_at', endOfDay)
+        .order('created_at', { ascending: false })
+
+    // Generate public URLs for images
+    const logsWithUrls = await Promise.all((logs || []).map(async (log) => {
+        const { data } = await supabase.storage.from('meal-logs').createSignedUrl(log.image_path, 3600 * 24) // 24h url
+        return {
+            ...log,
+            signedUrl: data?.signedUrl
+        }
+    }))
+
+    return { logs: logsWithUrls }
+}
+
+// 8. Review Meal Log
+export async function reviewMealLog(logId: string, status: 'pending' | 'reviewed', comment?: string) {
+    const supabase = await createClient()
+
+    const { error } = await supabase
+        .from('meal_logs')
+        .update({ status, coach_comment: comment })
+        .eq('id', logId)
+
+    if (error) return { error: 'Error actualizando registro' }
+
+    return { success: true }
+}
+

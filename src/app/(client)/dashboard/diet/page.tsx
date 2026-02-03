@@ -2,13 +2,16 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Card } from '@/components/ui/card'
-import { ArrowLeft, CheckCircle2, Utensils } from 'lucide-react'
+import { ArrowLeft, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { MealLogger } from '@/components/clients/meal-logger'
+import { MealCard } from '@/components/clients/meal-card'
 import Link from 'next/link'
+import { getDailyMealLogs } from '@/app/(dashboard)/clients/[id]/meal-plan-actions'
+import { DailyProgressBar } from '@/components/clients/daily-progress-bar'
+import { MealLogger } from '@/components/clients/meal-logger'
 
 export default async function DietPage() {
     const supabase = await createClient()
@@ -41,6 +44,16 @@ export default async function DietPage() {
 
     const todayPlan = mealPlan?.days?.find((d: any) => d.day_of_week === dbDay)
 
+    // Fetch Daily Logs
+    const todayStr = format(new Date(), 'yyyy-MM-dd')
+    const { logs: dailyLogs } = await getDailyMealLogs(client.id, todayStr)
+
+    // Calculate Progress
+    const plannedMealNames = todayPlan?.meals?.map((m: any) => m.name) || []
+    const loggedMealTypes = new Set((dailyLogs || []).map((l: any) => l.meal_type))
+    const completedCount = plannedMealNames.filter((name: string) => loggedMealTypes.has(name)).length
+    const totalCount = plannedMealNames.length
+
     return (
         <div className="p-4 space-y-6 pb-24">
             {/* Header */}
@@ -52,6 +65,9 @@ export default async function DietPage() {
                 </Link>
                 <h1 className="text-xl font-bold">Nutrición</h1>
             </div>
+
+            {/* Daily Progress */}
+            <DailyProgressBar current={completedCount} total={totalCount} />
 
             {/* Macros Card */}
             <Card className="p-5 bg-white border shadow-sm space-y-4">
@@ -69,15 +85,6 @@ export default async function DietPage() {
                 </div>
             </Card>
 
-            {/* Meal Logger Action */}
-            <Card className="p-4 bg-gray-50 border-dashed border-2 flex flex-col items-center text-center gap-2">
-                <Utensils className="h-8 w-8 text-gray-400" />
-                <p className="text-sm text-gray-500">Subí una foto de tu comida para que tu coach la revise.</p>
-                <div className="w-full max-w-xs mt-2">
-                    <MealLogger clientId={client.id} />
-                </div>
-            </Card>
-
             {/* Weekly/Daily Plan */}
             <div>
                 <h2 className="text-lg font-semibold mb-3">Tu Menú de Hoy</h2>
@@ -92,24 +99,18 @@ export default async function DietPage() {
                                 <h3 className="font-semibold text-blue-900 mb-2 text-sm">{meal.name}</h3>
                                 <div className="space-y-2">
                                     {meal.items?.map((item: any, idx: number) => (
-                                        <div key={idx} className="flex gap-2 items-start text-sm">
-                                            <div className="mt-0.5 min-w-[4px] h-[4px] rounded-full bg-blue-300" />
-                                            <div>
-                                                <p className="text-gray-800 font-medium">
-                                                    {item.custom_name || item.recipe?.name || "Sin nombre"}
-                                                </p>
-                                                {item.recipe && (
-                                                    <p className="text-xs text-gray-500">
-                                                        {item.portions > 1 ? `${item.portions} porciones` : ""}
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </div>
+                                        <MealCard key={idx} item={item} mealName={meal.name} />
                                     ))}
                                     {(!meal.items || meal.items.length === 0) && (
                                         <p className="text-xs text-gray-400 italic">Sin comidas asignadas</p>
                                     )}
                                 </div>
+
+                                <MealLogger
+                                    clientId={client.id}
+                                    mealName={meal.name}
+                                    existingLogs={(dailyLogs || []).filter((l: any) => l.meal_type === meal.name)}
+                                />
                             </Card>
                         ))}
                     </div>

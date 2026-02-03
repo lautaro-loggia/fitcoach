@@ -192,7 +192,7 @@ export function ProfileTab({ client }: ProfileTabProps) {
             <div className="grid gap-3 grid-cols-1 md:grid-cols-3">
                 <StrengthProgressCard clientId={client.id} />
 
-                <Card className="bg-white rounded-2xl flex flex-col justify-center p-4">
+                <Card className="bg-white flex flex-col justify-center p-4 py-0">
                     <div className="space-y-0.5">
                         <h3 className="text-[17px] font-bold text-gray-900 leading-tight">Objetivo</h3>
                         <p className="text-[15px] text-gray-400 leading-snug">
@@ -202,7 +202,7 @@ export function ProfileTab({ client }: ProfileTabProps) {
                     </div>
                 </Card>
 
-                <Card className="bg-white rounded-2xl flex flex-col justify-center p-4">
+                <Card className="bg-white flex flex-col justify-center p-4 py-0">
                     <div className="space-y-0.5">
                         <h3 className="text-[17px] font-bold text-gray-900 leading-tight">Nivel de actividad</h3>
                         <p className="text-[15px] text-gray-400 leading-snug">

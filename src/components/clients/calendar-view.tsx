@@ -2,22 +2,38 @@
 
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday, parse } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, Dumbbell } from 'lucide-react'
-import { useState } from 'react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { Card } from '@/components/ui/card'
-import { ExerciseEditDialog } from './exercise-edit-dialog'
+import { CheckmarkCircle02Icon, Dumbbell01Icon } from 'hugeicons-react'
+import { getClientWorkoutHistory } from '@/app/(dashboard)/clients/[id]/history-actions'
 
 interface CalendarViewProps {
     workouts: any[]
+    clientId?: string
     onUpdateWorkout: (workoutId: string, updatedStructure: any[]) => void
 }
 
-export function CalendarView({ workouts, onUpdateWorkout }: CalendarViewProps) {
+export function CalendarView({ workouts, clientId, onUpdateWorkout }: CalendarViewProps) {
     const [currentDate, setCurrentDate] = useState(new Date())
-    const [selectedExercise, setSelectedExercise] = useState<{ workoutId: string, exerciseIndex: number, exercise: any } | null>(null)
-    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+    const [sessions, setSessions] = useState<any[]>([])
+
+    useEffect(() => {
+        if (clientId) {
+            loadHistory()
+        }
+    }, [clientId])
+
+    const loadHistory = async () => {
+        try {
+            const { sessions: data } = await getClientWorkoutHistory(clientId!)
+            setSessions(data || [])
+        } catch (error) {
+            console.error('Error fetching workout history:', error)
+            setSessions([])
+        }
+    }
 
     // Navigation
     const nextMonth = () => setCurrentDate(addMonths(currentDate, 1))
@@ -30,9 +46,6 @@ export function CalendarView({ workouts, onUpdateWorkout }: CalendarViewProps) {
     const endDate = endOfWeek(monthEnd, { weekStartsOn: 1 })
     const calendarDays = eachDayOfInterval({ start: startDate, end: endDate })
 
-    // Mapping workouts to days
-    // We assume workout.scheduled_days contains capitalized day names in Spanish: 'Lunes', 'Martes', etc.
-    // We need to map English date-fns days to these strings.
     const dayMapping: Record<string, string> = {
         'Monday': 'Lunes',
         'Tuesday': 'Martes',
@@ -44,143 +57,90 @@ export function CalendarView({ workouts, onUpdateWorkout }: CalendarViewProps) {
     }
 
     const getWorkoutsForDay = (date: Date) => {
-        const dayNameEnglish = format(date, 'EEEE', { locale: undefined }) // Default en-US for mapping key
+        const dayNameEnglish = format(date, 'EEEE', { locale: undefined })
         const dayNameSpanish = dayMapping[dayNameEnglish]
 
         return workouts.filter(w => {
-            // Date validity check
-            const validFrom = new Date(w.created_at) // created_at includes time, so new Date() is fine as long as we reset time below
-            // valid_until is YYYY-MM-DD string, so we must parse it to local date
+            const validFrom = new Date(w.created_at)
             const validUntil = w.valid_until ? parse(w.valid_until, 'yyyy-MM-dd', new Date()) : new Date('2099-12-31')
-
-            // Strip time
             validFrom.setHours(0, 0, 0, 0)
             validUntil.setHours(23, 59, 59, 999)
 
             if (date < validFrom || date > validUntil) return false
-
-            // Day of week check
-            // Assuming 'scheduled_days' array exists on workout
             const scheduledDays = w.scheduled_days || []
             return scheduledDays.includes(dayNameSpanish)
         })
     }
 
-    const handleExerciseClick = (workout: any, exercise: any, index: number) => {
-        setSelectedExercise({
-            workoutId: workout.id,
-            exerciseIndex: index,
-            exercise: exercise
-        })
-        setIsEditDialogOpen(true)
-    }
-
-    const handleSaveExercise = async (newSets: any[]) => {
-        if (!selectedExercise) return
-
-        const workout = workouts.find(w => w.id === selectedExercise.workoutId)
-        if (!workout) return
-
-        // Update the specific exercise in the structure
-        const newStructure = [...(Array.isArray(workout.structure) ? workout.structure : [])]
-
-        // We are updating the "Master Template" for the client here because we don't have per-day logging yet.
-        // This is a trade-off mentioned in the plan.
-        newStructure[selectedExercise.exerciseIndex] = {
-            ...newStructure[selectedExercise.exerciseIndex],
-            // sets property in structure might be just a number string "3", but the dialog returns an array of Set objects.
-            // We need to decide how to store this. 
-            // Current schema: sets (string), reps (string).
-            // New schema implied by dialog: detailed sets array.
-            // To maintain compatibility, I will convert the detailed sets back to a summary string if possible, 
-            // OR store the 'sets_detail' in the json structure.
-            sets: newSets.length.toString(),
-            reps: newSets[0]?.reps || "10", // Approximation
-            sets_detail: newSets // Storing the full detail
-        }
-
-        onUpdateWorkout(selectedExercise.workoutId, newStructure)
-        setIsEditDialogOpen(false)
+    const getSessionForDay = (date: Date) => {
+        return sessions.find(s => isSameDay(new Date(s.started_at), date))
     }
 
     return (
-        <div className="flex flex-col h-full bg-background">
-            <div className="flex items-center justify-end gap-2 mb-4">
-                <Button variant="outline" size="icon" onClick={prevMonth}>
-                    <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <span className="min-w-[140px] text-center font-medium text-lg capitalize">
+        <div className="flex flex-col h-full bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden animate-in fade-in zoom-in-95 duration-500">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-gray-50 bg-gray-50/10">
+                <span className="text-sm font-extrabold text-gray-900 capitalize tracking-tight">
                     {format(currentDate, 'MMMM yyyy', { locale: es })}
                 </span>
-                <Button variant="outline" size="icon" onClick={nextMonth}>
-                    <ChevronRight className="h-4 w-4" />
-                </Button>
+                <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="icon" onClick={prevMonth} className="h-9 w-9 text-gray-400 hover:text-gray-900 hover:bg-white rounded-xl transition-all">
+                        <ChevronLeft className="h-5 w-5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={nextMonth} className="h-9 w-9 text-gray-400 hover:text-gray-900 hover:bg-white rounded-xl transition-all">
+                        <ChevronRight className="h-5 w-5" />
+                    </Button>
+                </div>
             </div>
 
-            <div className="grid grid-cols-7 gap-px bg-muted border rounded-lg overflow-hidden flex-1">
-                {['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'].map((day) => (
-                    <div key={day} className="bg-background p-2 text-center text-sm font-medium border-b">
+            <div className="grid grid-cols-7 border-b border-gray-50 bg-white">
+                {['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'].map((day) => (
+                    <div key={day} className="py-4 text-center text-[10px] font-bold text-gray-400 tracking-[0.2em]">
                         {day}
                     </div>
                 ))}
+            </div>
 
-                {calendarDays.map((date, idx) => {
+            <div className="grid grid-cols-7 flex-1 bg-white">
+                {calendarDays.map((date) => {
                     const isCurrentMonth = isSameMonth(date, currentDate)
                     const dailyWorkouts = getWorkoutsForDay(date)
+                    const session = getSessionForDay(date)
                     const isTodayDate = isToday(date)
 
                     return (
                         <div
                             key={date.toString()}
                             className={cn(
-                                "min-h-[150px] bg-background p-2 border-r border-b relative group transition-colors hover:bg-muted/5",
-                                !isCurrentMonth && "bg-muted/10 text-muted-foreground"
+                                "min-h-[140px] p-3 border-r border-b border-gray-50 relative group transition-all duration-300 hover:bg-gray-50/50",
+                                !isCurrentMonth && "opacity-25"
                             )}
                         >
-                            <div className={cn(
-                                "text-xs font-medium mb-2 w-6 h-6 flex items-center justify-center rounded-full ml-auto",
-                                isTodayDate ? "bg-primary text-primary-foreground" : "text-muted-foreground"
-                            )}>
-                                {format(date, 'd')}
+                            <div className="flex justify-between items-start mb-3">
+                                <span className={cn(
+                                    "text-[11px] font-black h-6 w-6 flex items-center justify-center rounded-lg transition-all",
+                                    isTodayDate ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200" : "text-gray-400 group-hover:text-gray-900"
+                                )}>
+                                    {format(date, 'd')}
+                                </span>
                             </div>
 
                             <div className="space-y-2">
-                                {dailyWorkouts.map(workout => (
-                                    <Card key={workout.id} className="p-2 shadow-sm border-l-4 border-l-violet-primary overflow-hidden">
-                                        <p className="text-xs font-bold text-primary truncate mb-1">{workout.name}</p>
-                                        <div className="space-y-1">
-                                            {Array.isArray(workout.structure) && workout.structure.slice(0, 3).map((ex: any, i: number) => (
-                                                <div
-                                                    key={i}
-                                                    className="text-[10px] bg-muted/50 p-1 rounded cursor-pointer hover:bg-muted transition-colors truncate"
-                                                    onClick={() => handleExerciseClick(workout, ex, i)}
-                                                >
-                                                    <span className="font-semibold">x{ex.sets}</span> {ex.name}
-                                                </div>
-                                            ))}
-                                            {Array.isArray(workout.structure) && workout.structure.length > 3 && (
-                                                <div className="text-[10px] text-muted-foreground pl-1">
-                                                    + {workout.structure.length - 3} más
-                                                </div>
-                                            )}
-                                        </div>
-                                    </Card>
-                                ))}
+                                {session ? (
+                                    <div className="flex items-center gap-1.5 px-2.5 py-2 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100/50 shadow-sm shadow-emerald-50/50 transform transition-all hover:scale-[1.03]">
+                                        <CheckmarkCircle02Icon className="h-3.5 w-3.5 shrink-0" />
+                                        <span className="text-[10px] font-bold leading-none truncate tracking-tight">Completado</span>
+                                    </div>
+                                ) : dailyWorkouts.length > 0 ? (
+                                    <div className="flex items-center gap-1.5 px-2.5 py-2 bg-gray-50 text-gray-400 rounded-xl border border-gray-100/50 group-hover:bg-white group-hover:border-gray-200 group-hover:text-gray-600 shadow-sm transition-all hover:scale-[1.03]">
+                                        <Dumbbell01Icon className="h-3.5 w-3.5 shrink-0" />
+                                        <span className="text-[10px] font-bold leading-none truncate tracking-tight">Entrenami...</span>
+                                    </div>
+                                ) : null}
                             </div>
                         </div>
                     )
                 })}
             </div>
-
-            {selectedExercise && (
-                <ExerciseEditDialog
-                    isOpen={isEditDialogOpen}
-                    onClose={() => setIsEditDialogOpen(false)}
-                    exerciseName={selectedExercise.exercise.name}
-                    initialSets={selectedExercise.exercise.sets_detail || []} // Use stored details if available
-                    onSave={handleSaveExercise}
-                />
-            )}
         </div>
     )
 }

@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { getOrCreateSession, completeSession } from './actions'
+import { getOrCreateSession, completeSession, getSessionCheckins } from './actions'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Check } from 'lucide-react'
 import { SessionExerciseList } from '@/components/workout-session/session-exercise-list'
@@ -21,6 +21,9 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 
     // Parse structure if it's JSON, though usually Supabase returns it as object if column is jsonb
     const exercises = workout?.structure || []
+
+    // OPTIMIZATION: Fetch all exercise checkins in bulk
+    const existingCheckins = await getSessionCheckins(session.id)
 
     return (
         <div className="min-h-screen bg-background pb-24">
@@ -61,6 +64,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                     exercises={exercises}
                     clientName="Tú"
                     workoutName={workout?.name || 'Rutina'}
+                    initialCheckins={existingCheckins}
                 />
             </div>
         </div>

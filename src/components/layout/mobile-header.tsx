@@ -9,7 +9,7 @@ export function MobileHeader() {
     const { setMobileOpen } = useSidebar()
 
     return (
-        <header className="md:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-background border-b border-border flex items-center px-4">
+        <header className="md:hidden sticky top-0 z-40 h-14 bg-background border-b border-border flex items-center px-4 shrink-0">
             <Button
                 variant="ghost"
                 size="icon"
