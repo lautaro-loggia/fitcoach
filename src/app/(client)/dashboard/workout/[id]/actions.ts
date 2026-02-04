@@ -391,14 +391,15 @@ export async function updateRestSettings(checkinId: string, enabled: boolean, se
 }
 
 // Complete session
-export async function completeSession(sessionId: string) {
+export async function completeSession(sessionId: string, feedback?: any) {
     const adminSupabase = createAdminClient()
 
     const { error } = await adminSupabase
         .from('workout_sessions')
         .update({
             status: 'completed',
-            ended_at: new Date().toISOString()
+            ended_at: new Date().toISOString(),
+            feedback: feedback || {}
         })
         .eq('id', sessionId)
 

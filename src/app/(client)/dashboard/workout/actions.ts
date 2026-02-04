@@ -9,6 +9,7 @@ export async function completeWorkout(formData: {
     workoutId: string
     clientId: string
     exercisesLog: any // JSON of checked exercises
+    feedback: any
 }) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -38,7 +39,8 @@ export async function completeWorkout(formData: {
             workout_id: formData.workoutId,
             date: new Date().toISOString().split('T')[0],
             completed_at: new Date().toISOString(),
-            exercises_log: formData.exercisesLog // Storing what was checked
+            exercises_log: formData.exercisesLog, // Storing what was checked
+            feedback: formData.feedback
         })
 
     if (error) {

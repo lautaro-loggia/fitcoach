@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner' // Assuming sonner is used, if not we'll use standard toast
 import { completeWorkout } from '@/app/(client)/dashboard/workout/actions'
 import confetti from 'canvas-confetti'
+import WorkoutFeedbackForm, { WorkoutFeedback } from './workout-feedback-form'
 
 interface Exercise {
     id: string
@@ -30,6 +31,7 @@ interface Workout {
 export default function ActiveWorkoutView({ workout, clientId }: { workout: Workout; clientId: string }) {
     const router = useRouter()
     const [checkedState, setCheckedState] = useState<Record<number, boolean>>({})
+    const [showFeedback, setShowFeedback] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
 
     const toggleExercise = (index: number) => {
@@ -43,13 +45,18 @@ export default function ActiveWorkoutView({ workout, clientId }: { workout: Work
     const totalExercises = workout.structure.length
     const progress = Math.round((completedCount / totalExercises) * 100)
 
-    const handleFinish = async () => {
+    const handleFinishClick = () => {
+        setShowFeedback(true)
+    }
+
+    const handleFinalSubmit = async (feedback: WorkoutFeedback) => {
         setIsSubmitting(true)
         try {
             const result = await completeWorkout({
                 workoutId: workout.id,
                 clientId: clientId,
-                exercisesLog: checkedState
+                exercisesLog: checkedState,
+                feedback // Pass feedback data
             })
 
             if (result.error) {
@@ -71,6 +78,10 @@ export default function ActiveWorkoutView({ workout, clientId }: { workout: Work
         } finally {
             setIsSubmitting(false)
         }
+    }
+
+    if (showFeedback) {
+        return <WorkoutFeedbackForm onSubmit={handleFinalSubmit} isSubmitting={isSubmitting} />
     }
 
     return (
@@ -151,11 +162,11 @@ export default function ActiveWorkoutView({ workout, clientId }: { workout: Work
             {/* Finish Action */}
             <div className="fixed bottom-20 left-4 right-4 z-20">
                 <Button
-                    onClick={handleFinish}
+                    onClick={handleFinishClick}
                     disabled={isSubmitting}
                     className={`w-full h-14 text-lg font-bold shadow-xl transition-all ${completedCount === totalExercises
-                            ? 'bg-green-600 hover:bg-green-700 text-white animate-pulse'
-                            : 'bg-blue-600 hover:bg-blue-700 text-white'
+                        ? 'bg-green-600 hover:bg-green-700 text-white animate-pulse'
+                        : 'bg-blue-600 hover:bg-blue-700 text-white'
                         }`}
                 >
                     {isSubmitting ? (
