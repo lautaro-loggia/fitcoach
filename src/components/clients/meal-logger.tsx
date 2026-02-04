@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Camera, Image as ImageIcon, Check, Loader2, Plus, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { registerMealLog } from '@/app/(dashboard)/clients/[id]/meal-plan-actions'
+import { compressImage } from '@/lib/image-utils'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import Image from 'next/image'
 
@@ -38,9 +39,12 @@ export function MealLogger({ clientId, mealName, existingLogs }: MealLoggerProps
 
         setIsUploading(true)
         const formData = new FormData()
-        formData.append('file', selectedFile)
 
         try {
+            // Compress client-side
+            const compressedFile = await compressImage(selectedFile, 0.8, 1600)
+            formData.append('file', compressedFile)
+
             const result = await registerMealLog(clientId, mealName, formData)
             if (result?.error) {
                 toast.error(result.error)
