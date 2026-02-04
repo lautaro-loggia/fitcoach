@@ -93,3 +93,48 @@ export async function signup(formData: FormData) {
     revalidatePath('/', 'layout')
     redirect('/')
 }
+
+export async function requestPasswordReset(formData: FormData) {
+    const supabase = await createClient()
+    const email = formData.get('email') as string
+    const origin = (await headers()).get('origin')
+
+    if (!email) {
+        return { error: 'Por favor ingrese su correo electrónico' }
+    }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${origin}/auth/callback?next=/reset-password`,
+    })
+
+    if (error) {
+        return { error: error.message }
+    }
+
+    return { success: true }
+}
+
+export async function updatePassword(formData: FormData) {
+    const supabase = await createClient()
+    const password = formData.get('password') as string
+    const confirmPassword = formData.get('confirmPassword') as string
+
+    if (!password || !confirmPassword) {
+        return { error: 'Por favor complete todos los campos' }
+    }
+
+    if (password !== confirmPassword) {
+        return { error: 'Las contraseñas no coinciden' }
+    }
+
+    const { error } = await supabase.auth.updateUser({
+        password: password
+    })
+
+    if (error) {
+        return { error: error.message }
+    }
+
+    revalidatePath('/', 'layout')
+    redirect('/')
+}
