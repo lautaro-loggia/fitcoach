@@ -55,7 +55,7 @@ export default async function DietPage() {
     const totalCount = plannedMealNames.length
 
     return (
-        <div className="p-4 space-y-6 pb-24">
+        <div className="p-4 space-y-6 pb-6">
             {/* Header */}
             <div className="flex items-center gap-2">
                 <Link href="/dashboard">
@@ -93,7 +93,7 @@ export default async function DietPage() {
                 </p>
 
                 {todayPlan ? (
-                    <div className="space-y-3">
+                    <div className="flex flex-col gap-4">
                         {todayPlan.meals?.sort((a: any, b: any) => a.sort_order - b.sort_order).map((meal: any) => (
                             <Card key={meal.id} className="p-4">
                                 <h3 className="font-semibold text-blue-900 mb-2 text-sm">{meal.name}</h3>

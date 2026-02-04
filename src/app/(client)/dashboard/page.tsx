@@ -157,7 +157,7 @@ export default async function ClientDashboard() {
     const isCheckinPrioritary = isFirstCheckin || isCheckinDue
 
     return (
-        <div className="p-4 space-y-6 pb-24 max-w-md mx-auto">
+        <div className="p-4 space-y-6 pb-6 max-w-md mx-auto">
             {/* 1. Header Compacto */}
             <div className="flex justify-between items-center py-1">
                 <div className="flex items-center gap-3">

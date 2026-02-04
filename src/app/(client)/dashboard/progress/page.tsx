@@ -52,7 +52,7 @@ export default async function ProgressPage() {
         : null
 
     return (
-        <div className="p-4 space-y-6 pb-24">
+        <div className="p-4 space-y-6 pb-6">
             <div className="flex items-center gap-2">
                 <Link href="/dashboard">
                     <Button variant="ghost" size="icon" className="-ml-2 h-8 w-8">

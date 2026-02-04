@@ -21,7 +21,7 @@ export default async function ClientLayout({
 
     return (
         <div className="min-h-screen bg-neutral-50 text-slate-900 font-sans">
-            <main className="w-full max-w-md mx-auto min-h-screen bg-white shadow-sm pb-20">
+            <main className="w-full max-w-md mx-auto min-h-screen bg-white shadow-sm pb-32">
                 {/* Mobile First Container */}
                 {children}
                 <MobileNav />
