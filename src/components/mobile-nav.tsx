@@ -36,7 +36,7 @@ export function MobileNav() {
     ]
 
     return (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-md pointer-events-none">
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-md pointer-events-none">
             <nav className="bg-white/75 backdrop-blur-lg border border-black/[0.06] shadow-[0_10px_40px_rgba(0,0,0,0.08)] rounded-[40px] px-6 py-3 flex items-center justify-between pointer-events-auto">
                 {navItems.map((item) => {
                     const active = item.isActive(pathname)

@@ -294,9 +294,9 @@ export async function getDailyMealLogs(clientId: string, date: string) {
 
 // 8. Review Meal Log
 export async function reviewMealLog(logId: string, status: 'pending' | 'reviewed', comment?: string) {
-    const supabase = await createClient()
+    const adminSupabase = createAdminClient()
 
-    const { error } = await supabase
+    const { error } = await adminSupabase
         .from('meal_logs')
         .update({ status, coach_comment: comment })
         .eq('id', logId)
