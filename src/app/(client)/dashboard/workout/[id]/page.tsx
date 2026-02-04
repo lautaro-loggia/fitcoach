@@ -1,9 +1,10 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { getOrCreateSession, completeSession, getSessionCheckins } from './actions'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Check } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { SessionExerciseList } from '@/components/workout-session/session-exercise-list'
+import { FinishWorkoutButton } from './finish-workout-button'
+import { getOrCreateSession, getSessionCheckins } from './actions'
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params
@@ -41,16 +42,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                             <p className="text-sm text-muted-foreground">Tu entrenamiento</p>
                         </div>
                     </div>
-                    <form action={async () => {
-                        'use server'
-                        await completeSession(session.id)
-                        redirect('/dashboard/workout')
-                    }}>
-                        <Button type="submit" variant="default" size="sm" className="gap-1">
-                            <Check className="h-4 w-4" />
-                            Terminar
-                        </Button>
-                    </form>
+                    <FinishWorkoutButton sessionId={session.id} />
                 </div>
             </div>
 
