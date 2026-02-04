@@ -1,15 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Dialog, DialogContent, DialogTrigger, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogClose } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { History, ChevronLeft, ChevronRight, CheckCircle2, MessageSquare } from 'lucide-react'
+import { History, ChevronLeft, ChevronRight, CheckCircle2, MessageSquare, X } from 'lucide-react'
 import { format, addDays, subDays } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { getDailyMealLogs, reviewMealLog } from '@/app/(dashboard)/clients/[id]/meal-plan-actions'
 import Image from 'next/image'
 import { toast } from 'sonner'
-import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
 
 interface MealHistoryDialogProps {
@@ -62,25 +61,32 @@ export function MealHistoryDialog({ clientId }: MealHistoryDialogProps) {
                     <History className="h-4 w-4" /> Historial de comidas
                 </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-5xl h-[80vh] flex flex-col p-0 overflow-hidden gap-0">
+            <DialogContent className="max-w-[95vw] h-[90vh] flex flex-col p-0 overflow-hidden gap-0" showCloseButton={false}>
                 <div className="p-4 border-b flex items-center justify-between bg-gray-50/50">
                     <DialogTitle className="font-semibold text-lg">Historial de comidas</DialogTitle>
-                    <div className="flex items-center gap-2 bg-white rounded-lg border p-1 border-gray-200 shadow-sm mr-8">
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDate(subDays(date, 1))}>
-                            <ChevronLeft className="h-4 w-4" />
-                        </Button>
-                        <span className="text-sm font-medium w-32 text-center">
-                            {format(date, 'eee d MMM', { locale: es })}
-                        </span>
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDate(addDays(date, 1))}>
-                            <ChevronRight className="h-4 w-4" />
-                        </Button>
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2 bg-white rounded-lg border p-1 border-gray-200 shadow-sm">
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDate(subDays(date, 1))}>
+                                <ChevronLeft className="h-4 w-4" />
+                            </Button>
+                            <span className="text-sm font-medium w-32 text-center">
+                                {format(date, 'eee d MMM', { locale: es })}
+                            </span>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDate(addDays(date, 1))}>
+                                <ChevronRight className="h-4 w-4" />
+                            </Button>
+                        </div>
+                        <DialogClose asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-gray-200">
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </DialogClose>
                     </div>
                 </div>
 
                 <div className="flex flex-1 overflow-hidden">
                     {/* List/Grid of Meals */}
-                    <ScrollArea className="flex-1 p-4 border-r">
+                    <ScrollArea className="w-64 flex-none p-4 border-r">
                         {loading ? (
                             <div className="text-center py-8 text-muted-foreground">Cargando...</div>
                         ) : logs.length === 0 ? (
@@ -89,7 +95,7 @@ export function MealHistoryDialog({ clientId }: MealHistoryDialogProps) {
                                 <p>No hay comidas registradas este día</p>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 gap-4">
+                            <div className="grid grid-cols-2 gap-4">
                                 {logs.map((log) => (
                                     <div
                                         key={log.id}
@@ -118,7 +124,7 @@ export function MealHistoryDialog({ clientId }: MealHistoryDialogProps) {
                     </ScrollArea>
 
                     {/* Detail View */}
-                    <div className="w-[350px] bg-white border-l flex flex-col">
+                    <div className="flex-1 bg-white flex flex-col min-w-0">
                         {selectedLog ? (
                             <MealDetail
                                 log={selectedLog}
@@ -153,7 +159,7 @@ function MealDetail({ log, onReview, onClose }: { log: any, onReview: (s: 'pendi
 
     return (
         <div className="flex-1 flex flex-col h-full bg-white">
-            <div className="relative aspect-video w-full bg-black shrink-0">
+            <div className="relative flex-1 w-full bg-black min-h-[400px] shrink-0">
                 <Image
                     src={log.signedUrl || '/placeholder.png'}
                     alt={log.meal_type}
