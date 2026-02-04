@@ -4,7 +4,7 @@ import { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Camera, Image as ImageIcon, Check, Loader2, Plus, X } from 'lucide-react'
 import { toast } from 'sonner'
-import { registerMealLog } from '@/app/(dashboard)/clients/[id]/meal-plan-actions'
+import { registerMealLog, deleteMealLog } from '@/app/(dashboard)/clients/[id]/meal-plan-actions'
 import { compressImage } from '@/lib/image-utils'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import Image from 'next/image'
@@ -55,7 +55,8 @@ export function MealLogger({ clientId, mealName, existingLogs }: MealLoggerProps
                 setPreviewUrl(null)
             }
         } catch (error) {
-            toast.error('Error al subir la comida')
+            console.error('Error in handleConfirmUpload:', error)
+            toast.error('Errorinesperado al subir la comida')
         } finally {
             setIsUploading(false)
         }
@@ -69,6 +70,21 @@ export function MealLogger({ clientId, mealName, existingLogs }: MealLoggerProps
 
     const triggerFileRead = () => {
         fileInputRef.current?.click()
+    }
+
+    const handleDeleteLog = async (logId: string, imagePath: string) => {
+        if (!confirm('¿Estás seguro de que quieres eliminar esta foto?')) return
+
+        try {
+            const result = await deleteMealLog(logId, imagePath)
+            if (result?.error) {
+                toast.error(result.error)
+            } else {
+                toast.success('Foto eliminada')
+            }
+        } catch (error) {
+            toast.error('Error al eliminar la foto')
+        }
     }
 
     // Filter logs for this specific meal (case sensitive? Usually mealName matches what is stored)
@@ -92,20 +108,22 @@ export function MealLogger({ clientId, mealName, existingLogs }: MealLoggerProps
 
             {/* Existing Logs Visualization */}
             {hasLogs && (
-                <div className="flex gap-2 mb-3 overflow-x-auto pb-2">
+                <div className="flex gap-2 mb-3 overflow-x-auto pb-2 scrollbar-none">
                     {myLogs.map((log) => (
-                        <div key={log.id} className="relative h-16 w-16 shrink-0 rounded-lg overflow-hidden border border-gray-200">
+                        <div key={log.id} className="relative h-16 w-16 shrink-0 rounded-xl overflow-hidden border border-gray-100 group">
                             <Image
                                 src={log.signedUrl || '/placeholder.png'}
                                 alt="Comida registrada"
                                 fill
                                 className="object-cover"
                             />
-                            {/* Badge count if multiple? Requirement: "Si hay varias fotos... mostrar 1 thumbnail + badge +2" 
-                                The mockup/req implies we can show thumbnails or collapse.
-                                "Después de registrar: mostrar thumbnail pequeño de la foto"
-                                "Si hay varias fotos... mostrar 1 thumbnail + badge +2"
-                            */}
+                            <button
+                                onClick={() => handleDeleteLog(log.id, log.image_path)}
+                                className="absolute top-1 right-1 bg-white/90 text-red-500 p-1 rounded-full shadow-sm md:opacity-0 group-hover:opacity-100 transition-opacity active:scale-95"
+                                title="Eliminar foto"
+                            >
+                                <X className="h-3.5 w-3.5" />
+                            </button>
                         </div>
                     ))}
                 </div>
