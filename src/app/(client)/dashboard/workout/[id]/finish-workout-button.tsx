@@ -15,10 +15,18 @@ const WorkoutFeedbackForm = dynamic(() => import('@/components/clients/open/work
     ssr: false
 })
 
+import { createPortal } from 'react-dom'
+import { useEffect } from 'react'
+
 export function FinishWorkoutButton({ sessionId }: { sessionId: string }) {
     const [showFeedback, setShowFeedback] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [mounted, setMounted] = useState(false)
     const router = useRouter()
+
+    useEffect(() => {
+        setMounted(true)
+    }, [])
 
     const handleFinishClick = (e: React.FormEvent) => {
         e.preventDefault()
@@ -63,13 +71,14 @@ export function FinishWorkoutButton({ sessionId }: { sessionId: string }) {
                 Finalizar
             </Button>
 
-            {showFeedback && (
-                <div className="fixed inset-0 z-[9999] bg-white">
+            {showFeedback && mounted && createPortal(
+                <div className="fixed inset-0 z-[9999] bg-white overflow-hidden">
                     <WorkoutFeedbackForm
                         onSubmit={handleFinalSubmit}
                         isSubmitting={isSubmitting}
                     />
-                </div>
+                </div>,
+                document.body
             )}
         </>
     )
