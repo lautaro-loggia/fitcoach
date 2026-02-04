@@ -82,7 +82,6 @@ export function MealLogger({ clientId, mealName, existingLogs }: MealLoggerProps
                 type="file"
                 ref={fileInputRef}
                 accept="image/*"
-                capture="environment" // Prefer back camera on mobile
                 className="hidden"
                 onChange={handleFileSelect}
             />
@@ -116,11 +115,10 @@ export function MealLogger({ clientId, mealName, existingLogs }: MealLoggerProps
                 {hasLogs && <span className="text-xs text-green-600 font-medium flex items-center gap-1"><Check className="h-3 w-3" /> Registrado</span>}
 
                 <Button
-                    variant="outline"
                     size="sm"
                     onClick={triggerFileRead}
                     disabled={isUploading}
-                    className="ml-auto gap-2 text-blue-600 border-blue-200 hover:bg-blue-50"
+                    className="ml-auto gap-2 bg-zinc-900 text-white hover:bg-zinc-800 rounded-xl px-4 transition-all active:scale-95 shadow-sm border-none"
                 >
                     <Camera className="h-4 w-4" />
                     {hasLogs ? "Registrar otra" : "Registrar comida"}
@@ -157,7 +155,11 @@ export function MealLogger({ clientId, mealName, existingLogs }: MealLoggerProps
                             <Button variant="outline" className="flex-1" onClick={handleCancel}>
                                 Cancelar
                             </Button>
-                            <Button className="flex-1" onClick={handleConfirmUpload} disabled={isUploading}>
+                            <Button
+                                className="flex-1 bg-zinc-900 text-white hover:bg-zinc-800 rounded-xl"
+                                onClick={handleConfirmUpload}
+                                disabled={isUploading}
+                            >
                                 {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 {isUploading ? 'Subiendo...' : 'Confirmar'}
                             </Button>

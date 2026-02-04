@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useTransition, useState, useMemo } from 'react'
-import { MoreHorizontalIcon, File01Icon, Delete02Icon, UserSettings01Icon, Loading03Icon, Search01Icon, Cancel01Icon, ArrowDown01Icon, Calendar03Icon, FilterHorizontalIcon, Tick01Icon } from 'hugeicons-react'
+import { MoreHorizontalIcon, File01Icon, Delete02Icon, UserSettings01Icon, Loading03Icon, Search01Icon, Cancel01Icon, ArrowDown01Icon, Calendar03Icon, FilterHorizontalIcon } from 'hugeicons-react'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -41,6 +41,13 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table'
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 import { ClientAvatar } from '@/components/clients/client-avatar'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -327,79 +334,50 @@ export function ClientTable({ clients, presentialWorkouts, defaultOpenNew, hideH
 
     const FilterContent = () => (
         <div className="space-y-6 py-4">
-            <div className="space-y-3">
-                <Label className="text-sm font-bold text-gray-900">Estado del Cliente</Label>
-                <RadioGroup value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)} className="grid grid-cols-1 gap-2">
-                    {[
-                        { id: 'all', label: 'Todos los estados' },
-                        { id: 'active', label: 'Activos' },
-                        { id: 'inactive', label: 'Inactivos' }
-                    ].map((opt) => (
-                        <Label
-                            key={opt.id}
-                            htmlFor={`status-${opt.id}`}
-                            className={cn(
-                                "flex items-center justify-between px-5 py-4 border-2 rounded-xl cursor-pointer transition-all hover:bg-muted/50",
-                                statusFilter === opt.id ? "border-primary bg-primary/5" : "border-transparent bg-muted/30"
-                            )}
-                        >
-                            <span className="font-medium">{opt.label}</span>
-                            <RadioGroupItem value={opt.id} id={`status-${opt.id}`} className="sr-only" />
-                            {statusFilter === opt.id && <Tick01Icon className="w-5 h-5 text-primary" />}
-                        </Label>
-                    ))}
-                </RadioGroup>
+            <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">Estado del Cliente</Label>
+                <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+                    <SelectTrigger className="h-11 rounded-xl border-gray-200 focus:ring-1 focus:ring-primary">
+                        <SelectValue placeholder="Seleccionar estado" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">Todos los estados</SelectItem>
+                        <SelectItem value="active">Activos</SelectItem>
+                        <SelectItem value="inactive">Inactivos</SelectItem>
+                    </SelectContent>
+                </Select>
             </div>
 
-            <div className="space-y-3">
-                <Label className="text-sm font-bold text-gray-900">Objetivo Principal</Label>
-                <div className="grid grid-cols-1 gap-2">
-                    {[
-                        { id: 'all', label: 'Todos los objetivos' },
-                        { id: 'fat_loss', label: 'Pérdida de grasa' },
-                        { id: 'muscle_gain', label: 'Ganancia muscular' },
-                        { id: 'recomp', label: 'Recomposición' },
-                        { id: 'performance', label: 'Rendimiento' },
-                        { id: 'health', label: 'Salud' }
-                    ].map((opt) => (
-                        <button
-                            key={opt.id}
-                            onClick={() => setGoalFilter(opt.id as GoalFilter)}
-                            className={cn(
-                                "flex items-center justify-between px-5 py-4 border-2 rounded-xl text-left transition-all hover:bg-muted/50 text-sm",
-                                goalFilter === opt.id ? "border-primary bg-primary/5 font-semibold" : "border-transparent bg-muted/30"
-                            )}
-                        >
-                            {opt.label}
-                            {goalFilter === opt.id && <Tick01Icon className="w-5 h-5 text-primary" />}
-                        </button>
-                    ))}
-                </div>
+            <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">Objetivo Principal</Label>
+                <Select value={goalFilter} onValueChange={(v) => setGoalFilter(v as GoalFilter)}>
+                    <SelectTrigger className="h-11 rounded-xl border-gray-200 focus:ring-1 focus:ring-primary">
+                        <SelectValue placeholder="Seleccionar objetivo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">Todos los objetivos</SelectItem>
+                        <SelectItem value="fat_loss">Pérdida de grasa</SelectItem>
+                        <SelectItem value="muscle_gain">Ganancia muscular</SelectItem>
+                        <SelectItem value="recomp">Recomposición</SelectItem>
+                        <SelectItem value="performance">Rendimiento</SelectItem>
+                        <SelectItem value="health">Salud</SelectItem>
+                    </SelectContent>
+                </Select>
             </div>
 
-            <div className="space-y-3">
-                <Label className="text-sm font-bold text-gray-900">Próximo Check-in</Label>
-                <RadioGroup value={checkinFilter} onValueChange={(v) => setCheckinFilter(v as CheckinStatus)} className="grid grid-cols-1 gap-2">
-                    {[
-                        { id: 'all', label: 'Cualquier fecha' },
-                        { id: 'overdue', label: 'Vencidos', color: 'text-red-600' },
-                        { id: 'due_soon', label: 'Hoy o mañana', color: 'text-amber-600' },
-                        { id: 'future', label: 'A tiempo', color: 'text-emerald-600' }
-                    ].map((opt) => (
-                        <Label
-                            key={opt.id}
-                            htmlFor={`check-${opt.id}`}
-                            className={cn(
-                                "flex items-center justify-between px-5 py-4 border-2 rounded-xl cursor-pointer transition-all hover:bg-muted/50",
-                                checkinFilter === opt.id ? "border-primary bg-primary/5" : "border-transparent bg-muted/30"
-                            )}
-                        >
-                            <span className={cn("font-medium", (opt as any).color)}>{opt.label}</span>
-                            <RadioGroupItem value={opt.id} id={`check-${opt.id}`} className="sr-only" />
-                            {checkinFilter === opt.id && <Tick01Icon className="w-5 h-5 text-primary" />}
-                        </Label>
-                    ))}
-                </RadioGroup>
+            <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">Próximo Check-in</Label>
+                <Select value={checkinFilter} onValueChange={(v) => setCheckinFilter(v as CheckinStatus)}>
+                    <SelectTrigger className="h-11 rounded-xl border-gray-200 focus:ring-1 focus:ring-primary">
+                        <SelectValue placeholder="Seleccionar check-in" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">Cualquier fecha</SelectItem>
+                        <SelectItem value="overdue">Vencidos</SelectItem>
+                        <SelectItem value="due_soon">Hoy o mañana</SelectItem>
+                        <SelectItem value="future">A tiempo</SelectItem>
+                    </SelectContent>
+                </Select>
             </div>
         </div>
     )
@@ -441,27 +419,40 @@ export function ClientTable({ clients, presentialWorkouts, defaultOpenNew, hideH
                                     )}
                                 </Button>
                             </SheetTrigger>
-                            <SheetContent className="w-full sm:max-w-md overflow-y-auto">
-                                <SheetHeader className="pb-4 border-b">
-                                    <SheetTitle className="text-xl font-bold">Filtros Avanzados</SheetTitle>
+                            <SheetContent className="w-full sm:max-w-md flex flex-col h-full p-0">
+                                <SheetHeader className="p-6 border-b text-left">
+                                    <SheetTitle className="text-2xl font-bold text-gray-900">Filtros Avanzados</SheetTitle>
                                     <p className="text-sm text-muted-foreground">Personalizá tu vista de clientes</p>
                                 </SheetHeader>
 
-                                <FilterContent />
+                                <div className="flex-1 overflow-y-auto px-6">
+                                    <FilterContent />
+                                </div>
 
-                                <SheetFooter className="mt-8 flex-col gap-2 pt-6 border-t sm:flex-col">
-                                    <SheetClose asChild>
-                                        <Button className="w-full h-11 rounded-xl font-bold">Aplicar Filtros</Button>
-                                    </SheetClose>
-                                    {hasActiveFilters && (
-                                        <Button
-                                            variant="ghost"
-                                            onClick={clearFilters}
-                                            className="w-full h-11 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded-xl"
-                                        >
-                                            Limpiar todos los filtros
-                                        </Button>
-                                    )}
+                                <SheetFooter className="p-6 border-t bg-white">
+                                    <div className="flex flex-col gap-3 w-full">
+                                        <div className="flex gap-3 w-full">
+                                            <SheetClose asChild>
+                                                <Button variant="secondary" className="flex-1 h-12 rounded-xl font-bold bg-[#F4F4F5] text-gray-900 hover:bg-gray-200 border-none">
+                                                    Cancelar
+                                                </Button>
+                                            </SheetClose>
+                                            <SheetClose asChild>
+                                                <Button className="flex-1 h-12 rounded-xl font-bold">
+                                                    Aplicar Filtros
+                                                </Button>
+                                            </SheetClose>
+                                        </div>
+                                        {hasActiveFilters && (
+                                            <Button
+                                                variant="ghost"
+                                                onClick={clearFilters}
+                                                className="w-full h-10 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded-xl text-xs font-semibold"
+                                            >
+                                                Limpiar todos los filtros
+                                            </Button>
+                                        )}
+                                    </div>
                                 </SheetFooter>
                             </SheetContent>
                         </Sheet>

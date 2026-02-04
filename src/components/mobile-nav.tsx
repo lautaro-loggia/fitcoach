@@ -36,8 +36,8 @@ export function MobileNav() {
     ]
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 border-t bg-white h-16 px-4 pb-safe z-50">
-            <div className="mx-auto max-w-md h-full flex items-center justify-around">
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-md pointer-events-none">
+            <nav className="bg-white/75 backdrop-blur-lg border border-black/[0.06] shadow-[0_10px_40px_rgba(0,0,0,0.08)] rounded-[40px] px-6 py-3 flex items-center justify-between pointer-events-auto">
                 {navItems.map((item) => {
                     const active = item.isActive(pathname)
                     return (
@@ -45,19 +45,28 @@ export function MobileNav() {
                             key={item.href}
                             href={item.href}
                             className={cn(
-                                "flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors duration-200",
-                                active ? "text-black" : "text-gray-400 hover:text-gray-600"
+                                "flex flex-col items-center justify-center space-y-1 transition-all duration-200 active:scale-95",
+                                "min-w-[44px]" // Área de toque cómoda
                             )}
                         >
                             <item.icon
-                                className={cn("h-6 w-6 transition-transform duration-200", active && "scale-110")}
-                                strokeWidth={active ? 2 : 1.5}
+                                className={cn(
+                                    "h-6 w-6 transition-all duration-300",
+                                    active ? "text-[#5254D9]" : "text-gray-400"
+                                )}
+                                strokeWidth={active ? 1.8 : 1.5}
                             />
-                            <span className="text-[10px] font-medium">{item.label}</span>
+                            <span className={cn(
+                                "text-[10px] font-semibold leading-none transition-colors duration-200",
+                                active ? "text-[#5254D9]" : "text-gray-400"
+                            )}>
+                                {item.label}
+                            </span>
                         </Link>
                     )
                 })}
-            </div>
+            </nav>
         </div>
     )
 }
+
