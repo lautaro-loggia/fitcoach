@@ -62,10 +62,10 @@ export function MealHistoryDialog({ clientId }: MealHistoryDialogProps) {
                     <History className="h-4 w-4" /> Historial de comidas
                 </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-0 overflow-hidden gap-0">
+            <DialogContent className="max-w-5xl h-[80vh] flex flex-col p-0 overflow-hidden gap-0">
                 <div className="p-4 border-b flex items-center justify-between bg-gray-50/50">
                     <DialogTitle className="font-semibold text-lg">Historial de comidas</DialogTitle>
-                    <div className="flex items-center gap-2 bg-white rounded-lg border p-1 border-gray-200 shadow-sm">
+                    <div className="flex items-center gap-2 bg-white rounded-lg border p-1 border-gray-200 shadow-sm mr-8">
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDate(subDays(date, 1))}>
                             <ChevronLeft className="h-4 w-4" />
                         </Button>
@@ -89,11 +89,11 @@ export function MealHistoryDialog({ clientId }: MealHistoryDialogProps) {
                                 <p>No hay comidas registradas este día</p>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 gap-4">
                                 {logs.map((log) => (
                                     <div
                                         key={log.id}
-                                        className={`group cursor-pointer rounded-xl overflow-hidden border-2 transition-all relative aspect-square ${selectedLog?.id === log.id ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-transparent hover:border-gray-200'}`}
+                                        className={`group cursor-pointer rounded-xl overflow-hidden border-2 transition-all relative aspect-square ${selectedLog?.id === log.id ? 'border-zinc-900 ring-2 ring-zinc-900/20' : 'border-transparent hover:border-gray-200'}`}
                                         onClick={() => setSelectedLog(log)}
                                     >
                                         <Image
@@ -128,28 +128,27 @@ export function MealHistoryDialog({ clientId }: MealHistoryDialogProps) {
                         ) : (
                             <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground p-8 text-center bg-gray-50/50">
                                 <MessageSquare className="h-8 w-8 mb-3 opacity-20" />
-                                <p className="text-sm">Selecciona una comida para ver detalles y dejar feedback</p>
+                                <p className="text-sm">Selecciona una comida para ver detalles</p>
                             </div>
                         )}
                     </div>
                 </div>
-            </DialogContent>
-        </Dialog>
+            </DialogContent >
+        </Dialog >
     )
 }
 
 function MealDetail({ log, onReview, onClose }: { log: any, onReview: (s: 'pending' | 'reviewed', c?: string) => void, onClose: () => void }) {
-    const [comment, setComment] = useState(log.coach_comment || '')
+    // Comment state removed as requested
     const [isReviewed, setIsReviewed] = useState(log.status === 'reviewed')
 
     // Reset state when log changes
     useEffect(() => {
-        setComment(log.coach_comment || '')
         setIsReviewed(log.status === 'reviewed')
     }, [log.id])
 
     const handleSave = () => {
-        onReview(isReviewed ? 'reviewed' : 'pending', comment)
+        onReview(isReviewed ? 'reviewed' : 'pending', "") // Empty comment
     }
 
     return (
@@ -172,15 +171,7 @@ function MealDetail({ log, onReview, onClose }: { log: any, onReview: (s: 'pendi
                         </p>
                     </div>
 
-                    <div className="space-y-3">
-                        <label className="text-sm font-medium text-gray-700">Comentarios del Coach</label>
-                        <Textarea
-                            placeholder="Ej: Excelente elección de carbohidratos..."
-                            value={comment}
-                            onChange={(e) => setComment(e.target.value)}
-                            className="resize-none min-h-[120px] bg-gray-50 border-gray-200 focus:bg-white transition-colors"
-                        />
-                    </div>
+                    {/* Comments section removed as requested */}
                 </div>
             </ScrollArea>
 
