@@ -8,6 +8,9 @@ import { cn } from "@/lib/utils"
 export function MobileNav() {
     const pathname = usePathname()
 
+    // No mostrar el navbar durante el onboarding
+    if (pathname?.startsWith("/onboarding")) return null
+
     const navItems = [
         {
             href: "/dashboard",
