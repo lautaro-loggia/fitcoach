@@ -82,8 +82,9 @@ export async function getOrCreateSession(assignedWorkoutId: string) {
             .eq('assigned_workout_id', assignedWorkoutId)
             .gte('started_at', today.toISOString())
             .lt('started_at', tomorrow.toISOString())
-            .eq('status', 'in_progress')
-            .single()
+            .order('started_at', { ascending: false })
+            .limit(1)
+            .maybeSingle()
     ])
 
     const workout = workoutResult.data
