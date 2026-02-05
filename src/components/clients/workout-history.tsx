@@ -113,7 +113,54 @@ export function WorkoutHistory({ clientId }: WorkoutHistoryProps) {
                         </CollapsibleTrigger>
 
                         <CollapsibleContent>
-                            <div className="border-x border-b rounded-b-lg -mt-1 pt-1 pb-3 px-3 space-y-3">
+                            <div className="border-x border-b rounded-b-lg -mt-1 pt-1 pb-3 px-3 space-y-4">
+                                {session.feedback && Object.keys(session.feedback).length > 0 && (
+                                    <div className="bg-gray-50 border rounded-lg p-3 text-sm space-y-3">
+                                        <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                                            <MessageSquare className="h-4 w-4" /> Feedback de la sesión
+                                        </h4>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <span className="text-xs text-gray-500 block uppercase">Sensación</span>
+                                                <span className="font-medium text-gray-800">{session.feedback.generalSensation}</span>
+                                            </div>
+                                            <div>
+                                                <span className="text-xs text-gray-500 block uppercase">RPE (Esfuerzo)</span>
+                                                <div className="flex items-center gap-1">
+                                                    <span className="font-bold text-gray-900">{session.feedback.rpe}</span>
+                                                    <span className="text-xs text-gray-400">/ 10</span>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <span className="text-xs text-gray-500 block uppercase">Energía</span>
+                                                <span className="font-medium text-gray-800">{session.feedback.energy}</span>
+                                            </div>
+                                            <div>
+                                                <span className="text-xs text-gray-500 block uppercase">Rendimiento</span>
+                                                <span className="font-medium text-gray-800">{session.feedback.performance}</span>
+                                            </div>
+                                        </div>
+
+                                        {session.feedback.pain && (
+                                            <div className="pt-2 border-t border-gray-100">
+                                                <div className="flex items-center gap-2 text-red-600 mb-1">
+                                                    <span className="text-xs font-bold uppercase">Reportó Molestias</span>
+                                                </div>
+                                                <div className="flex flex-wrap gap-2 text-xs">
+                                                    <span className="bg-red-50 text-red-700 px-2 py-0.5 rounded border border-red-100">
+                                                        Intensidad: {session.feedback.painIntensity}
+                                                    </span>
+                                                    {session.feedback.painZones?.map((z: string) => (
+                                                        <span key={z} className="bg-red-50 text-red-700 px-2 py-0.5 rounded border border-red-100">
+                                                            {z}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
                                 {session.exercises.length === 0 ? (
                                     <p className="text-sm text-muted-foreground py-2">No hay ejercicios registrados</p>
                                 ) : (

@@ -8,6 +8,7 @@ export interface SessionHistoryItem {
     ended_at: string | null
     status: string
     workout_name: string
+    feedback?: any // JSONB
     exercises: Array<{
         id: string
         exercise_name: string
@@ -38,6 +39,7 @@ export async function getClientWorkoutHistory(clientId: string): Promise<{ sessi
             started_at,
             ended_at,
             status,
+            feedback,
             assigned_workouts (
                 name
             ),
@@ -71,6 +73,7 @@ export async function getClientWorkoutHistory(clientId: string): Promise<{ sessi
         ended_at: session.ended_at,
         status: session.status,
         workout_name: session.assigned_workouts?.name || 'Rutina sin nombre',
+        feedback: session.feedback,
         exercises: (session.exercise_checkins || []).map((checkin: any) => ({
             id: checkin.id,
             exercise_name: checkin.exercise_name,
