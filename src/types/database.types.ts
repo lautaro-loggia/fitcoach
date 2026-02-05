@@ -298,6 +298,7 @@ export type Database = {
                     protein_100g: number | null
                     state: string | null
                     trainer_id: string | null
+                    valid_units: Json | null
                 }
                 Insert: {
                     carbs_100g?: number | null
@@ -312,6 +313,7 @@ export type Database = {
                     protein_100g?: number | null
                     state?: string | null
                     trainer_id?: string | null
+                    valid_units?: Json | null
                 }
                 Update: {
                     carbs_100g?: number | null
@@ -326,6 +328,7 @@ export type Database = {
                     protein_100g?: number | null
                     state?: string | null
                     trainer_id?: string | null
+                    valid_units?: Json | null
                 }
                 Relationships: [
                     {

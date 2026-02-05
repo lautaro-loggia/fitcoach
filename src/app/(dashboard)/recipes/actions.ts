@@ -7,6 +7,8 @@ export interface RecipeIngredient {
     ingredient_code: string
     ingredient_name: string
     grams: number
+    unit?: string
+    quantity?: number
     // Macro data (from ingredients table, used for calculation)
     kcal_100g?: number
     protein_100g?: number
