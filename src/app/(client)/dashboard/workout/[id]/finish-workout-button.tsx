@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Check } from 'lucide-react'
 import { WorkoutFeedback } from '@/components/clients/open/workout-feedback-form'
 import dynamic from 'next/dynamic'
-import { completeSession } from './actions'
+import { completeSession, validateSessionCompletionStatus } from './actions'
 import { useRouter } from 'next/navigation'
 import confetti from 'canvas-confetti'
 import { toast } from 'sonner'
@@ -28,8 +28,21 @@ export function FinishWorkoutButton({ sessionId }: { sessionId: string }) {
         setMounted(true)
     }, [])
 
-    const handleFinishClick = (e: React.FormEvent) => {
+    const handleFinishClick = async (e: React.FormEvent) => {
         e.preventDefault()
+
+        setIsSubmitting(true) // prevent double clicks while checking
+        const validation = await validateSessionCompletionStatus(sessionId)
+        setIsSubmitting(false)
+
+        if (!validation.valid) {
+            toast.error('No puedes finalizar aún', {
+                description: validation.message,
+                duration: 5000
+            })
+            return
+        }
+
         setShowFeedback(true)
     }
 
@@ -50,7 +63,7 @@ export function FinishWorkoutButton({ sessionId }: { sessionId: string }) {
             })
 
             toast.success('¡Entrenamiento completado!')
-            router.push('/dashboard/workout')
+            router.push('/dashboard')
             router.refresh()
         } catch (error) {
             toast.error('Error al completar el entrenamiento')

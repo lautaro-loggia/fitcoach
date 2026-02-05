@@ -465,5 +465,68 @@ export async function getTodaysWorkouts() {
         clients: clientInfo ? [clientInfo] : []
     }))
 
+
     return { workouts: enrichedWorkouts }
+}
+
+// Validate if session is ready to be completed
+export async function validateSessionCompletionStatus(sessionId: string) {
+    const adminSupabase = createAdminClient()
+
+    // 1. Get session and structure
+    const { data: session } = await adminSupabase
+        .from('workout_sessions')
+        .select(`
+            *,
+            assigned_workouts (
+                structure
+            )
+        `)
+        .eq('id', sessionId)
+        .single()
+
+    if (!session) return { valid: false, message: 'Sesión no encontrada' }
+
+    const exercises = session.assigned_workouts?.structure || []
+    if (exercises.length === 0) return { valid: true } // Empty workout is trivially complete
+
+    // 2. Get all checkins with completed sets
+    const { data: checkins } = await adminSupabase
+        .from('exercise_checkins')
+        .select(`
+            exercise_index,
+            set_logs (
+                id,
+                is_completed
+            )
+        `)
+        .eq('session_id', sessionId)
+
+    const checkinsMap = new Map()
+    checkins?.forEach(c => {
+        // @ts-ignore
+        const hasCompletedSet = c.set_logs?.some(s => s.is_completed)
+        if (hasCompletedSet) {
+            checkinsMap.set(c.exercise_index, true)
+        }
+    })
+
+    // 3. Check coverage
+    // We expect every exercise index from 0 to exercises.length - 1 to have a 'completed' entry
+    const missingExercises = []
+
+    for (let i = 0; i < exercises.length; i++) {
+        if (!checkinsMap.has(i)) {
+            missingExercises.push(exercises[i].name)
+        }
+    }
+
+    if (missingExercises.length > 0) {
+        return {
+            valid: false,
+            message: `Debes completar al menos 1 serie de cada ejercicio. Faltan: ${missingExercises.slice(0, 2).join(', ')}${missingExercises.length > 2 ? '...' : ''}`
+        }
+    }
+
+    return { valid: true }
 }

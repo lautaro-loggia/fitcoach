@@ -8,10 +8,17 @@ import { Label } from '@/components/ui/label'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Check, ChevronsUpDown, Plus } from 'lucide-react'
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 
 interface IngredientSelectorProps {
-    onAdd: (ingredient: any, quantity: number) => void
+    onAdd: (ingredient: any, grams: number, unit: string, quantity: number) => void
 }
 
 export function IngredientSelector({ onAdd }: IngredientSelectorProps) {
@@ -19,6 +26,23 @@ export function IngredientSelector({ onAdd }: IngredientSelectorProps) {
     const [open, setOpen] = useState(false)
     const [selectedIngredient, setSelectedIngredient] = useState<any>(null)
     const [quantity, setQuantity] = useState('')
+    const [unit, setUnit] = useState('g')
+
+    // Reset unit when ingredient changes
+    useEffect(() => {
+        if (selectedIngredient?.valid_units) {
+            // Default to the first unit if available, otherwise 'g'
+            // logic: custom units first?
+            const units = Object.keys(selectedIngredient.valid_units)
+            if (units.length > 0) {
+                setUnit(units[0])
+            } else {
+                setUnit('g')
+            }
+        } else {
+            setUnit('g')
+        }
+    }, [selectedIngredient])
 
     useEffect(() => {
         fetchIngredients()
@@ -36,18 +60,33 @@ export function IngredientSelector({ onAdd }: IngredientSelectorProps) {
         }
     }
 
+    const getGrams = () => {
+        if (!quantity || parseFloat(quantity) <= 0) return 0
+        const val = parseFloat(quantity)
+        if (unit === 'g') return val
+
+        // Conversion logic
+        if (selectedIngredient?.valid_units && selectedIngredient.valid_units[unit]) {
+            return val * selectedIngredient.valid_units[unit]
+        }
+        return val // Fallback
+    }
+
     const handleAdd = () => {
         if (selectedIngredient && quantity && parseFloat(quantity) > 0) {
-            onAdd(selectedIngredient, parseFloat(quantity))
+            const grams = getGrams()
+            onAdd(selectedIngredient, grams, unit, parseFloat(quantity))
             setSelectedIngredient(null)
             setQuantity('')
+            setUnit('g')
         }
     }
 
     // Calculate macros for selected ingredient with current quantity
     const calculateMacros = () => {
         if (!selectedIngredient || !quantity) return null
-        const factor = parseFloat(quantity) / 100
+        const grams = getGrams()
+        const factor = grams / 100
         return {
             kcal: Math.round((selectedIngredient.kcal_100g || 0) * factor),
             protein: Math.round((selectedIngredient.protein_100g || 0) * factor),
@@ -104,16 +143,32 @@ export function IngredientSelector({ onAdd }: IngredientSelectorProps) {
                     </Popover>
                 </div>
 
-                <div className="space-y-2">
-                    <Label htmlFor="quantity">Cantidad (g)</Label>
-                    <Input
-                        id="quantity"
-                        type="number"
-                        value={quantity}
-                        onChange={(e) => setQuantity(e.target.value)}
-                        placeholder="100"
-                        min="1"
-                    />
+                <div className="flex gap-2 min-w-[200px]">
+                    <div className="space-y-2 flex-1">
+                        <Label htmlFor="quantity">Cantidad</Label>
+                        <Input
+                            id="quantity"
+                            type="number"
+                            value={quantity}
+                            onChange={(e) => setQuantity(e.target.value)}
+                            placeholder="Ej: 2"
+                            min="0"
+                        />
+                    </div>
+                    <div className="space-y-2 w-[110px]">
+                        <Label>Unidad</Label>
+                        <Select value={unit} onValueChange={setUnit} disabled={!selectedIngredient}>
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="g">g</SelectItem>
+                                {selectedIngredient?.valid_units && Object.keys(selectedIngredient.valid_units).map((u: string) => (
+                                    <SelectItem key={u} value={u}>{u}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </div>
 
                 <Button

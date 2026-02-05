@@ -26,6 +26,8 @@ interface SelectedIngredient {
     fat_100g: number
     fiber_100g: number
     quantity_grams: number
+    unit: string
+    quantity: number
 }
 
 export function AddRecipeDialog() {
@@ -38,7 +40,7 @@ export function AddRecipeDialog() {
     const [prepTime, setPrepTime] = useState(0)
     const router = useRouter()
 
-    const handleAddIngredient = (ingredient: any, quantity: number) => {
+    const handleAddIngredient = (ingredient: any, grams: number, unit: string, quantity: number) => {
         setSelectedIngredients([...selectedIngredients, {
             id: ingredient.id,
             name: ingredient.name,
@@ -47,7 +49,9 @@ export function AddRecipeDialog() {
             carbs_100g: ingredient.carbs_100g,
             fat_100g: ingredient.fat_100g,
             fiber_100g: ingredient.fiber_100g,
-            quantity_grams: quantity,
+            quantity_grams: grams,
+            unit: unit,
+            quantity: quantity,
         }])
     }
 
@@ -69,6 +73,8 @@ export function AddRecipeDialog() {
             carbs_100g: ing.carbs_100g,
             fat_100g: ing.fat_100g,
             fiber_100g: ing.fiber_100g,
+            unit: ing.unit,
+            quantity: ing.quantity,
         }))
 
         const result = await createRecipeAction({
@@ -211,7 +217,7 @@ export function AddRecipeDialog() {
                                             <div className="flex-1">
                                                 <p className="font-medium">{ing.name}</p>
                                                 <p className="text-sm text-muted-foreground">
-                                                    {ing.quantity_grams}g · {Math.round(ingKcal)} kcal
+                                                    {ing.unit && ing.unit !== 'g' ? `${ing.quantity} ${ing.unit} (${Math.round(ing.quantity_grams)}g)` : `${ing.quantity_grams}g`} · {Math.round(ingKcal)} kcal
                                                 </p>
                                             </div>
                                             <Button

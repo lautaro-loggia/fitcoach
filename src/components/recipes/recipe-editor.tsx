@@ -58,6 +58,7 @@ interface Ingredient {
     carbs_100g: number
     fat_100g: number
     fiber_100g: number
+    valid_units?: Record<string, number>
 }
 
 interface RecipeEditorProps {
@@ -178,7 +179,10 @@ export function RecipeEditor({ recipe, userId, isAdmin = false }: RecipeEditorPr
                 protein_100g: 0,
                 carbs_100g: 0,
                 fat_100g: 0,
+
                 fiber_100g: 0,
+                quantity: 100,
+                unit: 'g'
             },
         ])
     }
@@ -207,10 +211,35 @@ export function RecipeEditor({ recipe, userId, isAdmin = false }: RecipeEditorPr
         setRecipeIngredients(updated)
     }
 
-    // Update ingredient grams
-    const handleGramsChange = (index: number, grams: number) => {
+    // Update quantity (recalc grams)
+    const handleQuantityChange = (index: number, quantity: number) => {
         const updated = [...recipeIngredients]
-        updated[index] = { ...updated[index], grams }
+        const ing = updated[index]
+        const selected = availableIngredients.find(a => a.id === ing.ingredient_code)
+
+        let grams = quantity
+        if (ing.unit !== 'g' && selected?.valid_units && ing.unit && selected.valid_units[ing.unit]) {
+            grams = quantity * selected.valid_units[ing.unit]
+        }
+
+        updated[index] = { ...ing, quantity, grams }
+        setRecipeIngredients(updated)
+    }
+
+    // Update unit (recalc grams)
+    const handleUnitChange = (index: number, unit: string) => {
+        const updated = [...recipeIngredients]
+        const ing = updated[index]
+        const selected = availableIngredients.find(a => a.id === ing.ingredient_code)
+
+        let grams = ing.quantity || 0
+        if (unit !== 'g' && selected?.valid_units && selected.valid_units[unit]) {
+            grams = (ing.quantity || 0) * selected.valid_units[unit]
+        } else {
+            grams = ing.quantity || 0
+        }
+
+        updated[index] = { ...ing, unit, grams }
         setRecipeIngredients(updated)
     }
 
@@ -581,24 +610,42 @@ export function RecipeEditor({ recipe, userId, isAdmin = false }: RecipeEditorPr
                                                         </SelectContent>
                                                     </Select>
                                                 </div>
-                                                <div className="col-span-2">
+
+                                                <div className="col-span-2 flex gap-1">
                                                     <Input
                                                         type="number"
                                                         min="0"
-                                                        className="h-9"
-                                                        value={ing.grams}
+                                                        className="h-9 w-[70px] px-2"
+                                                        value={ing.quantity || ing.grams || 0}
                                                         onChange={(e) =>
-                                                            handleGramsChange(index, parseFloat(e.target.value) || 0)
+                                                            handleQuantityChange(index, parseFloat(e.target.value) || 0)
                                                         }
                                                     />
+                                                    <Select
+                                                        value={ing.unit || 'g'}
+                                                        onValueChange={(val) => handleUnitChange(index, val)}
+                                                    >
+                                                        <SelectTrigger className="h-9 px-2 min-w-[60px]">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="g">g</SelectItem>
+                                                            {(() => {
+                                                                const valid = availableIngredients.find(a => a.id === ing.ingredient_code)?.valid_units
+                                                                if (valid) {
+                                                                    return Object.keys(valid).map(u => (
+                                                                        <SelectItem key={u} value={u}>{u}</SelectItem>
+                                                                    ))
+                                                                }
+                                                                return null
+                                                            })()}
+                                                        </SelectContent>
+                                                    </Select>
                                                 </div>
                                                 <div className="col-span-4 text-right text-xs text-muted-foreground">
                                                     {ingMacros ? (
                                                         <>
-                                                            <span className="font-medium text-foreground">{Math.round(ingMacros.kcal)}</span> kcal |{' '}
-                                                            P: {Math.round(ingMacros.protein)}g |{' '}
-                                                            C: {Math.round(ingMacros.carbs)}g |{' '}
-                                                            G: {Math.round(ingMacros.fat)}g
+                                                            <span className="font-medium text-foreground">{Math.round(ingMacros.kcal)}</span> kcal | P: {Math.round(ingMacros.protein)}g | C: {Math.round(ingMacros.carbs)}g | G: {Math.round(ingMacros.fat)}g
                                                         </>
                                                     ) : (
                                                         <span className="italic">Sin datos nutricionales</span>
@@ -693,53 +740,55 @@ export function RecipeEditor({ recipe, userId, isAdmin = false }: RecipeEditorPr
                                 </div>
                             </div>
                         </CardContent>
-                    </Card>
+                    </Card >
 
                     {/* Danger Zone */}
-                    {canEdit && (
-                        <Card className="border-destructive/50">
-                            <CardHeader>
-                                <CardTitle className="text-destructive">Zona de peligro</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button
-                                            variant="destructive"
-                                            className="w-full"
-                                            disabled={isDeleting}
-                                        >
-                                            {isDeleting ? (
-                                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                            ) : (
-                                                <Trash2 className="h-4 w-4 mr-2" />
-                                            )}
-                                            Eliminar receta
-                                        </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>¿Eliminar esta receta?</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                Esta acción no se puede deshacer. La receta será eliminada permanentemente.
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                            <AlertDialogAction
-                                                onClick={handleDelete}
-                                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    {
+                        canEdit && (
+                            <Card className="border-destructive/50">
+                                <CardHeader>
+                                    <CardTitle className="text-destructive">Zona de peligro</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button
+                                                variant="destructive"
+                                                className="w-full"
+                                                disabled={isDeleting}
                                             >
-                                                Eliminar
-                                            </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </CardContent>
-                        </Card>
-                    )}
-                </div>
-            </div>
-        </div>
+                                                {isDeleting ? (
+                                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                                ) : (
+                                                    <Trash2 className="h-4 w-4 mr-2" />
+                                                )}
+                                                Eliminar receta
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>¿Eliminar esta receta?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    Esta acción no se puede deshacer. La receta será eliminada permanentemente.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                <AlertDialogAction
+                                                    onClick={handleDelete}
+                                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                                >
+                                                    Eliminar
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </CardContent>
+                            </Card>
+                        )
+                    }
+                </div >
+            </div >
+        </div >
     )
 }

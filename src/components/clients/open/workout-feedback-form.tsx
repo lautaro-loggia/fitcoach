@@ -99,10 +99,10 @@ export default function WorkoutFeedbackForm({ onSubmit, isSubmitting }: WorkoutF
     )
 
     return (
-        <div className="flex flex-col h-full bg-gray-50/50 overflow-y-auto sm:rounded-xl">
+        <div className="flex flex-col h-full bg-gray-50/50 overflow-y-auto sm:rounded-xl relative">
             <div className="p-6 space-y-8 pb-32 max-w-lg mx-auto w-full">
 
-                <div className="text-center space-y-2 mb-8">
+                <div className="text-center space-y-2 mb-8 pt-6">
                     <h2 className="text-2xl font-bold text-gray-900">Resumen de sesión</h2>
                     <p className="text-gray-500">Completa este rápido feedback para finalizar.</p>
                 </div>
