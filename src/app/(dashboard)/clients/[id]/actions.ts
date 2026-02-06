@@ -19,17 +19,26 @@ export async function getClientActivity(clientId: string): Promise<ActivityEvent
     // 1. Fetch Meal Logs
     const { data: meals } = await supabase
         .from('meal_logs')
-        .select('id, meal_type, created_at')
+        .select('id, meal_type, created_at, status, coach_comment')
         .eq('client_id', clientId)
         .order('created_at', { ascending: false })
         .limit(10)
 
-    // 2. Fetch Workout Logs
-    const { data: workouts } = await supabase
+    // 2. Fetch Workout Logs (Unified with Sessions later)
+    const { data: workoutLogs } = await supabase
         .from('workout_logs')
-        .select('id, completed_at, workout_id')
+        .select('id, completed_at, workout_id, feedback')
         .eq('client_id', clientId)
         .order('completed_at', { ascending: false })
+        .limit(10)
+
+    // 2b. Fetch Workout Sessions (The more detailed system)
+    const { data: workoutSessions } = await supabase
+        .from('workout_sessions')
+        .select('id, ended_at, feedback, assigned_workouts(name)')
+        .eq('client_id', clientId)
+        .eq('status', 'completed')
+        .order('ended_at', { ascending: false })
         .limit(10)
 
     // 3. Fetch Checkins
@@ -43,7 +52,7 @@ export async function getClientActivity(clientId: string): Promise<ActivityEvent
     // 4. Fetch Payments
     const { data: payments } = await supabase
         .from('payments')
-        .select('id, amount, paid_at, created_at')
+        .select('id, amount, paid_at, note, created_at')
         .eq('client_id', clientId)
         .order('created_at', { ascending: false })
         .limit(10)
@@ -52,22 +61,50 @@ export async function getClientActivity(clientId: string): Promise<ActivityEvent
 
     // Map Meal Logs
     meals?.forEach(m => {
+        const hasComment = m.coach_comment && m.coach_comment.trim() !== ''
         events.push({
             id: m.id,
-            title: 'Comida registrada',
-            description: `Se subió una foto de ${m.meal_type}.`,
+            title: m.status === 'reviewed' ? 'Comida revisada' : 'Comida registrada',
+            description: hasComment ? m.coach_comment : `Se subió una foto de ${m.meal_type || 'comida'}.`,
             date: new Date(m.created_at),
             type: 'meal'
         })
     })
 
+    // Helper to format workout feedback
+    const formatFeedback = (feedback: any) => {
+        if (!feedback || typeof feedback !== 'object') return null
+        const parts = []
+        if (feedback.generalSensation) parts.push(feedback.generalSensation)
+        if (feedback.rpe) parts.push(`RPE ${feedback.rpe}`)
+        if (feedback.energy) parts.push(`Energía ${feedback.energy.toLowerCase()}`)
+        return parts.length > 0 ? parts.join(' • ') : null
+    }
+
     // Map Workout Logs
-    workouts?.forEach(w => {
+    workoutLogs?.forEach(w => {
+        const feedbackStr = formatFeedback(w.feedback)
         events.push({
             id: w.id,
-            title: 'Entrenamiento completado',
-            description: `El asesorado finalizó su rutina de hoy.`,
+            title: 'Entrenamiento finalizado',
+            description: feedbackStr || 'El asesorado completó su rutina diaria.',
             date: new Date(w.completed_at),
+            type: 'workout'
+        })
+    })
+
+    // Map Workout Sessions (If they are not duplicates by ID or similar)
+    // We'll add them and let the date sort or unique ID handle it
+    workoutSessions?.forEach(s => {
+        // Skip if we already have a workout log with this date/time approx (though IDs are different)
+        // Just adding them for now as they represent a more detailed entry
+        const workoutName = (s.assigned_workouts as any)?.name || 'Rutina'
+        const feedbackStr = formatFeedback(s.feedback)
+        events.push({
+            id: s.id,
+            title: `Entreno: ${workoutName}`,
+            description: feedbackStr || 'Sesión finalizada con éxito.',
+            date: new Date(s.ended_at!),
             type: 'workout'
         })
     })
@@ -79,7 +116,7 @@ export async function getClientActivity(clientId: string): Promise<ActivityEvent
             id: c.id,
             title: 'Actualización corporal',
             description: hasObservations
-                ? c.observations
+                ? `${c.observations} — Peso: ${c.weight}kg`
                 : `Nuevo check-in registrado (${c.weight}kg).`,
             date: new Date(c.created_at || c.date), // prefers created_at for sorting
             type: 'checkin'
@@ -88,10 +125,11 @@ export async function getClientActivity(clientId: string): Promise<ActivityEvent
 
     // Map Payments
     payments?.forEach(p => {
+        const hasNote = p.note && p.note.trim() !== ''
         events.push({
             id: p.id,
             title: 'Pago registrado',
-            description: `Se registró un pago de $${p.amount}.`,
+            description: hasNote ? p.note : `Se registró un pago de $${p.amount}.`,
             date: new Date(p.created_at || p.paid_at),
             type: 'payment'
         })
