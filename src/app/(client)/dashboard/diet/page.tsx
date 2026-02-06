@@ -12,6 +12,7 @@ import Link from 'next/link'
 import { getDailyMealLogs } from '@/app/(dashboard)/clients/[id]/meal-plan-actions'
 import { DailyProgressBar } from '@/components/clients/daily-progress-bar'
 import { MealLogger } from '@/components/clients/meal-logger'
+import { getARTDate, getTodayString } from '@/lib/utils'
 
 export default async function DietPage() {
     const supabase = await createClient()
@@ -38,14 +39,15 @@ export default async function DietPage() {
         .single() // Assuming one active plan
 
     // Filter logic for "Plan del día"
-    // JS Date day: 0=Sun, 1=Mon... DB day: 1=Mon...7=Sun
-    const jsDay = new Date().getDay()
+    // ART Date day calculation
+    const artNow = getARTDate()
+    const jsDay = artNow.getDay()
     const dbDay = jsDay === 0 ? 7 : jsDay
 
     const todayPlan = mealPlan?.days?.find((d: any) => d.day_of_week === dbDay)
 
-    // Fetch Daily Logs
-    const todayStr = format(new Date(), 'yyyy-MM-dd')
+    // Fetch Daily Logs using ART date string
+    const todayStr = getTodayString()
     const { logs: dailyLogs } = await getDailyMealLogs(client.id, todayStr)
 
     // Calculate Progress
@@ -89,7 +91,7 @@ export default async function DietPage() {
             <div>
                 <h2 className="text-lg font-semibold mb-3">Tu Menú de Hoy</h2>
                 <p className="text-xs text-gray-500 uppercase font-bold mb-3">
-                    {format(new Date(), 'EEEE d', { locale: es })}
+                    {format(getARTDate(), 'EEEE d', { locale: es })}
                 </p>
 
                 {todayPlan ? (

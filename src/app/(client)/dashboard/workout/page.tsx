@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card'
 import { Calendar, ChevronRight, Dumbbell, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { getARTDate } from '@/lib/utils'
 
 export default async function WorkoutPage() {
     const supabase = await createClient()
@@ -39,7 +40,7 @@ export default async function WorkoutPage() {
     // If there is ONLY ONE workout active schedule, just show it? 
     // Implementing a list view for now to satisfy "Lista de ejercicios" (which is inside the specific routine).
 
-    const todayName = format(new Date(), 'EEEE', { locale: es }).toLowerCase()
+    const todayName = format(getARTDate(), 'EEEE', { locale: es }).toLowerCase()
     const todayWorkout = workouts?.find(w =>
         w.scheduled_days?.map((d: string) => d.toLowerCase()).includes(todayName)
     )

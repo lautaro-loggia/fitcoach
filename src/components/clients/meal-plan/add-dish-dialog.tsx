@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useRef } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { cn } from "@/lib/utils"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
@@ -9,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Plus, Search, Loader2, AlertTriangle } from "lucide-react"
 import { RecipeCard } from "@/components/recipes/recipe-card"
+import { AddRecipeDialog } from "@/components/recipes/add-recipe-dialog"
 import { checkRecipeAllergens, checkDietaryCompliance } from "@/lib/allergen-utils"
 
 interface AddDishDialogProps {
@@ -43,6 +45,11 @@ export function AddDishDialog({ mealId, contextLabel, onConfirm, clientAllergens
     const [warningOpen, setWarningOpen] = useState(false)
     const [warningMessage, setWarningMessage] = useState<string>("")
     const [pendingAction, setPendingAction] = useState<(() => Promise<void>) | null>(null)
+
+    // Recipe Creation State
+    const [isCreatingRecipe, setIsCreatingRecipe] = useState(false)
+
+    const nameInputRef = useRef<HTMLInputElement>(null)
 
     useEffect(() => {
         if (isOpen && recipes.length === 0) {
@@ -86,7 +93,8 @@ export function AddDishDialog({ mealId, contextLabel, onConfirm, clientAllergens
 
     const handlePreSubmit = () => {
         if (selectedRecipeId === 'custom' && !customName) {
-            alert("Por favor ingresa el nombre de la receta")
+            nameInputRef.current?.focus()
+            // Podríamos usar un toast aquí si estuviera disponible, pero el focus es un buen indicador inicial
             return
         }
 
@@ -146,7 +154,10 @@ export function AddDishDialog({ mealId, contextLabel, onConfirm, clientAllergens
                                         placeholder="Buscar..."
                                         className="pl-9"
                                         value={searchQuery}
-                                        onChange={e => setSearchQuery(e.target.value)}
+                                        onChange={e => {
+                                            setSearchQuery(e.target.value)
+                                            if (e.target.value) setSelectedRecipeId("")
+                                        }}
                                     />
                                 </div>
                             </div>
@@ -154,6 +165,7 @@ export function AddDishDialog({ mealId, contextLabel, onConfirm, clientAllergens
                             <div className="space-y-2 md:col-span-1">
                                 <Label>Nombre (Personalizado)</Label>
                                 <Input
+                                    ref={nameInputRef}
                                     placeholder="Ej: Pollo con arroz"
                                     value={customName}
                                     onChange={e => setCustomName(e.target.value)}
@@ -171,12 +183,24 @@ export function AddDishDialog({ mealId, contextLabel, onConfirm, clientAllergens
                             </div>
                         </div>
 
-                        {/* Custom Option */}
-                        <div className="flex items-center space-x-2 border p-3 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50" onClick={() => setSelectedRecipeId('custom')}>
-                            <div className={`w-4 h-4 rounded-full border border-primary flex items-center justify-center ${selectedRecipeId === 'custom' ? 'bg-primary' : 'bg-transparent'}`}>
-                                {selectedRecipeId === 'custom' && <div className="w-2 h-2 rounded-full bg-white" />}
+                        <div
+                            className={cn(
+                                "flex items-center space-x-3 border-2 p-3 rounded-xl cursor-pointer transition-all",
+                                selectedRecipeId === 'custom'
+                                    ? "border-primary bg-primary/5 shadow-sm"
+                                    : "border-border bg-muted/30 hover:bg-muted/50"
+                            )}
+                            onClick={() => setIsCreatingRecipe(true)}
+                        >
+                            <div className={cn(
+                                "w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary"
+                            )}>
+                                <Plus className="h-5 w-5" />
                             </div>
-                            <span className={selectedRecipeId === 'custom' ? 'font-medium' : ''}>Crear receta desde cero (sin base)</span>
+                            <div className="flex flex-col">
+                                <span className="font-bold text-sm">Crear receta desde cero</span>
+                                <span className="text-xs text-muted-foreground">La receta se guardará en tu catálogo para usarla siempre</span>
+                            </div>
                         </div>
 
                         {/* Recipe Grid */}
@@ -211,6 +235,27 @@ export function AddDishDialog({ mealId, contextLabel, onConfirm, clientAllergens
                     </div>
                 </DialogContent>
             </Dialog>
+
+            <AddRecipeDialog
+                open={isCreatingRecipe}
+                onOpenChange={setIsCreatingRecipe}
+                defaultMealType={contextLabel.split(' · ')[1]?.toLowerCase()}
+                onSuccess={async (newRecipe) => {
+                    setIsCreatingRecipe(false)
+                    setLoading(true)
+                    try {
+                        await onConfirm({
+                            recipeId: newRecipe.id,
+                            portions: newRecipe.servings || 1
+                        })
+                        setOpen(false)
+                    } catch (error) {
+                        console.error(error)
+                    } finally {
+                        setLoading(false)
+                    }
+                }}
+            />
 
             <AlertDialog open={warningOpen} onOpenChange={setWarningOpen}>
                 <AlertDialogContent>

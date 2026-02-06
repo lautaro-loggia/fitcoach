@@ -44,6 +44,17 @@ export async function createRecipeAction(data: RecipeData) {
         return { error: 'Debe agregar al menos un ingrediente' }
     }
 
+    // Calculate total macros from ingredients
+    const macros = data.ingredients.reduce((acc, ing) => {
+        const factor = (ing.grams || 0) / 100
+        return {
+            kcal: acc.kcal + (ing.kcal_100g || 0) * factor,
+            protein: acc.protein + (ing.protein_100g || 0) * factor,
+            carbs: acc.carbs + (ing.carbs_100g || 0) * factor,
+            fat: acc.fat + (ing.fat_100g || 0) * factor,
+        }
+    }, { kcal: 0, protein: 0, carbs: 0, fat: 0 })
+
     // Generate a unique recipe_code
     const recipe_code = `R${Date.now().toString(36).toUpperCase()}`
 
@@ -57,6 +68,10 @@ export async function createRecipeAction(data: RecipeData) {
         instructions: data.instructions,
         ingredients: data.ingredients,
         image_url: data.image_url || null,
+        macros_calories: macros.kcal,
+        macros_protein_g: macros.protein,
+        macros_carbs_g: macros.carbs,
+        macros_fat_g: macros.fat,
     }).select().single()
 
     if (error) {

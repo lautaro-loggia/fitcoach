@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { PlusSignIcon, Cancel01Icon, DragDropVerticalIcon, FloppyDiskIcon, ArrowLeft01Icon, PencilEdit01Icon, Calendar03Icon, Delete02Icon, Tick01Icon, ArrowUpDownIcon, InformationCircleIcon } from 'hugeicons-react'
+import { PlusSignIcon, Cancel01Icon, DragDropVerticalIcon, FloppyDiskIcon, ArrowLeft01Icon, PencilEdit01Icon, Calendar03Icon, Delete02Icon, Tick01Icon, ArrowUpDownIcon, InformationCircleIcon, Dumbbell01Icon, ZapIcon, GridViewIcon } from 'hugeicons-react'
 import { createClient } from '@/lib/supabase/client'
 import { assignWorkoutAction, updateAssignedWorkoutAction } from '@/app/(dashboard)/clients/[id]/training-actions'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -16,12 +16,27 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { format, parse, addWeeks } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { cn } from '@/lib/utils'
+import { cn, normalizeText } from '@/lib/utils'
 import { Switch } from '@/components/ui/switch'
 
-// Normalize text to remove accents for search
-const normalizeText = (text: string) => {
-    return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+// Helper to convert string to Title Case
+const toTitleCase = (str: string) => {
+    return str.toLowerCase()
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+}
+
+// Helper to get contextual icon for a routine name
+const getRoutineIcon = (name: string) => {
+    const n = name.toLowerCase();
+    if (n.includes('pierna')) return <Dumbbell01Icon className="h-5 w-5 text-amber-500" />;
+    if (n.includes('empuje') || n.includes('push')) return <ZapIcon className="h-5 w-5 text-blue-500" />;
+    if (n.includes('traccion') || n.includes('pull') || n.includes('tirón')) return <ZapIcon className="h-5 w-5 text-purple-500" />;
+    if (n.includes('pecho') || n.includes('espalda') || n.includes('hombro')) return <Dumbbell01Icon className="h-5 w-5 text-red-500" />;
+    if (n.includes('brazos') || n.includes('biceps')) return <Dumbbell01Icon className="h-5 w-5 text-green-500" />;
+    if (n.includes('dia') || n.includes('lunes') || n.includes('martes') || n.includes('miércoles') || n.includes('jueves') || n.includes('viernes') || n.includes('sábado') || n.includes('domingo')) return <Calendar03Icon className="h-5 w-5 text-indigo-500" />;
+    return <GridViewIcon className="h-5 w-5 text-gray-500" />;
 }
 
 // Color mapping for muscle groups
@@ -118,7 +133,18 @@ export function AssignWorkoutDialog({
     const fetchTemplates = async () => {
         const supabase = createClient()
         const { data } = await supabase.from('workouts').select('*').order('name')
-        if (data) setTemplates(data)
+        if (data) {
+            // Deduplicate by name (normalized) and filter out empty names
+            const seen = new Set();
+            const unique = data.filter(t => {
+                if (!t.name || t.name.trim() === '') return false;
+                const normalized = t.name.trim().toLowerCase();
+                if (seen.has(normalized)) return false;
+                seen.add(normalized);
+                return true;
+            });
+            setTemplates(unique)
+        }
     }
 
     const resetEditor = () => {
@@ -244,17 +270,27 @@ export function AssignWorkoutDialog({
                 )}
             </DialogTrigger>
 
-            <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle>
+            <DialogContent className={cn(
+                "max-h-[95vh] overflow-y-auto duration-300 transition-all",
+                step === 'select' && !existingWorkout ? "sm:max-w-[500px]" : "sm:max-w-[850px]",
+                // Bottom-sheet effect on mobile
+                "max-sm:fixed max-sm:bottom-0 max-sm:top-auto max-sm:left-0 max-sm:translate-x-0 max-sm:translate-y-0 max-sm:w-full max-sm:rounded-b-none max-sm:rounded-t-[24px] max-sm:border-x-0 max-sm:border-b-0"
+            )}>
+                <DialogHeader className={step === 'select' && !existingWorkout ? "text-center pb-2" : ""}>
+                    <DialogTitle className={step === 'select' && !existingWorkout ? "text-2xl font-bold" : ""}>
                         {isEditingExercise
                             ? (editingExerciseIndex !== null ? 'Editar ejercicio' : 'Agregar Ejercicio')
                             : (existingWorkout
                                 ? 'Editar Rutina del Cliente'
-                                : (step === 'select' ? 'Seleccionar Plantilla' : 'Nueva Rutina para Cliente')
+                                : (step === 'select' ? 'Elegir plantilla' : 'Nueva Rutina para Cliente')
                             )
                         }
                     </DialogTitle>
+                    {step === 'select' && !existingWorkout && !isEditingExercise && (
+                        <p className="text-muted-foreground mt-1">
+                            Partí de una rutina existente o creá una nueva
+                        </p>
+                    )}
                     {clientName && (existingWorkout || step === 'edit') && !isEditingExercise && (
                         <div className="flex items-center gap-2 px-3 py-2 mt-2 rounded-md bg-blue-50 border border-blue-200 text-blue-700 text-sm">
                             <InformationCircleIcon className="h-4 w-4 flex-shrink-0" />
@@ -277,31 +313,78 @@ export function AssignWorkoutDialog({
                 ) : (
                     <>
                         {step === 'select' && !existingWorkout ? (
-                            <div className="space-y-6 py-4">
-                                <div className="space-y-2">
-                                    <Label>Elegir una plantilla existente</Label>
-                                    <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Seleccionar rutina..." />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {templates.map(t => (
-                                                <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                            <div className="space-y-6 py-2">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                                    {templates.map(t => {
+                                        const isSelected = selectedTemplateId === t.id;
+                                        return (
+                                            <div
+                                                key={t.id}
+                                                onClick={() => setSelectedTemplateId(t.id)}
+                                                className={cn(
+                                                    "group relative flex flex-col p-4 rounded-xl border-2 transition-all cursor-pointer hover:border-primary/50",
+                                                    isSelected
+                                                        ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                                                        : "border-muted bg-card hover:bg-muted/30"
+                                                )}
+                                            >
+                                                <div className="flex items-center gap-3 mb-1">
+                                                    <div className={cn(
+                                                        "p-2 rounded-lg transition-colors",
+                                                        isSelected ? "bg-primary/10" : "bg-muted group-hover:bg-muted-foreground/10"
+                                                    )}>
+                                                        {getRoutineIcon(t.name)}
+                                                    </div>
+                                                    <span className="font-semibold text-foreground line-clamp-1">
+                                                        {toTitleCase(t.name)}
+                                                    </span>
+                                                </div>
+
+                                                {isSelected && (
+                                                    <div className="absolute top-2 right-2">
+                                                        <div className="bg-primary text-white rounded-full p-0.5">
+                                                            <Tick01Icon className="h-3 w-3" />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
-                                <div className="flex flex-col gap-3">
-                                    <Button onClick={handleSelectTemplate} disabled={!selectedTemplateId} className="w-full">
-                                        Continuar con plantilla seleccionada
-                                    </Button>
-                                    <div className="relative">
-                                        <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
-                                        <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">O</span></div>
+
+                                {selectedTemplateId && (
+                                    <div className="flex justify-center animate-in fade-in slide-in-from-top-2 duration-300">
+                                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-medium">
+                                            <Tick01Icon className="h-3 w-3" />
+                                            Plantilla seleccionada: {toTitleCase(templates.find(t => t.id === selectedTemplateId)?.name || '')}
+                                        </div>
                                     </div>
-                                    <Button variant="outline" onClick={handleCreateEmpty} className="w-full">
-                                        Crear desde cero (Vacío)
-                                    </Button>
+                                )}
+
+                                <div className="flex flex-col gap-4 mt-2">
+                                    <div className="flex flex-col gap-2">
+                                        <Button
+                                            onClick={handleSelectTemplate}
+                                            disabled={!selectedTemplateId}
+                                            className="w-full py-6 text-lg font-semibold rounded-2xl shadow-sm transition-all active:scale-[0.98]"
+                                        >
+                                            Usar esta plantilla
+                                        </Button>
+                                        <p className="text-center text-[11px] text-muted-foreground">
+                                            Podrás editar ejercicios, series y cargas luego.
+                                        </p>
+                                    </div>
+
+                                    <div className="flex justify-center">
+                                        <Button
+                                            variant="ghost"
+                                            onClick={handleCreateEmpty}
+                                            className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"
+                                        >
+                                            <PlusSignIcon className="h-4 w-4" />
+                                            O crear rutina desde cero
+                                        </Button>
+                                    </div>
                                 </div>
                             </div>
                         ) : (
@@ -648,7 +731,11 @@ function ExerciseForm({
                         </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-[600px] p-0" align="start">
-                        <Command>
+                        <Command filter={(value, search) => {
+                            const normalizedValue = normalizeText(value)
+                            const normalizedSearch = normalizeText(search)
+                            return normalizedValue.includes(normalizedSearch) ? 1 : 0
+                        }}>
                             <CommandInput placeholder="Buscar por nombre o grupo muscular..." />
                             <CommandList style={{ maxHeight: '300px', overflowY: 'auto' }}>
                                 <CommandEmpty className="py-2 px-4 text-sm text-gray-500">

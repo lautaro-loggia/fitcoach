@@ -14,13 +14,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { createClient } from '@/lib/supabase/client'
-import { cn } from '@/lib/utils'
+import { cn, normalizeText } from '@/lib/utils'
 import { ScrollArea } from '@/components/ui/scroll-area'
 
-// Normalize text to remove accents for search
-const normalizeText = (text: string) => {
-    return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
-}
+
 
 // Color mapping for muscle groups
 const getMuscleGroupColor = (muscleGroup: string) => {

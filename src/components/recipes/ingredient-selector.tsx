@@ -15,7 +15,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
-import { cn } from '@/lib/utils'
+import { cn, normalizeText } from '@/lib/utils'
 
 interface IngredientSelectorProps {
     onAdd: (ingredient: any, grams: number, unit: string, quantity: number) => void
@@ -115,7 +115,11 @@ export function IngredientSelector({ onAdd }: IngredientSelectorProps) {
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-[400px] p-0">
-                            <Command>
+                            <Command filter={(value, search) => {
+                                const normalizedValue = normalizeText(value)
+                                const normalizedSearch = normalizeText(search)
+                                return normalizedValue.includes(normalizedSearch) ? 1 : 0
+                            }}>
                                 <CommandInput placeholder="Buscar ingrediente..." />
                                 <CommandEmpty>No se encontraron ingredientes.</CommandEmpty>
                                 <CommandGroup className="max-h-[300px] overflow-y-auto">

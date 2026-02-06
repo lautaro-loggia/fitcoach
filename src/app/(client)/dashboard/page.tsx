@@ -32,6 +32,7 @@ import { ClientLogoutButton } from '@/components/clients/client-logout-button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { WeeklyProgress } from '@/components/clients/weekly-progress'
 import { NextMilestone } from '@/components/clients/next-milestone'
+import { getARTDate, getTodayString } from '@/lib/utils'
 
 export default async function ClientDashboard() {
     const supabase = await createClient()
@@ -51,8 +52,10 @@ export default async function ClientDashboard() {
         return <div className="p-8 text-center text-gray-500">No se pudo cargar el dashboard.</div>
     }
 
-    // 1. Get Today's Workout
-    const todayName = format(new Date(), 'EEEE', { locale: es }).toLowerCase()
+    // 1. Get Today's Workout (ART Time)
+    const artNow = getARTDate()
+    const todayName = format(artNow, 'EEEE', { locale: es }).toLowerCase()
+    const todayStr = getTodayString()
 
     // Fetch all workouts to find today's
     const { data: workouts } = await adminClient
@@ -72,14 +75,14 @@ export default async function ClientDashboard() {
             .select('*', { count: 'exact', head: true })
             .eq('client_id', client.id)
             .eq('workout_id', todayWorkout.id)
-            .eq('date', new Date().toISOString().split('T')[0])
+            .eq('date', todayStr)
 
         isCompleted = (count || 0) > 0
     }
 
 
     // 3. Weekly Adherence Logic
-    const oneWeekAgo = new Date()
+    const oneWeekAgo = getARTDate()
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
 
     // Count workout logs in last 7 days
@@ -112,11 +115,9 @@ export default async function ClientDashboard() {
 
     const lastCheckin = recentCheckins?.[0]
     const lastCheckinDate = lastCheckin ? new Date(lastCheckin.created_at) : null
-    // Check if check-in was done TODAY (compare YYYY-MM-DD in local time or just simple string match if simpler, 
-    // but strict date comparison is better to avoid timezone edge cases if possible, though toDateString() works well for local client assumption)
-    // Actually server usage of new Date() is server time. We should be careful. 
-    // Assuming server time is reasonably aligned or we just want to ensure we don't show it immediately after.
-    const isCheckinDoneToday = lastCheckinDate && lastCheckinDate.toDateString() === new Date().toDateString()
+    // Check if check-in was done TODAY (compare using ART date)
+    const isCheckinDoneToday = lastCheckinDate &&
+        getARTDate(lastCheckinDate).toDateString() === getARTDate().toDateString()
 
     let isFirstCheckin = false
     if (!recentCheckins || recentCheckins.length === 0) {
@@ -153,7 +154,7 @@ export default async function ClientDashboard() {
     }
 
     const nextReview = parseLocalDate(client.next_checkin_date)
-    const isCheckinDue = !isCheckinDoneToday && nextReview && (new Date() >= nextReview)
+    const isCheckinDue = !isCheckinDoneToday && nextReview && (getARTDate() >= nextReview)
     const isCheckinPrioritary = isFirstCheckin || isCheckinDue
 
     return (
@@ -270,7 +271,7 @@ export default async function ClientDashboard() {
                 <div className="flex items-center justify-between px-1">
                     <h3 className="text-sm font-bold text-gray-900">Tu día hoy</h3>
                     <span className="text-xs font-semibold text-gray-400 capitalize">
-                        {format(new Date(), 'EEEE d', { locale: es })}
+                        {format(getARTDate(), 'EEEE d', { locale: es })}
                     </span>
                 </div>
 
