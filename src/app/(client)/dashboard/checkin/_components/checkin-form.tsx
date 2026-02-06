@@ -13,6 +13,7 @@ import { toast } from 'sonner'
 import { Loader2, ArrowLeft, UploadCloud, Info, X, Image as ImageIcon } from 'lucide-react'
 import Link from 'next/link'
 import { compressImage } from '@/lib/image-utils'
+import { getTodayString } from '@/lib/utils'
 
 interface CheckinFormProps {
     initialWeight?: number
@@ -123,7 +124,7 @@ export function CheckinForm({ initialWeight, gender = 'male', height }: CheckinF
     }, [formData.body_fat])
 
     // Helper for date defaults
-    const todayStr = new Date().toISOString().split('T')[0]
+    const todayStr = getTodayString()
 
     const handleSlotUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: PhotoItem['type']) => {
         if (!e.target.files?.length) return

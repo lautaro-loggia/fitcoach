@@ -7,6 +7,7 @@ import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { RecipeCard } from "@/components/recipes/recipe-card"
 import { cn } from "@/lib/utils"
+import Image from "next/image"
 
 interface DishCardProps {
     item: any
@@ -18,8 +19,6 @@ export function DishCard({ item, onDelete }: DishCardProps) {
     const displayName = item.custom_name || item.recipe?.name || "Sin nombre"
 
     // Calculate stats
-    // Assuming recipe has macro data per serving or per 100g logic.
-    // Reusing the simple logic from before but validating inputs.
     const hasRecipe = !!item.recipe
 
     // Helper to safe multiply
@@ -28,13 +27,43 @@ export function DishCard({ item, onDelete }: DishCardProps) {
         return Math.round(val * item.portions)
     }
 
-    const kcal = hasRecipe ? calc(item.recipe.kcal_per_serving || item.recipe.macros_calories) : null
-    const protein = hasRecipe ? calc(item.recipe.protein_g_per_serving || item.recipe.macros_protein_g) : null
-    const carbs = hasRecipe ? calc(item.recipe.carbs_g_per_serving || item.recipe.macros_carbs_g) : null
-    const fat = hasRecipe ? calc(item.recipe.fat_g_per_serving || item.recipe.macros_fat_g) : null
+    const getMacros = () => {
+        if (!hasRecipe) return { kcal: 0, protein: 0, carbs: 0, fat: 0 }
 
-    // Check if we have valid macros to display (at least one > 0)
-    const showMacros = (protein || 0) + (carbs || 0) + (fat || 0) > 0
+        const r = item.recipe
+        // If macros are already in the recipe object, use them
+        if (r.macros_calories || r.macros_protein_g) {
+            return {
+                kcal: calc(r.kcal_per_serving || r.macros_calories),
+                protein: calc(r.protein_g_per_serving || r.macros_protein_g),
+                carbs: calc(r.carbs_g_per_serving || r.macros_carbs_g),
+                fat: calc(r.fat_g_per_serving || r.macros_fat_g),
+            }
+        }
+
+        // Fallback: calculate from ingredients if macros are missing
+        const ingredients = r.ingredients || r.ingredients_data || []
+        const totalRaw = ingredients.reduce((acc: any, ing: any) => {
+            const factor = (ing.grams || 0) / 100
+            return {
+                kcal: acc.kcal + (ing.kcal_100g || 0) * factor,
+                protein: acc.protein + (ing.protein_100g || 0) * factor,
+                carbs: acc.carbs + (ing.carbs_100g || 0) * factor,
+                fat: acc.fat + (ing.fat_100g || 0) * factor,
+            }
+        }, { kcal: 0, protein: 0, carbs: 0, fat: 0 })
+
+        const servings = r.servings || 1
+        return {
+            kcal: Math.round((totalRaw.kcal / servings) * item.portions),
+            protein: Math.round((totalRaw.protein / servings) * item.portions),
+            carbs: Math.round((totalRaw.carbs / servings) * item.portions),
+            fat: Math.round((totalRaw.fat / servings) * item.portions),
+        }
+    }
+
+    const { kcal, protein, carbs, fat } = getMacros()
+    const showMacros = (protein || carbs || fat) > 0
 
     return (
         <>
@@ -46,8 +75,17 @@ export function DishCard({ item, onDelete }: DishCardProps) {
                 onClick={() => hasRecipe && setDetailOpen(true)}
             >
                 <div className="flex items-center gap-3 overflow-hidden">
-                    <div className="h-10 w-10 shrink-0 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                        <Utensils className="h-5 w-5" />
+                    <div className="h-10 w-10 shrink-0 rounded-lg overflow-hidden bg-primary/10 flex items-center justify-center text-primary relative">
+                        {item.recipe?.image_url ? (
+                            <Image
+                                src={item.recipe.image_url}
+                                alt={displayName}
+                                fill
+                                className="object-cover"
+                            />
+                        ) : (
+                            <Utensils className="h-5 w-5" />
+                        )}
                     </div>
                     <div className="min-w-0">
                         <p className="font-medium text-sm truncate pr-2">{displayName}</p>

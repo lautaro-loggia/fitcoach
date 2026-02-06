@@ -13,9 +13,11 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
-import { Plus, X, Clock, Users } from 'lucide-react'
+import { Plus, X, Clock, Users, Camera, Loader2 } from 'lucide-react'
 import { IngredientSelector } from './ingredient-selector'
 import { createRecipeAction, RecipeIngredient } from '@/app/(dashboard)/recipes/actions'
+import { createClient } from '@/lib/supabase/client'
+import Image from 'next/image'
 
 interface SelectedIngredient {
     id: string
@@ -30,14 +32,27 @@ interface SelectedIngredient {
     quantity: number
 }
 
-export function AddRecipeDialog() {
-    const [open, setOpen] = useState(false)
+interface AddRecipeDialogProps {
+    open?: boolean
+    onOpenChange?: (open: boolean) => void
+    onSuccess?: (recipe: any) => void
+    defaultMealType?: string
+}
+
+export function AddRecipeDialog({ open: controlledOpen, onOpenChange, onSuccess, defaultMealType }: AddRecipeDialogProps = {}) {
+    const [internalOpen, setInternalOpen] = useState(false)
+    const isControlled = controlledOpen !== undefined
+    const open = isControlled ? controlledOpen : internalOpen
+    const setOpen = isControlled ? onOpenChange! : setInternalOpen
+
     const [loading, setLoading] = useState(false)
     const [selectedIngredients, setSelectedIngredients] = useState<SelectedIngredient[]>([])
     const [recipeName, setRecipeName] = useState('')
-    const [mealType, setMealType] = useState('')
+    const [mealType, setMealType] = useState(defaultMealType || '')
     const [servings, setServings] = useState(1)
     const [prepTime, setPrepTime] = useState(0)
+    const [imageUrl, setImageUrl] = useState('')
+    const [isUploading, setIsUploading] = useState(false)
     const router = useRouter()
 
     const handleAddIngredient = (ingredient: any, grams: number, unit: string, quantity: number) => {
@@ -57,6 +72,38 @@ export function AddRecipeDialog() {
 
     const handleRemoveIngredient = (index: number) => {
         setSelectedIngredients(selectedIngredients.filter((_, i) => i !== index))
+    }
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files?.[0]) return
+        setIsUploading(true)
+        const file = e.target.files[0]
+
+        try {
+            const supabase = createClient()
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) throw new Error('No se encontró sesión de usuario')
+
+            const fileExt = file.name.split('.').pop()
+            const fileName = `recipes/${user.id}/${Date.now()}.${fileExt}`
+
+            const { error: uploadError } = await supabase.storage
+                .from('recipe-images')
+                .upload(fileName, file)
+
+            if (uploadError) throw uploadError
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('recipe-images')
+                .getPublicUrl(fileName)
+
+            setImageUrl(publicUrl)
+        } catch (error: any) {
+            console.error('Upload error:', error)
+            alert(`Error al subir la imagen: ${error.message}`)
+        } finally {
+            setIsUploading(false)
+        }
     }
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -84,15 +131,20 @@ export function AddRecipeDialog() {
             prep_time_min: prepTime,
             instructions: '',
             ingredients: recipeIngredients,
+            image_url: imageUrl || null
         })
 
         if (result?.error) {
             alert(result.error)
         } else if (result.recipe) {
-            setOpen(false)
             resetForm()
-            // Navigate to the new recipe for editing
-            router.push(`/recipes/${result.recipe.id}`)
+            if (onSuccess) {
+                onSuccess(result.recipe)
+            } else {
+                setOpen(false)
+                // Navigate to the new recipe for editing only if no onSuccess is provided
+                router.push(`/recipes/${result.recipe.id}`)
+            }
         }
         setLoading(false)
     }
@@ -103,6 +155,8 @@ export function AddRecipeDialog() {
         setMealType('')
         setServings(1)
         setPrepTime(0)
+        setImageUrl('')
+        setIsUploading(false)
     }
 
     // Calculate total macros
@@ -128,11 +182,13 @@ export function AddRecipeDialog() {
             setOpen(newOpen)
             if (!newOpen) resetForm()
         }}>
-            <DialogTrigger asChild>
-                <Button className="bg-primary hover:bg-primary/90 text-white">
-                    <Plus className="mr-2 h-4 w-4" /> Nueva receta
-                </Button>
-            </DialogTrigger>
+            {!isControlled && (
+                <DialogTrigger asChild>
+                    <Button className="bg-primary hover:bg-primary/90 text-white">
+                        <Plus className="mr-2 h-4 w-4" /> Nueva receta
+                    </Button>
+                </DialogTrigger>
+            )}
             <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Crear nueva receta</DialogTitle>
@@ -142,32 +198,75 @@ export function AddRecipeDialog() {
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Basic Info Row */}
-                    <div className="grid grid-cols-2 gap-4">
+                    {/* Image & Basic Info Row */}
+                    <div className="flex gap-6 items-start">
+                        {/* Image Upload Area */}
                         <div className="space-y-2">
-                            <Label htmlFor="recipeName">Nombre de la receta *</Label>
-                            <Input
-                                id="recipeName"
-                                value={recipeName}
-                                onChange={(e) => setRecipeName(e.target.value)}
-                                placeholder="Ej: Pollo con arroz integral"
-                                required
-                            />
+                            <Label>Imagen</Label>
+                            <div className="relative h-32 w-32 rounded-xl overflow-hidden bg-muted flex items-center justify-center border-2 border-dashed border-muted-foreground/20 hover:border-primary/50 transition-colors group cursor-pointer"
+                                onClick={() => document.getElementById('recipe-image-upload')?.click()}>
+                                {imageUrl ? (
+                                    <Image
+                                        src={imageUrl}
+                                        alt="Recipe"
+                                        fill
+                                        className="object-cover"
+                                    />
+                                ) : isUploading ? (
+                                    <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                                ) : (
+                                    <div className="flex flex-col items-center gap-1 text-muted-foreground group-hover:text-primary">
+                                        <Camera className="h-8 w-8" />
+                                        <span className="text-[10px] font-medium">Subir</span>
+                                    </div>
+                                )}
+                                <input
+                                    type="file"
+                                    id="recipe-image-upload"
+                                    accept="image/*"
+                                    onChange={handleImageUpload}
+                                    className="hidden"
+                                />
+                            </div>
+                            {imageUrl && (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="w-full h-7 text-[10px] text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    onClick={() => setImageUrl('')}
+                                >
+                                    Quitar foto
+                                </Button>
+                            )}
                         </div>
-                        <div className="space-y-2">
-                            <Label>Tipo de comida</Label>
-                            <Select value={mealType} onValueChange={setMealType}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Seleccionar" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="desayuno">Desayuno</SelectItem>
-                                    <SelectItem value="almuerzo">Almuerzo</SelectItem>
-                                    <SelectItem value="cena">Cena</SelectItem>
-                                    <SelectItem value="snack">Snack</SelectItem>
-                                    <SelectItem value="postre">Postre</SelectItem>
-                                </SelectContent>
-                            </Select>
+
+                        <div className="flex-1 grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="recipeName">Nombre de la receta *</Label>
+                                <Input
+                                    id="recipeName"
+                                    value={recipeName}
+                                    onChange={(e) => setRecipeName(e.target.value)}
+                                    placeholder="Ej: Pollo con arroz integral"
+                                    required
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Tipo de comida</Label>
+                                <Select value={mealType} onValueChange={setMealType}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Seleccionar" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="desayuno">Desayuno</SelectItem>
+                                        <SelectItem value="almuerzo">Almuerzo</SelectItem>
+                                        <SelectItem value="cena">Cena</SelectItem>
+                                        <SelectItem value="snack">Snack</SelectItem>
+                                        <SelectItem value="postre">Postre</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
                     </div>
 
@@ -265,7 +364,7 @@ export function AddRecipeDialog() {
                         </Button>
                         <Button
                             type="submit"
-                            disabled={loading || selectedIngredients.length === 0 || !recipeName.trim()}
+                            disabled={loading || isUploading || selectedIngredients.length === 0 || !recipeName.trim()}
                             className="bg-primary text-white hover:bg-primary/90"
                         >
                             {loading ? 'Creando...' : 'Crear receta'}

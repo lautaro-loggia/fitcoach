@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { getTodayString, getARTDate } from '@/lib/utils'
 
 export async function completeWorkout(formData: {
     workoutId: string
@@ -37,8 +38,8 @@ export async function completeWorkout(formData: {
         .insert({
             client_id: formData.clientId,
             workout_id: formData.workoutId,
-            date: new Date().toISOString().split('T')[0],
-            completed_at: new Date().toISOString(),
+            date: getTodayString(),
+            completed_at: getARTDate().toISOString(),
             exercises_log: formData.exercisesLog, // Storing what was checked
             feedback: formData.feedback
         })

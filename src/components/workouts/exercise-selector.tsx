@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Tick01Icon, ArrowUpDownIcon, PlusSignIcon, Delete02Icon } from 'hugeicons-react'
-import { cn } from '@/lib/utils'
+import { cn, normalizeText } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
@@ -98,7 +98,11 @@ export function ExerciseSelector({ onAdd }: ExerciseSelectorProps) {
                         </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-[400px] p-0">
-                        <Command>
+                        <Command filter={(value, search) => {
+                            const normalizedValue = normalizeText(value)
+                            const normalizedSearch = normalizeText(search)
+                            return normalizedValue.includes(normalizedSearch) ? 1 : 0
+                        }}>
                             <CommandInput placeholder="Buscar por nombre o grupo muscular..." />
                             <CommandList style={{ maxHeight: '300px', overflowY: 'auto' }}>
                                 <CommandEmpty>No se encontraron ejercicios.</CommandEmpty>
