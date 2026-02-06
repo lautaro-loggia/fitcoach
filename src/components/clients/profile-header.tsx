@@ -13,7 +13,7 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { useRouter } from 'next/navigation'
-import { ClientAvatarUpload } from './client-avatar-upload'
+import { ClientAvatar } from './client-avatar'
 
 interface ProfileHeaderProps {
     client: {
@@ -46,12 +46,10 @@ export function ProfileHeader({ client, allClients = [], isCompact = false, clas
             )}
 
             {/* Avatar del cliente */}
-            <ClientAvatarUpload
-                clientId={client.id}
-                clientName={client.full_name}
-                currentAvatarUrl={client.avatar_url}
+            <ClientAvatar
+                name={client.full_name}
+                avatarUrl={client.avatar_url}
                 size={isCompact ? "sm" : "md"}
-                showButton={false}
             />
 
             <div className="min-w-0 flex-1">
