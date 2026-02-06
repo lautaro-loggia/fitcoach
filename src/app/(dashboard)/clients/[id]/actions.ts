@@ -9,7 +9,7 @@ export type ActivityEvent = {
     title: string
     description: string
     date: Date
-    type: 'meal' | 'workout' | 'checkin'
+    type: 'meal' | 'workout' | 'checkin' | 'payment'
     daysAgo?: string
 }
 
@@ -38,6 +38,14 @@ export async function getClientActivity(clientId: string): Promise<ActivityEvent
         .select('id, date, weight, created_at')
         .eq('client_id', clientId)
         .order('date', { ascending: false })
+        .limit(10)
+
+    // 4. Fetch Payments
+    const { data: payments } = await supabase
+        .from('payments')
+        .select('id, amount, paid_at, created_at')
+        .eq('client_id', clientId)
+        .order('created_at', { ascending: false })
         .limit(10)
 
     const events: ActivityEvent[] = []
@@ -72,6 +80,17 @@ export async function getClientActivity(clientId: string): Promise<ActivityEvent
             description: `Nuevo check-in registrado (${c.weight}kg).`,
             date: new Date(c.created_at || c.date), // prefers created_at for sorting
             type: 'checkin'
+        })
+    })
+
+    // Map Payments
+    payments?.forEach(p => {
+        events.push({
+            id: p.id,
+            title: 'Pago registrado',
+            description: `Se registró un pago de $${p.amount}.`,
+            date: new Date(p.created_at || p.paid_at),
+            type: 'payment'
         })
     })
 

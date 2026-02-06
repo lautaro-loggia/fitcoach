@@ -17,7 +17,7 @@ import { PhotoComparisonDialog } from '../photo-comparison-dialog'
 import { getWeightProgressColor, progressColorClasses } from '@/lib/utils/progress-colors'
 import { StrengthProgressCard } from '../cards/strength-progress-card'
 import { getClientActivity, ActivityEvent } from '@/app/(dashboard)/clients/[id]/actions'
-import { Dumbbell, Utensils, Activity } from 'lucide-react'
+import { Dumbbell, Utensils, Activity, DollarSign } from 'lucide-react'
 
 interface ProfileTabProps {
     client: any
@@ -513,6 +513,7 @@ export function ProfileTab({ client }: ProfileTabProps) {
                                                 {event.type === 'meal' && <Utensils className="h-4 w-4 text-orange-500" />}
                                                 {event.type === 'workout' && <Dumbbell className="h-4 w-4 text-blue-500" />}
                                                 {event.type === 'checkin' && <Activity className="h-4 w-4 text-green-500" />}
+                                                {event.type === 'payment' && <DollarSign className="h-4 w-4 text-emerald-500" />}
                                             </div>
                                             <div>
                                                 <h4 className="font-semibold text-sm">{event.title}</h4>
