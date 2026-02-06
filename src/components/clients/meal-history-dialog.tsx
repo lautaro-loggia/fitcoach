@@ -3,13 +3,14 @@
 import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogClose } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { History, ChevronLeft, ChevronRight, CheckCircle2, MessageSquare, X } from 'lucide-react'
+import { History, ChevronLeft, ChevronRight, CheckCircle2, MessageSquare, X, Loader2 } from 'lucide-react'
 import { format, addDays, subDays } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { getDailyMealLogs, reviewMealLog } from '@/app/(dashboard)/clients/[id]/meal-plan-actions'
 import Image from 'next/image'
 import { toast } from 'sonner'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface MealHistoryDialogProps {
     clientId: string
@@ -61,7 +62,7 @@ export function MealHistoryDialog({ clientId }: MealHistoryDialogProps) {
                     <History className="h-4 w-4" /> Historial de comidas
                 </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-[95vw] h-[90vh] flex flex-col p-0 overflow-hidden gap-0" showCloseButton={false}>
+            <DialogContent className="max-w-[1000px] w-[95vw] h-[90vh] flex flex-col p-0 overflow-hidden gap-0" showCloseButton={false}>
                 <div className="p-4 border-b flex items-center justify-between bg-gray-50/50">
                     <DialogTitle className="font-semibold text-lg">Historial de comidas</DialogTitle>
                     <div className="flex items-center gap-4">
@@ -86,9 +87,13 @@ export function MealHistoryDialog({ clientId }: MealHistoryDialogProps) {
 
                 <div className="flex flex-1 overflow-hidden">
                     {/* List/Grid of Meals */}
-                    <ScrollArea className="w-64 flex-none p-4 border-r">
+                    <ScrollArea className="w-72 flex-none p-4 border-r">
                         {loading ? (
-                            <div className="text-center py-8 text-muted-foreground">Cargando...</div>
+                            <div className="grid grid-cols-2 gap-4">
+                                {[1, 2, 3, 4, 5, 6].map((i) => (
+                                    <Skeleton key={i} className="aspect-square rounded-xl" />
+                                ))}
+                            </div>
                         ) : logs.length === 0 ? (
                             <div className="text-center py-12 text-muted-foreground flex flex-col items-center gap-2">
                                 <History className="h-8 w-8 opacity-20" />
@@ -111,6 +116,9 @@ export function MealHistoryDialog({ clientId }: MealHistoryDialogProps) {
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
                                             <p className="text-white font-medium capitalize">{log.meal_type}</p>
                                             <p className="text-white/80 text-xs">{format(new Date(log.created_at), 'HH:mm')}</p>
+                                        </div>
+                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-data-[loading=true]:opacity-100">
+                                            <Loader2 className="h-5 w-5 animate-spin text-white" />
                                         </div>
                                         {log.status === 'reviewed' && (
                                             <div className="absolute top-2 right-2 bg-green-500 text-white p-1 rounded-full shadow-sm">
@@ -159,12 +167,16 @@ function MealDetail({ log, onReview, onClose }: { log: any, onReview: (s: 'pendi
 
     return (
         <div className="flex-1 flex flex-col h-full bg-white">
-            <div className="relative flex-1 w-full bg-black min-h-[400px] shrink-0">
+            <div className="relative flex-1 w-full bg-zinc-900/5 min-h-[400px] shrink-0 flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-zinc-300 absolute z-0" />
                 <Image
                     src={log.signedUrl || '/placeholder.png'}
                     alt={log.meal_type}
                     fill
-                    className="object-contain"
+                    className="object-contain relative z-10"
+                    onLoadingComplete={(img) => {
+                        img.parentElement?.querySelector('.animate-spin')?.classList.add('hidden')
+                    }}
                 />
             </div>
 
