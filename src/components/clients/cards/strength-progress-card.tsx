@@ -212,13 +212,13 @@ export function StrengthProgressCard({ clientId }: StrengthProgressCardProps) {
             <CardContent className="p-4 py-3">
                 {insufficientData ? (
                     <div className="space-y-0.5">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center justify-between w-full">
                             <h3 className="text-[17px] font-bold text-gray-900 leading-tight">Progreso en fuerza</h3>
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <div className="cursor-help text-gray-300 hover:text-gray-400 transition-colors">
-                                            <InformationCircleIcon className="h-3.5 w-3.5" />
+                                        <div className="cursor-help text-zinc-400 hover:text-zinc-600 transition-colors">
+                                            <InformationCircleIcon className="h-4 w-4" />
                                         </div>
                                     </TooltipTrigger>
                                     <TooltipContent className="p-3 max-w-[240px] bg-zinc-900 text-white border-zinc-800 rounded-xl shadow-xl">
@@ -233,14 +233,14 @@ export function StrengthProgressCard({ clientId }: StrengthProgressCardProps) {
                     </div>
                 ) : (
                     <div className="flex justify-between items-start">
-                        <div className="space-y-0.5">
-                            <div className="flex items-center gap-1.5">
+                        <div className="space-y-0.5 flex-1">
+                            <div className="flex items-center justify-between w-full">
                                 <h3 className="text-[17px] font-bold text-gray-900 leading-tight">Progreso en fuerza</h3>
                                 <TooltipProvider>
                                     <Tooltip>
                                         <TooltipTrigger asChild>
-                                            <div className="cursor-help text-gray-300 hover:text-gray-400 transition-colors">
-                                                <InformationCircleIcon className="h-3.5 w-3.5" />
+                                            <div className="cursor-help text-zinc-400 hover:text-zinc-600 transition-colors mr-3">
+                                                <InformationCircleIcon className="h-4 w-4" />
                                             </div>
                                         </TooltipTrigger>
                                         <TooltipContent className="p-3 max-w-[240px] bg-zinc-900 text-white border-zinc-800 rounded-xl shadow-xl">
