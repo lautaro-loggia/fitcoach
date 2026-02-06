@@ -35,7 +35,7 @@ export async function getClientActivity(clientId: string): Promise<ActivityEvent
     // 3. Fetch Checkins
     const { data: checkins } = await supabase
         .from('checkins')
-        .select('id, date, weight, created_at')
+        .select('id, date, weight, observations, created_at')
         .eq('client_id', clientId)
         .order('date', { ascending: false })
         .limit(10)
@@ -74,10 +74,13 @@ export async function getClientActivity(clientId: string): Promise<ActivityEvent
 
     // Map Checkins
     checkins?.forEach(c => {
+        const hasObservations = c.observations && c.observations.trim() !== ''
         events.push({
             id: c.id,
             title: 'Actualización corporal',
-            description: `Nuevo check-in registrado (${c.weight}kg).`,
+            description: hasObservations
+                ? c.observations
+                : `Nuevo check-in registrado (${c.weight}kg).`,
             date: new Date(c.created_at || c.date), // prefers created_at for sorting
             type: 'checkin'
         })
