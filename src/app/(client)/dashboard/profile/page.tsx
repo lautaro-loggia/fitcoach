@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ClientLogoutButton } from '@/components/clients/client-logout-button'
+import { ClientAvatarUpload } from '@/components/clients/client-avatar-upload'
 
 export default async function ProfilePage() {
     const supabase = await createClient()
@@ -36,12 +37,12 @@ export default async function ProfilePage() {
 
             {/* Main Info */}
             <div className="flex flex-col items-center">
-                <Avatar className="h-24 w-24 border-4 border-white shadow-lg mb-4">
-                    <AvatarImage src={client.avatar_url || ""} />
-                    <AvatarFallback className="bg-blue-600 text-white text-2xl font-bold">
-                        {client.full_name.substring(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                </Avatar>
+                <ClientAvatarUpload
+                    clientId={client.id}
+                    userId={client.user_id}
+                    clientName={client.full_name}
+                    currentAvatarUrl={client.avatar_url}
+                />
                 <h2 className="text-xl font-bold text-gray-900">{client.full_name}</h2>
                 <div className="flex items-center gap-1.5 text-gray-500 mt-1">
                     <Mail className="h-3 w-3" />
