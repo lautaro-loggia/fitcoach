@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
+import { getTodayString } from '@/lib/utils'
 
 export type MealConfig = {
     name: string
@@ -214,7 +215,7 @@ export async function registerMealLog(clientId: string, mealType: string, formDa
     const adminSupabase = createAdminClient()
 
     // 1. Upload to Storage
-    const dateStr = new Date().toISOString().split('T')[0]
+    const dateStr = getTodayString()
     const timestamp = Date.now()
     const fileExt = file.name.split('.').pop() || 'webp'
     const filePath = `${clientId}/${dateStr}/${timestamp}.${fileExt}`
@@ -275,8 +276,10 @@ export async function getDailyMealLogs(clientId: string, date: string) {
         .from('meal_logs')
         .select('*')
         .eq('client_id', clientId)
-        .gte('created_at', startOfDay)
-        .lte('created_at', endOfDay)
+        // Adjusting to local date comparison in Postgres if possible, or using simple string filters
+        // Since created_at is timestamptz, we compare with the start and end of that day in ART (-03:00)
+        .gte('created_at', `${date}T00:00:00-03:00`)
+        .lte('created_at', `${date}T23:59:59-03:00`)
         .order('created_at', { ascending: false })
 
     // Generate public URLs for images

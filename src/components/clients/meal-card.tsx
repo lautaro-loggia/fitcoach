@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Image from 'next/image'
 import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogClose, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Utensils, Clock, X, ChefHat } from 'lucide-react'
+import { Utensils, Clock, X, ChefHat, Loader2 } from 'lucide-react'
 
 interface Ingredient {
     grams: number
@@ -139,15 +139,19 @@ export function MealCard({ item, mealName }: MealItemProps) {
                 </div>
             </DialogTrigger>
 
-            <DialogContent className="sm:max-w-md p-0 gap-0 overflow-hidden bg-white border-0 shadow-xl rounded-3xl" showCloseButton={false}>
+            <DialogContent className="max-w-[1200px] w-[95vw] p-0 gap-0 overflow-hidden bg-white border-0 shadow-xl rounded-3xl" showCloseButton={false}>
                 {/* Header Image */}
-                <div className="relative w-full aspect-[4/3] bg-gray-100">
+                <div className="relative w-full aspect-[16/9] bg-gray-100 flex items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-gray-300 absolute z-0" />
                     {recipe.image_url ? (
                         <Image
                             src={recipe.image_url}
                             alt={title}
                             fill
-                            className="object-cover"
+                            className="object-cover relative z-10"
+                            onLoadingComplete={(img) => {
+                                img.parentElement?.querySelector('.animate-spin')?.classList.add('hidden')
+                            }}
                         />
                     ) : (
                         <div className="absolute inset-0 flex items-center justify-center text-gray-300">

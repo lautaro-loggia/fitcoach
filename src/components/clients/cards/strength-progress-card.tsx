@@ -212,14 +212,46 @@ export function StrengthProgressCard({ clientId }: StrengthProgressCardProps) {
             <CardContent className="p-4 py-3">
                 {insufficientData ? (
                     <div className="space-y-0.5">
-                        <h3 className="text-[17px] font-bold text-gray-900 leading-tight">Progreso en fuerza</h3>
+                        <div className="flex items-center justify-between w-full">
+                            <h3 className="text-[17px] font-bold text-gray-900 leading-tight">Progreso en fuerza</h3>
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <div className="cursor-help text-zinc-400 hover:text-zinc-600 transition-colors">
+                                            <InformationCircleIcon className="h-4 w-4" />
+                                        </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="p-3 max-w-[240px] bg-zinc-900 text-white border-zinc-800 rounded-xl shadow-xl">
+                                        <p className="text-[11px] leading-relaxed">
+                                            Mide la evolución del 1RM estimado en los ejercicios principales de las últimas 4 semanas, promediando la mejora en peso y repeticiones logradas.
+                                        </p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        </div>
                         <p className="text-[15px] text-gray-400">Aún no se ha registrado ningún ejercicio</p>
                     </div>
                 ) : (
                     <div className="flex justify-between items-start">
-                        <div className="space-y-0.5">
-                            <h3 className="text-[17px] font-bold text-gray-900 leading-tight">Progreso en fuerza</h3>
-                            <p className="text-[15px] text-gray-400">ultimas 4 semanas</p>
+                        <div className="space-y-0.5 flex-1">
+                            <div className="flex items-center justify-between w-full">
+                                <h3 className="text-[17px] font-bold text-gray-900 leading-tight">Progreso en fuerza</h3>
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <div className="cursor-help text-zinc-400 hover:text-zinc-600 transition-colors mr-3">
+                                                <InformationCircleIcon className="h-4 w-4" />
+                                            </div>
+                                        </TooltipTrigger>
+                                        <TooltipContent className="p-3 max-w-[240px] bg-zinc-900 text-white border-zinc-800 rounded-xl shadow-xl">
+                                            <p className="text-[11px] leading-relaxed">
+                                                Mide la evolución del 1RM estimado en los ejercicios principales de las últimas 4 semanas, promediando la mejora en peso y repeticiones logradas.
+                                            </p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                            </div>
+                            <p className="text-[15px] text-gray-400">últimas 4 semanas</p>
                         </div>
                         <div className="text-[18px] font-bold text-[#22C55E]">
                             {progress && progress > 0 ? '+' : ''}{progress?.toFixed(1)}%

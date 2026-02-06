@@ -9,23 +9,30 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Checkbox } from '@/components/ui/checkbox'
 import { updateNutrition } from '@/actions/client-onboarding'
 import { toast } from 'sonner'
-import { Loader2 } from 'lucide-react'
+import { ArrowRight, ArrowLeft, Loader2, Utensils, ShieldAlert, Sparkles, Brain, BicepsFlexed, Leaf, Sprout, Plus, Minus, Check, Ban } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
-// Allergens based on standard list + prompt requests
 const ALLERGENS_LIST = [
     'Gluten (TACC)', 'Lácteos', 'Huevos', 'Frutos Secos', 'Mariscos', 'Pescado', 'Soja'
 ]
 
-export function StepNutrition({ client, onNext, onPrev }: { client: any, onNext: () => void, onPrev: () => void }) {
-    const [loading, setLoading] = useState(false)
+const DIET_PREFS = [
+    { id: 'no_preference', label: 'Sin preferencia', desc: 'Comés de todo un poco.', icon: Utensils },
+    { id: 'high_protein', label: 'Alta en Proteína', desc: 'Priorizar músculo.', icon: BicepsFlexed },
+    { id: 'vegetarian', label: 'Vegetariana', desc: 'Sin carne, incluye huevos y lácteos.', icon: Leaf },
+    { id: 'vegan', label: 'Vegana', desc: '100% origen vegetal.', icon: Sprout },
+    { id: 'keto', label: 'Keto / Low Carb', desc: 'Baja en hidratos.', icon: Brain },
+]
 
+export function StepNutrition({ client, onNext, onPrev, isPreview }: { client: any, onNext: () => void, onPrev: () => void, isPreview?: boolean }) {
+    const [loading, setLoading] = useState(false)
     const savedInfo = client.dietary_info || {}
 
     const [formData, setFormData] = useState({
         diet_preference: savedInfo.preference || 'no_preference',
         meals_per_day: savedInfo.meals_count?.toString() || '4',
         experience: savedInfo.experience || 'none',
-        allergens: (savedInfo.allergens as string[]) || [], // array of strings
+        allergens: (savedInfo.allergens as string[]) || [],
         other_restrictions: savedInfo.other || ''
     })
 
@@ -40,6 +47,13 @@ export function StepNutrition({ client, onNext, onPrev }: { client: any, onNext:
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setLoading(true)
+
+        if (isPreview) {
+            await new Promise(resolve => setTimeout(resolve, 500))
+            onNext()
+            setLoading(false)
+            return
+        }
 
         try {
             const res = await updateNutrition({
@@ -63,97 +77,161 @@ export function StepNutrition({ client, onNext, onPrev }: { client: any, onNext:
     }
 
     return (
-        <div className="space-y-6">
-            <div className="space-y-2">
-                <h2 className="text-2xl font-bold">Nutrición</h2>
-                <p className="text-gray-500 text-sm">Preferencias para tu plan de alimentación.</p>
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="space-y-1">
+                <h2 className="text-3xl font-extrabold tracking-tight text-[#1A1A1A]">Nutrición</h2>
+                <p className="text-gray-500 text-sm leading-relaxed font-medium">
+                    Ajustemos el plan a tus gustos y necesidades.
+                </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-
-                <div className="space-y-3">
-                    <Label>Preferencia de Dieta</Label>
-                    <Select
-                        value={formData.diet_preference}
-                        onValueChange={(val) => setFormData({ ...formData, diet_preference: val })}
-                    >
-                        <SelectTrigger>
-                            <SelectValue placeholder="Seleccioná..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="no_preference">Sin preferencia especial</SelectItem>
-                            <SelectItem value="high_protein">Alta en Proteína</SelectItem>
-                            <SelectItem value="vegetarian">Vegetariana</SelectItem>
-                            <SelectItem value="vegan">Vegana</SelectItem>
-                            <SelectItem value="keto">Keto / Low Carb</SelectItem>
-                            <SelectItem value="other">Otra</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-
-                <div className="space-y-3">
-                    <Label>Comidas por día (aprox)</Label>
-                    <Input
-                        type="number"
-                        min={1}
-                        max={8}
-                        value={formData.meals_per_day}
-                        onChange={e => setFormData({ ...formData, meals_per_day: e.target.value })}
-                    />
-                </div>
-
-                <div className="space-y-3">
-                    <Label>Experiencia con dietas/macros</Label>
-                    <RadioGroup
-                        value={formData.experience}
-                        onValueChange={val => setFormData({ ...formData, experience: val })}
-                        className="flex flex-col space-y-1"
-                    >
-                        <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="none" id="exp1" />
-                            <Label htmlFor="exp1" className="font-normal">Ninguna / Poca</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="some" id="exp2" />
-                            <Label htmlFor="exp2" className="font-normal">Algo de experiencia</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="high" id="exp3" />
-                            <Label htmlFor="exp3" className="font-normal">Mucha (Trackeo macros, etc)</Label>
-                        </div>
-                    </RadioGroup>
-                </div>
-
-                <div className="space-y-3">
-                    <Label>Alergias o Restricciones</Label>
-                    <div className="grid grid-cols-2 gap-2">
-                        {ALLERGENS_LIST.map(alg => (
-                            <div key={alg} className="flex items-center space-x-2 border p-2 rounded-md">
-                                <Checkbox
-                                    id={alg}
-                                    checked={formData.allergens.includes(alg)}
-                                    onCheckedChange={() => toggleAllergen(alg)}
-                                />
-                                <Label htmlFor={alg} className="font-normal text-xs cursor-pointer select-none">
-                                    {alg}
-                                </Label>
-                            </div>
+            <form onSubmit={handleSubmit} className="space-y-8">
+                <div className="space-y-4">
+                    <Label className="text-sm font-bold text-[#1A1A1A]">Preferencia de Dieta</Label>
+                    <div className="grid grid-cols-1 gap-3">
+                        {DIET_PREFS.map((pref) => (
+                            <button
+                                key={pref.id}
+                                type="button"
+                                onClick={() => setFormData({ ...formData, diet_preference: pref.id })}
+                                className={cn(
+                                    "flex items-center p-4 rounded-xl border-2 transition-all text-left",
+                                    formData.diet_preference === pref.id
+                                        ? "bg-white border-black shadow-md shadow-black/5"
+                                        : "bg-[#F9F9F8] border-transparent hover:border-gray-200"
+                                )}
+                            >
+                                <div className={cn("p-2 rounded-lg mr-4", formData.diet_preference === pref.id ? "bg-black text-white" : "bg-gray-100 text-gray-400")}>
+                                    <pref.icon className="w-4 h-4" />
+                                </div>
+                                <div className="space-y-0.5">
+                                    <span className={cn(
+                                        "font-bold block text-sm",
+                                        formData.diet_preference === pref.id ? "text-[#1A1A1A]" : "text-gray-600"
+                                    )}>
+                                        {pref.label}
+                                    </span>
+                                    <p className="text-[11px] text-gray-400">{pref.desc}</p>
+                                </div>
+                            </button>
                         ))}
                     </div>
-                    <Input
-                        placeholder="Otras restricciones (opcional)..."
-                        value={formData.other_restrictions}
-                        onChange={e => setFormData({ ...formData, other_restrictions: e.target.value })}
-                    />
                 </div>
 
-                <div className="flex gap-3 pt-4">
-                    <Button type="button" variant="outline" onClick={onPrev} disabled={loading} className="w-1/3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                    <div className="space-y-4">
+                        <Label className="text-sm font-bold text-[#1A1A1A]">Comidas por día</Label>
+                        <div className="flex items-center gap-4 bg-white border border-gray-200 p-2 rounded-xl h-14">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                    const current = Number(formData.meals_per_day)
+                                    if (current > 1) setFormData({ ...formData, meals_per_day: (current - 1).toString() })
+                                }}
+                                className="h-10 w-10 text-gray-500 hover:text-black hover:bg-gray-100 rounded-lg"
+                            >
+                                <Minus className="w-4 h-4" />
+                            </Button>
+                            <div className="flex-1 text-center">
+                                <span className="text-xl font-bold text-[#1A1A1A]">{formData.meals_per_day}</span>
+                            </div>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                    const current = Number(formData.meals_per_day)
+                                    if (current < 8) setFormData({ ...formData, meals_per_day: (current + 1).toString() })
+                                }}
+                                className="h-10 w-10 text-gray-500 hover:text-black hover:bg-gray-100 rounded-lg"
+                            >
+                                <Plus className="w-4 h-4" />
+                            </Button>
+                        </div>
+                        <p className="text-[11px] text-gray-400 font-medium text-center">
+                            4–5 suele funcionar bien para la mayoría.
+                        </p>
+                    </div>
+
+                    <div className="space-y-4">
+                        <Label className="text-sm font-bold text-[#1A1A1A]">Experiencia con macros</Label>
+                        <Select
+                            value={formData.experience}
+                            onValueChange={val => setFormData({ ...formData, experience: val })}
+                        >
+                            <SelectTrigger className="w-full h-14 border-gray-200 focus:ring-black rounded-xl">
+                                <SelectValue placeholder="Seleccioná..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="none">Principiante</SelectItem>
+                                <SelectItem value="some">Intermedio</SelectItem>
+                                <SelectItem value="high">Avanzado</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <p className="text-[11px] text-gray-400 font-medium">
+                            Esto define qué tan complejo será tu plan de comidas.
+                        </p>
+                    </div>
+                </div>
+
+                <div className="space-y-4">
+                    <Label className="text-sm font-bold text-[#1A1A1A] flex items-center justify-between">
+                        Alergias o Restricciones
+                        <span className="text-[10px] text-gray-400 lowercase font-normal italic">Seleccioná todas las que apliquen</span>
+                    </Label>
+                    <div className="flex flex-wrap gap-2 pt-2">
+                        {ALLERGENS_LIST.map(alg => {
+                            const isSelected = formData.allergens.includes(alg)
+                            return (
+                                <button
+                                    key={alg}
+                                    type="button"
+                                    onClick={() => toggleAllergen(alg)}
+                                    className={cn(
+                                        "px-4 py-2.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-2",
+                                        isSelected
+                                            ? "bg-black border-black text-white shadow-md shadow-black/10"
+                                            : "bg-white border-gray-200 text-gray-500 hover:border-gray-300 hover:bg-gray-50"
+                                    )}
+                                >
+                                    {alg}
+                                    {isSelected && <Check className="w-3 h-3 text-white" />}
+                                </button>
+                            )
+                        })}
+                    </div>
+                    <div className="relative mt-4">
+                        <ShieldAlert className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <Input
+                            placeholder="Solo si no está en la lista..."
+                            className="h-14 pl-11 border-gray-200 focus:ring-black rounded-xl text-sm bg-gray-50/50"
+                            value={formData.other_restrictions}
+                            onChange={e => setFormData({ ...formData, other_restrictions: e.target.value })}
+                        />
+                    </div>
+                </div>
+
+                <div className="flex gap-3 pt-6">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={onPrev}
+                        disabled={loading}
+                        className="w-1/3 h-14 font-bold border-gray-200 text-gray-500 hover:bg-gray-50 rounded-xl"
+                    >
+                        <ArrowLeft className="mr-2 h-5 w-5" />
                         Atrás
                     </Button>
-                    <Button type="submit" className="w-2/3" disabled={loading}>
-                        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                        Siguiente
+                    <Button
+                        type="submit"
+                        className="w-2/3 h-14 text-base font-bold bg-[#1A1A1A] hover:bg-black shadow-lg shadow-black/10 transition-all rounded-xl"
+                        disabled={loading}
+                    >
+                        {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
+                        Continuar
+                        <ArrowRight className="ml-2 h-5 w-5" />
                     </Button>
                 </div>
             </form>

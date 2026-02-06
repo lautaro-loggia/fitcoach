@@ -16,6 +16,8 @@ import { AddCheckinDialog } from '../add-checkin-dialog'
 import { PhotoComparisonDialog } from '../photo-comparison-dialog'
 import { getWeightProgressColor, progressColorClasses } from '@/lib/utils/progress-colors'
 import { StrengthProgressCard } from '../cards/strength-progress-card'
+import { getClientActivity, ActivityEvent } from '@/app/(dashboard)/clients/[id]/actions'
+import { Dumbbell, Utensils, Activity, DollarSign } from 'lucide-react'
 
 interface ProfileTabProps {
     client: any
@@ -56,6 +58,8 @@ export function ProfileTab({ client }: ProfileTabProps) {
 
     // -- Photos State (Missing in previous step) --
     const [photos, setPhotos] = useState<any[]>([])
+    const [activity, setActivity] = useState<ActivityEvent[]>([])
+    const [activityLoading, setActivityLoading] = useState(true)
 
     useEffect(() => {
         fetchData()
@@ -152,6 +156,13 @@ export function ProfileTab({ client }: ProfileTabProps) {
 
                 setPhotos(processedPhotos)
             }
+
+            // Fetch real activity
+            setActivityLoading(true)
+            const activityData = await getClientActivity(client.id)
+            setActivity(activityData)
+            setActivityLoading(false)
+
         } catch (err) {
             console.error("Error in fetchData:", err)
         }
@@ -178,12 +189,7 @@ export function ProfileTab({ client }: ProfileTabProps) {
     // If it's 0 or null, we treat it as no previous data, so diff is 0.
     const weightDiff = (previousWeight && previousWeight > 0) ? currentWeight - previousWeight : 0
 
-    // -- Mock Updates --
-    const updates = checkins.slice().reverse().slice(0, 3).map(c => ({
-        title: "Actualización corporal",
-        description: "Se actualizaron las medidas corporales del asesorado.",
-        daysAgo: Math.floor((new Date().getTime() - new Date(c.date).getTime()) / (1000 * 3600 * 24))
-    }))
+    // -- Updates removed as we use state now --
 
     return (
         <div className="space-y-3 animate-in fade-in duration-500">
@@ -195,9 +201,9 @@ export function ProfileTab({ client }: ProfileTabProps) {
                 <Card className="bg-white flex flex-col justify-center p-4 py-0">
                     <div className="space-y-0.5">
                         <h3 className="text-[17px] font-bold text-gray-900 leading-tight">Objetivo</h3>
-                        <p className="text-[15px] text-gray-400 leading-snug">
+                        <p className="text-[15px] text-gray-600 leading-snug">
                             {client.main_goal ? (goalTranslations[client.main_goal] || client.main_goal) : "Mantener"}
-                            {client.goal_text && <span className="block text-xs text-gray-300 mt-1">"{client.goal_text}"</span>}
+                            {client.goal_text && <span className="block text-xs text-gray-500 mt-1">"{client.goal_text}"</span>}
                         </p>
                     </div>
                 </Card>
@@ -205,9 +211,9 @@ export function ProfileTab({ client }: ProfileTabProps) {
                 <Card className="bg-white flex flex-col justify-center p-4 py-0">
                     <div className="space-y-0.5">
                         <h3 className="text-[17px] font-bold text-gray-900 leading-tight">Nivel de actividad</h3>
-                        <p className="text-[15px] text-gray-400 leading-snug">
+                        <p className="text-[15px] text-gray-600 leading-snug">
                             {client.activity_level ? (activityTranslations[client.activity_level] || client.activity_level) : "Moderado"}
-                            <span className="block text-xs text-gray-300 mt-1">
+                            <span className="block text-xs text-gray-500 mt-1">
                                 {client.work_type ? `Trabajo: ${workTypeTranslations[client.work_type] || client.work_type}` : ''}
                             </span>
                         </p>
@@ -485,16 +491,39 @@ export function ProfileTab({ client }: ProfileTabProps) {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-6">
-                            {updates.length === 0 && <p className="text-sm text-muted-foreground">No hay actualizaciones recientes.</p>}
-                            {updates.map((update, i) => (
-                                <div key={i} className="flex justify-between items-start pb-4 border-b last:border-0 last:pb-0">
-                                    <div>
-                                        <h4 className="font-semibold text-sm">{update.title}</h4>
-                                        <p className="text-sm text-muted-foreground">{update.description}</p>
-                                    </div>
-                                    <span className="text-xs text-muted-foreground whitespace-nowrap">{update.daysAgo} dias</span>
+                            {activityLoading ? (
+                                <div className="space-y-4">
+                                    {[1, 2, 3].map(i => (
+                                        <div key={i} className="flex justify-between items-start animate-pulse">
+                                            <div className="space-y-2">
+                                                <div className="h-4 w-40 bg-gray-100 rounded" />
+                                                <div className="h-3 w-60 bg-gray-50 rounded" />
+                                            </div>
+                                            <div className="h-3 w-12 bg-gray-50 rounded" />
+                                        </div>
+                                    ))}
                                 </div>
-                            ))}
+                            ) : activity.length === 0 ? (
+                                <p className="text-sm text-muted-foreground">No hay actualizaciones recientes.</p>
+                            ) : (
+                                activity.map((event) => (
+                                    <div key={event.id} className="flex justify-between items-start pb-4 border-b last:border-0 last:pb-0">
+                                        <div className="flex gap-3">
+                                            <div className="h-8 w-8 rounded-full bg-gray-50 flex items-center justify-center shrink-0 border border-gray-100">
+                                                {event.type === 'meal' && <Utensils className="h-4 w-4 text-orange-500" />}
+                                                {event.type === 'workout' && <Dumbbell className="h-4 w-4 text-blue-500" />}
+                                                {event.type === 'checkin' && <Activity className="h-4 w-4 text-green-500" />}
+                                                {event.type === 'payment' && <DollarSign className="h-4 w-4 text-emerald-500" />}
+                                            </div>
+                                            <div>
+                                                <h4 className="font-semibold text-sm">{event.title}</h4>
+                                                <p className="text-sm text-muted-foreground">{event.description}</p>
+                                            </div>
+                                        </div>
+                                        <span className="text-xs text-muted-foreground whitespace-nowrap lowercase">{event.daysAgo}</span>
+                                    </div>
+                                ))
+                            )}
                         </div>
                     </CardContent>
                 </Card>
