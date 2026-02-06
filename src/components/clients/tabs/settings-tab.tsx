@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { updateClientAction, deleteClientAction } from "@/app/(dashboard)/clients/actions"
 import { Loading03Icon, FloppyDiskIcon, Delete02Icon, Alert02Icon } from "hugeicons-react"
 import { AllergenSelector } from "../allergen-selector"
-import { ClientAvatarUpload } from "../client-avatar-upload"
+
 import {
     AlertDialog,
     AlertDialogAction,
@@ -114,21 +114,7 @@ export function SettingsTab({ client }: { client: any }) {
                 <div className="grid gap-6">
 
                     {/* Foto de Perfil */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Foto de Perfil</CardTitle>
-                            <CardDescription>Esta foto se mostrará en el perfil y en las listas.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="flex justify-center py-6">
-                            <ClientAvatarUpload
-                                clientId={client.id}
-                                clientName={client.full_name}
-                                currentAvatarUrl={client.avatar_url}
-                                size="lg"
-                                showButton={true}
-                            />
-                        </CardContent>
-                    </Card>
+
 
                     {/* Información Personal */}
                     <Card>

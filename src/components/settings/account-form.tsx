@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { AvatarUpload } from './avatar-upload'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { DeleteAccountDialog } from './delete-account-dialog'
 import { Loader2, AlertTriangle } from 'lucide-react'
 
@@ -107,12 +107,13 @@ export function AccountForm({ userId }: AccountFormProps) {
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <div className="flex justify-center pb-4 border-b">
-                        <AvatarUpload
-                            userId={userId}
-                            currentAvatarUrl={avatarUrl}
-                            userInitials={getUserInitials()}
-                            onUploadComplete={(url) => setAvatarUrl(url)}
-                        />
+                        <div className="flex flex-col items-center gap-2">
+                            <Avatar className="h-24 w-24">
+                                <AvatarImage src={avatarUrl || undefined} alt="Avatar" />
+                                <AvatarFallback className="text-2xl">{getUserInitials()}</AvatarFallback>
+                            </Avatar>
+                            <p className="text-xs text-muted-foreground">La foto de perfil se gestiona desde la app.</p>
+                        </div>
                     </div>
 
                     <div className="space-y-2">

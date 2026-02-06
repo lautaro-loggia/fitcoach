@@ -1,8 +1,8 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { PlusSignIcon, LayoutTopIcon } from 'hugeicons-react'
-import { useRouter } from 'next/navigation'
+import { PlusSignIcon } from 'hugeicons-react'
+
 import { AssignWorkoutDialog } from './assign-workout-dialog'
 
 interface TrainingActionsWrapperProps {
@@ -11,7 +11,7 @@ interface TrainingActionsWrapperProps {
 }
 
 export function TrainingActionsWrapper({ clientId, clientName }: TrainingActionsWrapperProps) {
-    const router = useRouter()
+
 
     const handleRefresh = (open: boolean) => {
         if (!open) {
@@ -21,14 +21,7 @@ export function TrainingActionsWrapper({ clientId, clientName }: TrainingActions
 
     return (
         <div className="flex items-center gap-3">
-            <Button
-                variant="outline"
-                size="sm"
-                className="h-10 px-4 rounded-xl border-gray-200 bg-white text-gray-900 font-bold text-xs gap-2 shadow-sm"
-                onClick={() => router.push(`/clients/${clientId}?tab=profile`)}
-            >
-                <LayoutTopIcon className="h-4 w-4" /> Reporte de progreso
-            </Button>
+
 
             <AssignWorkoutDialog
                 clientId={clientId}

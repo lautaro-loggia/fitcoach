@@ -14,7 +14,8 @@ import {
     User,
     Trophy,
     Coffee,
-    ArrowRight
+    ArrowRight,
+    Footprints
 } from 'lucide-react'
 import Link from 'next/link'
 import { format } from 'date-fns'
@@ -368,6 +369,19 @@ export default async function ClientDashboard() {
                         <p className="text-xs text-gray-500 font-medium mb-1">Objetivo Actual</p>
                         <p className="text-sm font-bold text-gray-900 leading-tight">
                             {client.main_goal ? (goalLabels[client.main_goal] || client.main_goal) : "Sin definir"}
+                        </p>
+                    </div>
+                </Card>
+
+                {/* Daily Steps Goal Card */}
+                <Card className="p-4 bg-white border border-gray-100 shadow-sm flex flex-row items-center h-auto justify-between">
+                    <div className="h-8 w-8 rounded-full bg-orange-50 flex items-center justify-center text-orange-600 mr-3">
+                        <Footprints className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1">
+                        <p className="text-xs text-gray-500 font-medium mb-1">Pasos Diarios</p>
+                        <p className="text-sm font-bold text-gray-900 leading-tight">
+                            {client.daily_steps_goal ? `${client.daily_steps_goal.toLocaleString()} pasos` : "7,000 pasos"}
                         </p>
                     </div>
                 </Card>
