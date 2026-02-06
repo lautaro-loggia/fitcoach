@@ -212,7 +212,23 @@ export function StrengthProgressCard({ clientId }: StrengthProgressCardProps) {
             <CardContent className="p-4 py-3">
                 {insufficientData ? (
                     <div className="space-y-0.5">
-                        <h3 className="text-[17px] font-bold text-gray-900 leading-tight">Progreso en fuerza</h3>
+                        <div className="flex items-center gap-1.5">
+                            <h3 className="text-[17px] font-bold text-gray-900 leading-tight">Progreso en fuerza</h3>
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <div className="cursor-help text-gray-300 hover:text-gray-400 transition-colors">
+                                            <InformationCircleIcon className="h-3.5 w-3.5" />
+                                        </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="p-3 max-w-[240px] bg-zinc-900 text-white border-zinc-800 rounded-xl shadow-xl">
+                                        <p className="text-[11px] leading-relaxed">
+                                            Mide la evolución del 1RM estimado en los ejercicios principales de las últimas 4 semanas, promediando la mejora en peso y repeticiones logradas.
+                                        </p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        </div>
                         <p className="text-[15px] text-gray-400">Aún no se ha registrado ningún ejercicio</p>
                     </div>
                 ) : (
