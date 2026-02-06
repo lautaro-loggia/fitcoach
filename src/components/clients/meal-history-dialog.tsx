@@ -87,7 +87,7 @@ export function MealHistoryDialog({ clientId }: MealHistoryDialogProps) {
 
                 <div className="flex flex-1 overflow-hidden">
                     {/* List/Grid of Meals */}
-                    <ScrollArea className="w-72 flex-none p-4 border-r">
+                    <ScrollArea className="w-64 flex-none p-4 border-r">
                         {loading ? (
                             <div className="grid grid-cols-2 gap-4">
                                 {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -173,7 +173,7 @@ function MealDetail({ log, onReview, onClose }: { log: any, onReview: (s: 'pendi
                     src={log.signedUrl || '/placeholder.png'}
                     alt={log.meal_type}
                     fill
-                    className="object-contain relative z-10"
+                    className="object-cover relative z-10"
                     onLoadingComplete={(img) => {
                         img.parentElement?.querySelector('.animate-spin')?.classList.add('hidden')
                     }}
