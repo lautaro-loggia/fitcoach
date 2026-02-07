@@ -9,7 +9,7 @@ import { updateBasicProfile } from '@/actions/client-onboarding'
 import { toast } from 'sonner'
 import { ArrowRight, Loader2 } from 'lucide-react'
 
-export function StepProfile({ client, onNext, isNextTo, isPreview }: { client: any, onNext: () => void, isNextTo?: string, isPreview?: boolean }) {
+export function StepProfile({ client, onNext, isNextTo, isPreview, onUpdate }: { client: any, onNext: () => void, isNextTo?: string, isPreview?: boolean, onUpdate?: (data: any) => void }) {
     const [loading, setLoading] = useState(false)
 
     // Pre-fill if exists
@@ -24,10 +24,10 @@ export function StepProfile({ client, onNext, isNextTo, isPreview }: { client: a
         if (!dob) return null
         const birthDate = new Date(dob)
         const today = new Date()
-        let age = today.getFullYear() - birthDate.getFullYear()
+        const age = today.getFullYear() - birthDate.getFullYear()
         const m = today.getMonth() - birthDate.getMonth()
         if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-            age--
+            return age - 1
         }
         return age
     }
@@ -36,7 +36,37 @@ export function StepProfile({ client, onNext, isNextTo, isPreview }: { client: a
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+
+        // Validation
+        if (!formData.gender) {
+            toast.error('Por favor seleccioná tu sexo.')
+            return
+        }
+        if (!formData.birth_date) {
+            toast.error('Por favor ingresá tu fecha de nacimiento.')
+            return
+        }
+        if (!formData.height) {
+            toast.error('Por favor ingresá tu altura.')
+            return
+        }
+        if (!formData.weight) {
+            toast.error('Por favor ingresá tu peso actual.')
+            return
+        }
+
         setLoading(true)
+
+        // Update local state immediately
+        if (onUpdate) {
+            onUpdate({
+                birth_date: formData.birth_date,
+                height: Number(formData.height),
+                current_weight: Number(formData.weight),
+                initial_weight: Number(formData.weight),
+                gender: formData.gender
+            })
+        }
 
         if (isPreview) {
             await new Promise(resolve => setTimeout(resolve, 500))

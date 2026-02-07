@@ -121,7 +121,7 @@ export default async function DashboardPage() {
                         <Link href="/clients?new=true">
                             <Button variant="outline" className="gap-2 bg-white">
                                 <UserPlus className="h-4 w-4 text-muted-foreground" />
-                                Asesorado
+                                Nuevo asesorado
                             </Button>
                         </Link>
                     </div>

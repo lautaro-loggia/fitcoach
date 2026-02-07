@@ -13,7 +13,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { PlusSignIcon, Mail01Icon, Loading03Icon, UserIcon } from 'hugeicons-react'
+import { PlusSignIcon, Mail01Icon, Loading03Icon, UserIcon, SmartPhone01Icon } from 'hugeicons-react'
 import { inviteClient } from '@/actions/invite-client'
 import { toast } from 'sonner'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -115,6 +115,20 @@ export function AddClientDialog({ defaultOpen = false }: AddClientDialogProps) {
                                 />
                             </div>
                         </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="phone">Teléfono</Label>
+                            <div className="relative">
+                                <SmartPhone01Icon className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                                <Input
+                                    id="phone"
+                                    name="phone"
+                                    type="tel"
+                                    placeholder="+54 9 11 1234 5678"
+                                    className="pl-9"
+                                />
+                            </div>
+                        </div>
+
                     </div>
 
                     <DialogFooter>

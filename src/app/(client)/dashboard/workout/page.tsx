@@ -45,9 +45,25 @@ export default async function WorkoutPage() {
         w.scheduled_days?.map((d: string) => d.toLowerCase()).includes(todayName)
     )
 
-    // We could Auto-Redirect if today has a workout? 
-    // if (todayWorkout) redirect(`/dashboard/workout/${todayWorkout.id}`)
-    // Commented out to allow browsing others if needed.
+    // Check if today's workout is completed
+    let isTodayCompleted = false
+    if (todayWorkout) {
+        const todayStr = new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'America/Argentina/Buenos_Aires',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        }).format(new Date())
+
+        const { count } = await adminClient
+            .from('workout_logs')
+            .select('*', { count: 'exact', head: true })
+            .eq('client_id', client.id)
+            .eq('workout_id', todayWorkout.id)
+            .eq('date', todayStr)
+
+        isTodayCompleted = (count || 0) > 0
+    }
 
     return (
         <div className="p-4 space-y-6 pb-6">
@@ -60,7 +76,7 @@ export default async function WorkoutPage() {
                 <h1 className="text-xl font-bold">Mis Rutinas</h1>
             </div>
 
-            {todayWorkout && (
+            {todayWorkout && !isTodayCompleted && (
                 <div className="mb-6">
                     <p className="text-sm text-gray-500 font-medium mb-2 uppercase tracking-wide">Hoy</p>
                     <Link href={`/dashboard/workout/${todayWorkout.id}`}>

@@ -9,7 +9,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Checkbox } from '@/components/ui/checkbox'
 import { updateNutrition } from '@/actions/client-onboarding'
 import { toast } from 'sonner'
-import { ArrowRight, ArrowLeft, Loader2, Utensils, ShieldAlert, Sparkles, Brain, BicepsFlexed, Leaf, Sprout, Plus, Minus, Check, Ban } from 'lucide-react'
+import { ArrowRight, ArrowLeft, Loader2, Utensils, ShieldAlert, Sparkles, Brain, BicepsFlexed, Leaf, Sprout, Plus, Minus, Check, Ban, HelpCircle } from 'lucide-react'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 const ALLERGENS_LIST = [
@@ -29,9 +30,9 @@ export function StepNutrition({ client, onNext, onPrev, isPreview }: { client: a
     const savedInfo = client.dietary_info || {}
 
     const [formData, setFormData] = useState({
-        diet_preference: savedInfo.preference || 'no_preference',
+        diet_preference: savedInfo.preference || '', // Removed default
         meals_per_day: savedInfo.meals_count?.toString() || '4',
-        experience: savedInfo.experience || 'none',
+        experience: savedInfo.experience || '', // Removed default
         allergens: (savedInfo.allergens as string[]) || [],
         other_restrictions: savedInfo.other || ''
     })
@@ -46,6 +47,17 @@ export function StepNutrition({ client, onNext, onPrev, isPreview }: { client: a
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+
+        // Validation
+        if (!formData.diet_preference) {
+            toast.error('Por favor seleccioná tu preferencia de dieta.')
+            return
+        }
+        if (!formData.experience || formData.experience === 'none_selected') { // Assuming 'none' might be interpreted as beginner, but let's check experience options
+            toast.error('Por favor seleccioná tu experiencia con macros.')
+            return
+        }
+
         setLoading(true)
 
         if (isPreview) {
@@ -156,7 +168,19 @@ export function StepNutrition({ client, onNext, onPrev, isPreview }: { client: a
                     </div>
 
                     <div className="space-y-4">
-                        <Label className="text-sm font-bold text-[#1A1A1A]">Experiencia con macros</Label>
+                        <Label className="text-sm font-bold text-[#1A1A1A] flex items-center justify-between">
+                            Experiencia con macros
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <HelpCircle className="w-3 h-3 text-gray-400 cursor-help" />
+                                    </TooltipTrigger>
+                                    <TooltipContent className="max-w-[220px] text-[10px] leading-tight">
+                                        Los macros (proteínas, carbohidratos y grasas) son los nutrientes que nos dan energía.
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        </Label>
                         <Select
                             value={formData.experience}
                             onValueChange={val => setFormData({ ...formData, experience: val })}
@@ -165,13 +189,14 @@ export function StepNutrition({ client, onNext, onPrev, isPreview }: { client: a
                                 <SelectValue placeholder="Seleccioná..." />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="none">Principiante</SelectItem>
-                                <SelectItem value="some">Intermedio</SelectItem>
-                                <SelectItem value="high">Avanzado</SelectItem>
+                                <SelectItem value="none">Ninguna</SelectItem>
+                                <SelectItem value="beginner">Principiante</SelectItem>
+                                <SelectItem value="intermediate">Intermedio</SelectItem>
+                                <SelectItem value="advanced">Avanzado</SelectItem>
                             </SelectContent>
                         </Select>
-                        <p className="text-[11px] text-gray-400 font-medium">
-                            Esto define qué tan complejo será tu plan de comidas.
+                        <p className="text-[10px] text-gray-400 font-medium leading-tight">
+                            Esto define qué tan detallado será tu plan de comidas. <span className="text-gray-300 italic">(Macros: Proteínas, Carbohidratos y Grasas)</span>
                         </p>
                     </div>
                 </div>
