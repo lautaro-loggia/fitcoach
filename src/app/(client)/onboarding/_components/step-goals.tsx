@@ -25,7 +25,7 @@ export function StepGoals({ client, onNext, onPrev, isPreview }: { client: any, 
     const [formData, setFormData] = useState({
         main_goal: client.main_goal || '',
         goal_specific: client.goal_text || '',
-        timeframe: client.goals?.timeframe || '1-3 months',
+        timeframe: client.goals?.timeframe || '',
         target_weight: client.target_weight || '',
         target_fat: client.target_fat || ''
     })
@@ -51,6 +51,21 @@ export function StepGoals({ client, onNext, onPrev, isPreview }: { client: any, 
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+
+        // Validation
+        if (!formData.main_goal) {
+            toast.error('Por favor seleccioná tu objetivo principal.')
+            return
+        }
+        if (!formData.timeframe) {
+            toast.error('Por favor seleccioná un plazo estimado.')
+            return
+        }
+        if (!formData.target_weight) {
+            toast.error('Por favor ingresá tu peso meta.')
+            return
+        }
+
         setLoading(true)
 
         if (isPreview) {

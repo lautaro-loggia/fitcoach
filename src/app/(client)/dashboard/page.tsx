@@ -120,14 +120,7 @@ export default async function ClientDashboard() {
     const isCheckinDoneToday = lastCheckinDate &&
         getARTDate(lastCheckinDate).toDateString() === getARTDate().toDateString()
 
-    let isFirstCheckin = false
-    if (!recentCheckins || recentCheckins.length === 0) {
-        isFirstCheckin = true
-    } else if (recentCheckins.length === 1) {
-        if (recentCheckins[0].observations === 'Check-in Inicial (Baseline)') {
-            isFirstCheckin = true
-        }
-    }
+    const isFirstCheckin = !recentCheckins || recentCheckins.length === 0
 
     // 5. Status Helpers
     const statusLabel: Record<string, string> = {
@@ -286,67 +279,60 @@ export default async function ClientDashboard() {
                             <p className="text-xs text-amber-700 mt-0.5">Contactá a tu coach para reactivar.</p>
                         </div>
                     </Card>
-                ) : todayWorkout ? (
-                    // WORKOUT DAY CARD
-                    <Card className={`border-none shadow-md overflow-hidden transition-all ${isCompleted ? 'bg-green-50 ring-1 ring-green-100' : 'bg-white ring-1 ring-gray-100'}`}>
+                ) : (todayWorkout && !isCompleted) ? (
+                    // WORKOUT DAY CARD (NOT COMPLETED)
+                    <Card className="border-none shadow-md overflow-hidden transition-all bg-white ring-1 ring-gray-100">
                         <div className="p-0">
                             <div className="p-5 pb-4">
                                 <div className="flex justify-between items-start mb-3">
                                     <div>
-                                        <div className={`text-[10px] font-bold uppercase tracking-wider mb-1 px-2 py-0.5 rounded-sm inline-block ${isCompleted ? 'bg-green-100 text-green-700' : 'bg-blue-50 text-blue-700'}`}>
+                                        <div className="text-[10px] font-bold uppercase tracking-wider mb-1 px-2 py-0.5 rounded-sm inline-block bg-blue-50 text-blue-700">
                                             Entrenamiento
                                         </div>
-                                        <h3 className={`text-xl font-bold leading-tight ${isCompleted ? 'text-green-900' : 'text-gray-900'}`}>
+                                        <h3 className="text-xl font-bold leading-tight text-gray-900">
                                             {todayWorkout.name}
                                         </h3>
                                     </div>
-                                    {isCompleted && (
-                                        <div className="bg-green-100 p-2 rounded-full">
-                                            <CheckCircle2 className="h-5 w-5 text-green-600" />
-                                        </div>
-                                    )}
                                 </div>
 
-                                {!isCompleted && (
-                                    <div className="flex items-center gap-4 text-sm text-gray-500 mb-0">
-                                        <span className="flex items-center gap-1.5">
-                                            <Dumbbell className="h-4 w-4" />
-                                            <span>{todayWorkout.structure?.length || 0} ejercicios</span>
-                                        </span>
-                                        <span className="text-gray-300">•</span>
-                                        <span className="flex items-center gap-1.5">
-                                            <Clock className="h-4 w-4" />
-                                            <span>60 min aprox.</span>
-                                        </span>
-                                    </div>
-                                )}
+                                <div className="flex items-center gap-4 text-sm text-gray-500 mb-0">
+                                    <span className="flex items-center gap-1.5">
+                                        <Dumbbell className="h-4 w-4" />
+                                        <span>{todayWorkout.structure?.length || 0} ejercicios</span>
+                                    </span>
+                                    <span className="text-gray-300">•</span>
+                                    <span className="flex items-center gap-1.5">
+                                        <Clock className="h-4 w-4" />
+                                        <span>60 min aprox.</span>
+                                    </span>
+                                </div>
                             </div>
 
-                            {!isCompleted && (
-                                <Link href="/dashboard/workout">
-                                    <div className="border-t border-gray-100 bg-gray-50/50 p-3 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-blue-600 font-bold text-sm">
-                                        <Play className="h-4 w-4" fill="currentColor" />
-                                        Comenzar Rutina
-                                    </div>
-                                </Link>
-                            )}
-
-                            {isCompleted && (
-                                <div className="px-5 pb-5 pt-0 text-sm text-green-700 font-medium">
-                                    ¡Rutina completada! Buen trabajo.
+                            <Link href="/dashboard/workout">
+                                <div className="border-t border-gray-100 bg-gray-50/50 p-3 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-blue-600 font-bold text-sm">
+                                    <Play className="h-4 w-4" fill="currentColor" />
+                                    Comenzar Rutina
                                 </div>
-                            )}
+                            </Link>
                         </div>
                     </Card>
                 ) : (
-                    // REST DAY CARD (Clean & Low visual weight)
+                    // REST DAY OR COMPLETED WORKOUT CARD
                     <Card className="p-5 bg-white border border-dashed border-gray-200 shadow-sm flex items-center gap-4">
                         <div className="h-10 w-10 rounded-full bg-gray-50 flex items-center justify-center shrink-0">
-                            <Coffee className="h-5 w-5 text-gray-400" />
+                            {isCompleted ? (
+                                <CheckCircle2 className="h-5 w-5 text-green-500" />
+                            ) : (
+                                <Coffee className="h-5 w-5 text-gray-400" />
+                            )}
                         </div>
                         <div className="flex-1">
-                            <h4 className="font-semibold text-gray-700">Día de Descanso</h4>
-                            <p className="text-xs text-gray-500 mt-0.5">Hoy toca recuperar energías.</p>
+                            <h4 className="font-semibold text-gray-700">
+                                {isCompleted ? "¡Rutina Completada!" : "Día de Descanso"}
+                            </h4>
+                            <p className="text-xs text-gray-500 mt-0.5">
+                                {isCompleted ? "Buen trabajo por hoy, a recuperar energías." : "Hoy toca recuperar energías para lo que viene."}
+                            </p>
                         </div>
                         <Link href="/dashboard/workout">
                             <Button variant="ghost" size="sm" className="text-xs font-medium text-gray-500 hover:text-indigo-600 h-auto py-1 px-2">

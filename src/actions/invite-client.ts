@@ -20,6 +20,7 @@ export async function inviteClient(prevState: any, formData: FormData) {
 
         const email = formData.get('email') as string
         const fullName = formData.get('fullName') as string
+        const phone = formData.get('phone') as string
 
         if (!email || !fullName) {
             return { error: 'Faltan campos requeridos', success: false }
@@ -98,6 +99,7 @@ export async function inviteClient(prevState: any, formData: FormData) {
             trainer_id: user.id,
             email: email,
             full_name: fullName,
+            phone: phone || null,
             onboarding_status: 'invited',
             status: 'active', // Operational status
             user_id: userId // Link immediately or defer check on callback

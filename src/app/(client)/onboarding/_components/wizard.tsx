@@ -14,10 +14,15 @@ import { toast } from 'sonner'
 
 export function OnboardingWizard({ client, isPreview }: { client: any, isPreview?: boolean }) {
     const [step, setStep] = useState(0)
+    const [clientData, setClientData] = useState(client)
     const TOTAL_STEPS = 8 // 0 a 7
 
     const nextStep = () => setStep(s => Math.min(s + 1, TOTAL_STEPS - 1))
     const prevStep = () => setStep(s => Math.max(s - 1, 0))
+
+    const updateClient = (data: any) => {
+        setClientData((prev: any) => ({ ...prev, ...data }))
+    }
 
     const isLastStep = step === TOTAL_STEPS - 1
 
@@ -55,13 +60,13 @@ export function OnboardingWizard({ client, isPreview }: { client: any, isPreview
 
             <div className="flex-1 p-6 flex flex-col max-w-lg mx-auto w-full overflow-y-auto">
                 <div className="flex-1 mb-8">
-                    {step === 0 && <StepBinding client={client} onNext={nextStep} isPreview={isPreview} />}
-                    {step === 1 && <StepProfile client={client} onNext={nextStep} isNextTo="Objetivos" isPreview={isPreview} />}
-                    {step === 2 && <StepGoals client={client} onNext={nextStep} onPrev={prevStep} isPreview={isPreview} />}
-                    {step === 3 && <StepLifestyle client={client} onNext={nextStep} onPrev={prevStep} isPreview={isPreview} />}
-                    {step === 4 && <StepInjuries client={client} onNext={nextStep} onPrev={prevStep} isPreview={isPreview} />}
-                    {step === 5 && <StepNutrition client={client} onNext={nextStep} onPrev={prevStep} isPreview={isPreview} />}
-                    {step === 6 && <StepBodyFat client={client} onNext={nextStep} onPrev={prevStep} isPreview={isPreview} />}
+                    {step === 0 && <StepBinding client={clientData} onNext={nextStep} isPreview={isPreview} />}
+                    {step === 1 && <StepProfile client={clientData} onUpdate={updateClient} onNext={nextStep} isNextTo="Objetivos" isPreview={isPreview} />}
+                    {step === 2 && <StepGoals client={clientData} onNext={nextStep} onPrev={prevStep} isPreview={isPreview} />}
+                    {step === 3 && <StepLifestyle client={clientData} onNext={nextStep} onPrev={prevStep} isPreview={isPreview} />}
+                    {step === 4 && <StepInjuries client={clientData} onNext={nextStep} onPrev={prevStep} isPreview={isPreview} />}
+                    {step === 5 && <StepNutrition client={clientData} onNext={nextStep} onPrev={prevStep} isPreview={isPreview} />}
+                    {step === 6 && <StepBodyFat client={clientData} onNext={nextStep} onPrev={prevStep} isPreview={isPreview} />}
                     {step === 7 && <StepSuccess isPreview={isPreview} />}
                 </div>
 

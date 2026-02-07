@@ -20,14 +20,29 @@ export function StepLifestyle({ client, onNext, onPrev, isPreview }: { client: a
     const [loading, setLoading] = useState(false)
 
     const [formData, setFormData] = useState({
-        activity_level: client.activity_level || 'sedentary',
-        work_type: client.work_type || 'sedentary',
-        training_days: client.training_availability?.days_per_week?.toString() || '3'
+        activity_level: client.activity_level || '',
+        work_type: client.work_type || '',
+        training_days: client.training_availability?.days_per_week?.toString() || ''
     })
 
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+
+        // Validation
+        if (!formData.activity_level) {
+            toast.error('Por favor seleccioná tu nivel de actividad diaria.')
+            return
+        }
+        if (!formData.work_type) {
+            toast.error('Por favor seleccioná tu tipo de trabajo.')
+            return
+        }
+        if (!formData.training_days) {
+            toast.error('Por favor seleccioná los días de entrenamiento.')
+            return
+        }
+
         setLoading(true)
 
         if (isPreview) {
@@ -122,7 +137,7 @@ export function StepLifestyle({ client, onNext, onPrev, isPreview }: { client: a
 
                     <div className="space-y-3">
                         <Label className="text-sm font-bold text-[#1A1A1A] flex items-center gap-2">
-                            <Dumbbell className="w-3 h-3" /> Frecuencia Semanal
+                            <Dumbbell className="w-3 h-3" /> Días de entrenamiento
                         </Label>
                         <Select
                             value={formData.training_days}

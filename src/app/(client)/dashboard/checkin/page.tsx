@@ -13,22 +13,29 @@ export default async function CheckinPage() {
 
     const { data: client } = await supabase
         .from('clients')
-        .select('current_weight, gender, height, next_checkin_date')
+        .select('id, current_weight, gender, height, next_checkin_date')
         .eq('user_id', user.id)
         .single()
 
+    if (!client) redirect('/dashboard')
+
+    // Check for existing check-ins
+    const { count: checkinCount } = await supabase
+        .from('checkins')
+        .select('*', { count: 'exact', head: true })
+        .eq('client_id', (client as any).id) // Assuming we need client.id which we missed in the select
+
+    const hasCheckins = (checkinCount || 0) > 0
+
     if (client && client.next_checkin_date) {
-        // Parse YYYY-MM-DD in local time
         const nextDate = new Date(client.next_checkin_date + 'T00:00:00')
         const today = new Date()
-        // Reset time part of today for fair comparison or just compare timestamps?
-        // Actually, if today is 12th and next is 12th, it should be allowed.
-        // So strict inequality: if now < nextDate (at 00:00), it implies today is strictly before.
-        // Example: Now = 11th 23:00. Next = 12th 00:00. Now < Next. Blocked. Correct.
-        // Example: Now = 12th 08:00. Next = 12th 00:00. Now >= Next. Allowed. Correct.
         if (today < nextDate) {
             redirect('/dashboard')
         }
+    } else if (hasCheckins) {
+        // If has baseline/checkins but no next date set, block it (coach must define it)
+        redirect('/dashboard')
     }
 
     return (
