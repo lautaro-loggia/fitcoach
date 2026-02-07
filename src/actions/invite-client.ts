@@ -52,12 +52,16 @@ export async function inviteClient(prevState: any, formData: FormData) {
         // Remove query params to avoid encoding issues commonly seen with Magic Links
         const redirectUrl = `${baseUrl}/auth/callback`
 
+        // Get coach name from profiles or user metadata
+        const coachName = user.user_metadata?.full_name || 'Tu coach'
+
         console.log('Sending invite with redirect URL:', redirectUrl)
 
         const { data: inviteData, error: inviteError } = await adminSupabase.auth.admin.inviteUserByEmail(email, {
             redirectTo: redirectUrl,
             data: {
                 full_name: fullName,
+                trainer_name: coachName,
                 role: 'client' // Optional meta
             }
         })
