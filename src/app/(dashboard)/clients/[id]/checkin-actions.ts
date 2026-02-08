@@ -88,3 +88,29 @@ export async function updateNextCheckinDateAction(clientId: string, date: string
     revalidatePath(`/clients/${clientId}`)
     return { success: true }
 }
+
+export async function updateCheckinNoteAction(checkinId: string, clientId: string, note: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { error: 'No autorizado' }
+    }
+
+    const { error } = await supabase
+        .from('checkins')
+        .update({
+            coach_note: note,
+            // The trigger in the DB will handle status and coach_note_updated_at
+            // But we can also set it explicitly if needed, though the trigger is safer.
+        })
+        .eq('id', checkinId)
+
+    if (error) {
+        console.error('Error updating checkin note:', error)
+        return { error: error.message || 'Error al actualizar la nota' }
+    }
+
+    revalidatePath(`/clients/${clientId}`)
+    return { success: true }
+}
