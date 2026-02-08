@@ -15,7 +15,8 @@ import {
     Trophy,
     Coffee,
     ArrowRight,
-    Footprints
+    Footprints,
+    MessageSquare
 } from 'lucide-react'
 import Link from 'next/link'
 import { format } from 'date-fns'
@@ -121,6 +122,17 @@ export default async function ClientDashboard() {
         getARTDate(lastCheckinDate).toDateString() === getARTDate().toDateString()
 
     const isFirstCheckin = !recentCheckins || recentCheckins.length === 0
+
+    // 4b. Check for New Feedback (status = 'commented' and seen_at is null)
+    const { data: newFeedbackCheckin } = await adminClient
+        .from('checkins')
+        .select('id, date, coach_note')
+        .eq('client_id', client.id)
+        .eq('status', 'commented')
+        .is('coach_note_seen_at', null)
+        .order('date', { ascending: false })
+        .limit(1)
+        .maybeSingle()
 
     // 5. Status Helpers
     const statusLabel: Record<string, string> = {
@@ -235,6 +247,28 @@ export default async function ClientDashboard() {
                         </div>
                     </div>
                 </Card>
+            )}
+
+            {/* 2b. New Feedback Banner */}
+            {newFeedbackCheckin && (
+                <Link href="/dashboard/progress">
+                    <Card className="border-none shadow-md bg-white border-l-4 border-l-primary overflow-hidden relative active:scale-[0.98] transition-all">
+                        <div className="p-4 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 bg-primary/10 rounded-full flex items-center justify-center text-primary shrink-0">
+                                    <MessageSquare className="h-5 w-5" />
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-bold text-gray-900">Tu coach te dejó feedback</h4>
+                                    <p className="text-xs text-gray-500 line-clamp-1">En tu check-in del {format(new Date(newFeedbackCheckin.date), 'd/MM')}</p>
+                                </div>
+                            </div>
+                            <div className="h-8 w-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400">
+                                <ChevronRight className="h-5 w-5" />
+                            </div>
+                        </div>
+                    </Card>
+                </Link>
             )}
 
             {/* NEW: Weekly Progress Block */}

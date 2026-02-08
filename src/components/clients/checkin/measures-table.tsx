@@ -1,84 +1,110 @@
+"use client"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import { format } from "date-fns"
-import { es } from "date-fns/locale"
+import { ArrowUpRight as ArrowUpRightIcon, ArrowDownRight as ArrowDownRightIcon, Minus as MinusIcon } from "lucide-react"
+import { RulerIcon } from "hugeicons-react"
 
 interface MeasuresTableProps {
-    checkins: any[]
-    selectedMetric: string
-    onSelect: (key: string) => void
+    selected: any
+    comparison?: any
+    activeMetric: string
+    onSelectMetric: (key: string) => void
 }
 
-export function MeasuresTable({ checkins, selectedMetric, onSelect }: MeasuresTableProps) {
-    // Determine latest values for each metric
-    // If we assume checkins are ordered by date ascending, we reverse to find latest non-null
-    const sortedCheckins = [...checkins].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-
-    const getLatest = (key: string, isMeasurement = false) => {
-        const found = sortedCheckins.find(c => {
-            if (isMeasurement) return c.measurements && c.measurements[key]
-            return c[key]
-        })
-
-        if (!found) return { value: "—", date: null }
-
-        const value = isMeasurement ? found.measurements[key] : found[key]
-        return {
-            value,
-            date: found.date
-        }
+export function MeasuresTable({ selected, comparison, activeMetric, onSelectMetric }: MeasuresTableProps) {
+    const getValue = (key: string, isMeasurement = false) => {
+        if (!selected) return null
+        return isMeasurement ? selected.measurements?.[key] : selected[key]
     }
 
-    const formatDate = (dateString: string | null) => {
-        if (!dateString) return "—"
-        return format(new Date(dateString), "d 'de' MMMM", { locale: es })
+    const calculateDelta = (key: string, isMeasurement = false) => {
+        if (!selected || !comparison) return null
+
+        const currentVal = isMeasurement ? selected.measurements?.[key] : selected[key]
+        const compVal = isMeasurement ? comparison.measurements?.[key] : comparison[key]
+
+        if (currentVal === null || currentVal === undefined || compVal === null || compVal === undefined) return null
+
+        return Number(currentVal) - Number(compVal)
     }
 
     const rows = [
-        { key: 'body_fat', label: "Grasa corporal", ...getLatest("body_fat"), unit: "%" },
-        { key: 'weight', label: "Peso", ...getLatest("weight"), unit: "kg" },
-        { key: 'lean_mass', label: "Masa magra", ...getLatest("lean_mass"), unit: "kg" },
-        // Measurements
-        { key: 'measurements.chest', label: "Medida Pecho", ...getLatest("chest", true), unit: "cm" },
-        { key: 'measurements.waist', label: "Medida Cintura", ...getLatest("waist", true), unit: "cm" },
-        { key: 'measurements.hips', label: "Medida Cadera", ...getLatest("hips", true), unit: "cm" },
-        { key: 'measurements.arm', label: "Medida Brazo", ...getLatest("arm", true), unit: "cm" },
-        { key: 'measurements.thigh', label: "Medida Muslo", ...getLatest("thigh", true), unit: "cm" },
-        { key: 'measurements.calf', label: "Medida Gemelos", ...getLatest("calf", true), unit: "cm" },
+        { key: 'measurements.waist', label: "Cintura", unit: "cm", isMeasurement: true },
+        { key: 'measurements.hips', label: "Cadera", unit: "cm", isMeasurement: true },
+        { key: 'measurements.chest', label: "Pecho", unit: "cm", isMeasurement: true },
+        { key: 'measurements.arm', label: "Brazo", unit: "cm", isMeasurement: true },
+        { key: 'measurements.thigh', label: "Muslo", unit: "cm", isMeasurement: true },
+        { key: 'measurements.calf', label: "Gemelos", unit: "cm", isMeasurement: true },
+        { key: 'weight', label: "Peso", unit: "kg", isMeasurement: false },
+        { key: 'body_fat', label: "Grasa Corporal", unit: "%", isMeasurement: false },
+        { key: 'lean_mass', label: "Masa Magra", unit: "kg", isMeasurement: false },
     ]
 
     return (
-        <Card className="h-full">
-            <CardHeader className="pb-4">
-                <CardTitle className="text-lg font-bold">Medidas corporales</CardTitle>
+        <Card className="rounded-2xl border-border/40 shadow-sm overflow-hidden bg-white h-full">
+            <CardHeader className="pb-4 px-6 pt-6">
+                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                    <RulerIcon className="h-4 w-4 text-primary" />
+                    Detalle de medidas
+                </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
                 <div className="w-full text-sm">
-                    <div className="grid grid-cols-12 px-6 py-2 text-muted-foreground text-xs font-medium uppercase tracking-wide border-b border-border/40">
-                        <div className="col-span-5">Nombre</div>
-                        <div className="col-span-3 text-right pr-4">Valor</div>
-                        <div className="col-span-4 text-right">Última actualización</div>
+                    <div className="grid grid-cols-12 px-6 py-2 text-muted-foreground text-[10px] font-black uppercase tracking-widest border-b border-border/40 bg-gray-50/50">
+                        <div className="col-span-6">Medida</div>
+                        <div className="col-span-3 text-right">Valor</div>
+                        <div className="col-span-3 text-right">Delta</div>
                     </div>
                     <div>
                         {rows.map((row, i) => {
-                            const isSelected = selectedMetric === row.key
+                            const val = getValue(row.isMeasurement ? row.key.split('.')[1] : row.key, row.isMeasurement)
+                            const delta = calculateDelta(row.isMeasurement ? row.key.split('.')[1] : row.key, row.isMeasurement)
+                            const isSelected = activeMetric === row.key
+
+                            const isPositive = delta && delta > 0
+                            const isZero = delta === 0 || delta === null
+
+                            // Important: Use waist/hips/body_fat for inverse logic (lower is usually better)
+                            const inverse = ['measurements.waist', 'measurements.hips', 'body_fat'].includes(row.key)
+                            let deltaColor = "text-gray-400"
+                            if (delta !== null && delta !== 0) {
+                                if (isPositive) {
+                                    deltaColor = inverse ? "text-orange-600" : "text-green-600"
+                                } else {
+                                    deltaColor = inverse ? "text-green-600" : "text-orange-600"
+                                }
+                            }
+
                             return (
                                 <div
                                     key={i}
-                                    onClick={() => onSelect(row.key)}
+                                    onClick={() => onSelectMetric(row.key)}
                                     className={cn(
-                                        "grid grid-cols-12 px-6 py-4 items-center border-b border-border/40 last:border-0 cursor-pointer transition-colors",
-                                        isSelected ? "bg-muted/80 hover:bg-muted/80" : "hover:bg-muted/20"
+                                        "grid grid-cols-12 px-6 py-3.5 items-center border-b border-border/40 last:border-0 cursor-pointer transition-all",
+                                        isSelected ? "bg-primary/5 border-l-4 border-l-primary" : "hover:bg-gray-50/50 border-l-4 border-l-transparent"
                                     )}
                                 >
-                                    <div className={cn("col-span-5 font-medium", isSelected && "text-primary")}>
+                                    <div className={cn("col-span-6 font-bold", isSelected ? "text-primary" : "text-gray-700")}>
                                         {row.label}
                                     </div>
-                                    <div className={cn("col-span-3 text-right font-semibold pr-4", isSelected && "text-primary")}>
-                                        {row.value !== "—" ? `${row.value}${row.unit} ` : "—"}
+                                    <div className="col-span-3 text-right font-black">
+                                        {val !== null && val !== undefined ? (
+                                            <span className={isSelected ? "text-primary" : "text-gray-900"}>
+                                                {val}<span className="text-[10px] ml-0.5 text-gray-400">{row.unit}</span>
+                                            </span>
+                                        ) : (
+                                            <span className="text-gray-300">—</span>
+                                        )}
                                     </div>
-                                    <div className={cn("col-span-4 text-right text-muted-foreground", isSelected && "text-primary/80")}>
-                                        {formatDate(row.date)}
+                                    <div className={cn("col-span-3 text-right text-[11px] font-black", deltaColor)}>
+                                        {!isZero ? (
+                                            <div className="flex items-center justify-end gap-0.5">
+                                                {isPositive ? "+" : ""}{delta?.toFixed(1)}
+                                            </div>
+                                        ) : (
+                                            <span className="text-gray-200">—</span>
+                                        )}
                                     </div>
                                 </div>
                             )

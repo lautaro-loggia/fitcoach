@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { format, subDays } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { WeightHistoryList } from '@/components/client/progress/weight-history-list'
 
 export default async function ProgressPage() {
     const supabase = await createClient()
@@ -37,13 +38,13 @@ export default async function ProgressPage() {
     const targetCount = 12
     const percentage = Math.min(100, Math.round(((completedCount || 0) / targetCount) * 100))
 
-    // 2. Body Weight History (Last 5 Checkins)
+    // 2. Body Weight History (Last 10 Checkins)
     const { data: checkins } = await adminClient
         .from('checkins')
-        .select('date, weight')
+        .select('id, date, weight, body_fat, lean_mass, measurements, coach_note, coach_note_seen_at, status')
         .eq('client_id', client.id)
         .order('date', { ascending: false })
-        .limit(5)
+        .limit(10)
 
     const latestWeight = checkins && checkins.length > 0 ? checkins[0].weight : '--'
     const startWeight = checkins && checkins.length > 0 ? checkins[checkins.length - 1].weight : '--'
@@ -103,21 +104,8 @@ export default async function ProgressPage() {
                         )}
                     </div>
 
-                    {/* Simple List Visualization */}
-                    <div className="space-y-3">
-                        {checkins?.map((checkin, idx) => (
-                            <div key={idx} className="flex items-center justify-between text-sm py-2 border-b border-gray-50 last:border-0">
-                                <div className="flex items-center gap-2 text-gray-500">
-                                    <Calendar className="h-3 w-3" />
-                                    <span>{format(new Date(checkin.date), 'd MMM yyyy', { locale: es })}</span>
-                                </div>
-                                <span className="font-mono font-medium text-gray-800">{checkin.weight} kg</span>
-                            </div>
-                        ))}
-                        {(!checkins || checkins.length === 0) && (
-                            <p className="text-sm text-gray-400 text-center py-2">Sin registros aún.</p>
-                        )}
-                    </div>
+                    {/* Interactive List Visualization */}
+                    <WeightHistoryList checkins={checkins || []} />
                 </Card>
             </div>
 

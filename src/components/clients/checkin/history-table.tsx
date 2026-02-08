@@ -1,13 +1,15 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { format, parse } from "date-fns"
+import { cn } from "@/lib/utils"
 
 interface HistoryTableProps {
-    data: any[] // Expects { date: string, value: number }
+    data: any[] // Expects { date: string, value: number, id: string }
     unit: string
-    checkins?: any[] // Kept for retro compatibility or full details if needed, but unused for now based on requirement
+    selectedId?: string
+    onSelect?: (id: string) => void
 }
 
-export function HistoryTable({ data, unit }: HistoryTableProps) {
+export function HistoryTable({ data, unit, selectedId, onSelect }: HistoryTableProps) {
     // Sort descending for history
     const sorted = [...data].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
@@ -28,16 +30,32 @@ export function HistoryTable({ data, unit }: HistoryTableProps) {
                                 Sin registros disponibles
                             </div>
                         ) : (
-                            sorted.map((c, i) => (
-                                <div key={i} className="flex justify-between px-6 py-4 items-center border-b border-border/40 last:border-0 hover:bg-muted/20 transition-colors">
-                                    <span className="font-medium text-sm text-muted-foreground">
-                                        {format(parse(c.date, 'yyyy-MM-dd', new Date()), 'dd/MM/yyyy')}
-                                    </span>
-                                    <span className="font-semibold text-sm text-foreground/80">
-                                        {c.value !== null ? `${c.value}${unit}` : '—'}
-                                    </span>
-                                </div>
-                            ))
+                            sorted.map((c, i) => {
+                                const isSelected = selectedId === c.id
+                                return (
+                                    <div
+                                        key={c.id || i}
+                                        onClick={() => onSelect?.(c.id)}
+                                        className={cn(
+                                            "flex justify-between px-6 py-4 items-center border-b border-border/40 last:border-0 cursor-pointer transition-colors",
+                                            isSelected ? "bg-primary/5 border-l-2 border-l-primary" : "hover:bg-muted/20"
+                                        )}
+                                    >
+                                        <span className={cn(
+                                            "font-medium text-sm",
+                                            isSelected ? "text-primary" : "text-muted-foreground"
+                                        )}>
+                                            {format(parse(c.date, 'yyyy-MM-dd', new Date()), 'dd/MM/yyyy')}
+                                        </span>
+                                        <span className={cn(
+                                            "font-semibold text-sm",
+                                            isSelected ? "text-primary" : "text-foreground/80"
+                                        )}>
+                                            {c.value !== null ? `${c.value}${unit}` : '—'}
+                                        </span>
+                                    </div>
+                                )
+                            })
                         )}
                     </div>
                 </div>

@@ -148,3 +148,26 @@ export async function uploadCheckinPhoto(formData: FormData) {
         return { error: 'Upload failed' }
     }
 }
+
+export async function markNoteAsSeenAction(checkinId: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return { error: 'No autorizado' }
+
+    const { error } = await supabase
+        .from('checkins')
+        .update({
+            coach_note_seen_at: new Date().toISOString()
+        })
+        .eq('id', checkinId)
+        .is('coach_note_seen_at', null) // Only update if not already seen
+
+    if (error) {
+        console.error('Error marking note as seen:', error)
+        return { error: 'Error al marcar como visto' }
+    }
+
+    revalidatePath('/dashboard', 'layout')
+    return { success: true }
+}
