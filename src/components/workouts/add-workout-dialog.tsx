@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { PlusSignIcon, Cancel01Icon, DragDropVerticalIcon, PencilEdit02Icon, Delete02Icon, Tick01Icon, ArrowUpDownIcon, ArrowLeft01Icon, Search01Icon } from 'hugeicons-react'
+import { PlusSignIcon, Cancel01Icon, DragDropVerticalIcon, PencilEdit02Icon, Delete02Icon, Tick01Icon, ArrowUpDownIcon, ArrowLeft01Icon, Search01Icon, ArrowUp01Icon, ArrowDown01Icon } from 'hugeicons-react'
 import { ExerciseSelector } from './exercise-selector'
 import { createWorkoutAction, updateWorkoutAction } from '@/app/(dashboard)/workouts/actions'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -55,8 +55,16 @@ export function WorkoutDialog({
     onOpenChange: setControlledOpen
 }: WorkoutDialogProps) {
     const [internalOpen, setInternalOpen] = useState(false)
+    const [isMobile, setIsMobile] = useState(false)
     const router = useRouter()
     const searchParams = useSearchParams()
+
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 768)
+        checkMobile()
+        window.addEventListener('resize', checkMobile)
+        return () => window.removeEventListener('resize', checkMobile)
+    }, [])
 
     useEffect(() => {
         if (searchParams.get('new') === 'true' && !existingWorkout) {
@@ -76,7 +84,6 @@ export function WorkoutDialog({
 
     const [loading, setLoading] = useState(false)
     const [name, setName] = useState('')
-    const [description, setDescription] = useState('')
     const [exercises, setExercises] = useState<any[]>([])
 
     // Exercise Form State
@@ -87,7 +94,6 @@ export function WorkoutDialog({
         if (isOpen) {
             if (existingWorkout) {
                 setName(existingWorkout.name)
-                setDescription(existingWorkout.description || '')
                 setExercises(Array.isArray(existingWorkout.structure) ? JSON.parse(JSON.stringify(existingWorkout.structure)) : [])
             } else {
                 resetForm()
@@ -97,7 +103,6 @@ export function WorkoutDialog({
 
     const resetForm = () => {
         setName('')
-        setDescription('')
         setExercises([])
         setEditingExerciseIndex(null)
         setIsAddingNewExercise(false)
@@ -139,11 +144,10 @@ export function WorkoutDialog({
 
         let result
         if (existingWorkout) {
-            result = await updateWorkoutAction(existingWorkout.id, name, description, exercises)
+            result = await updateWorkoutAction(existingWorkout.id, name, '', exercises)
         } else {
             result = await createWorkoutAction({
                 name,
-                description,
                 exercises
             })
         }
@@ -158,6 +162,16 @@ export function WorkoutDialog({
         setLoading(false)
     }
 
+    const moveExercise = (index: number, direction: 'up' | 'down') => {
+        const newExercises = [...exercises]
+        const targetIndex = direction === 'up' ? index - 1 : index + 1
+        if (targetIndex < 0 || targetIndex >= newExercises.length) return
+
+        const [movedItem] = newExercises.splice(index, 1)
+        newExercises.splice(targetIndex, 0, movedItem)
+        setExercises(newExercises)
+    }
+
     const isEditingExercise = editingExerciseIndex !== null || isAddingNewExercise
 
     return (
@@ -169,159 +183,344 @@ export function WorkoutDialog({
                     </Button>
                 )}
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle>
-                        {isEditingExercise
-                            ? (editingExerciseIndex !== null ? 'Editar ejercicio' : 'Agregar Ejercicio')
-                            : (existingWorkout ? 'Editar Rutina de Entrenamiento' : 'Crear Rutina de Entrenamiento')
-                        }
-                    </DialogTitle>
-                </DialogHeader>
+            <DialogContent
+                showCloseButton={!isMobile}
+                className={cn(
+                    "sm:max-w-[800px] max-h-[90vh] overflow-y-auto",
+                    isMobile && "!fixed !inset-0 !top-0 !left-0 !translate-x-0 !translate-y-0 !w-full !h-full !max-w-none !max-h-none rounded-none p-0 flex flex-col border-none shadow-none z-[60]"
+                )}
+            >
+                {!isMobile && (
+                    <DialogHeader>
+                        <DialogTitle>
+                            {isEditingExercise
+                                ? (editingExerciseIndex !== null ? 'Editar ejercicio' : 'Agregar Ejercicio')
+                                : (existingWorkout ? 'Editar Rutina de Entrenamiento' : 'Crear Rutina de Entrenamiento')
+                            }
+                        </DialogTitle>
+                    </DialogHeader>
+                )}
 
-                {isEditingExercise ? (
-                    <div className="animate-in fade-in slide-in-from-right-4 duration-200">
-                        <ExerciseForm
-                            initialData={editingExerciseIndex !== null ? exercises[editingExerciseIndex] : undefined}
-                            onSave={handleSaveExercise}
-                            onCancel={() => {
-                                setEditingExerciseIndex(null)
-                                setIsAddingNewExercise(false)
-                            }}
-                        />
-                    </div>
-                ) : (
-                    <div className="space-y-6">
-                        <div className="grid grid-cols-1 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="name">Nombre de la Rutina</Label>
-                                <Input
-                                    id="name"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    placeholder="Ej: Pierna Hipertrofia A"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="description">Descripción (Opcional)</Label>
-                                <Textarea
-                                    id="description"
-                                    value={description}
-                                    onChange={(e) => setDescription(e.target.value)}
-                                    placeholder="Breve descripción del entrenamiento..."
-                                    rows={2}
-                                />
-                            </div>
-                        </div>
+                {isMobile ? (
+                    <div className="flex flex-col h-full bg-background overflow-hidden">
+                        <DialogHeader className="p-4 border-b flex-row items-center justify-between space-y-0 sticky top-0 bg-background z-20">
+                            <DialogTitle className="text-xl font-bold">
+                                {existingWorkout ? 'Editar rutina' : 'Nueva rutina'}
+                            </DialogTitle>
+                            <Button variant="ghost" size="icon" onClick={() => setOpen(false)} className="h-10 w-10">
+                                <Cancel01Icon className="h-6 w-6" />
+                            </Button>
+                        </DialogHeader>
 
-                        <div className="space-y-4">
-                            <div className="border rounded-lg overflow-hidden bg-background">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow className="bg-muted/50 hover:bg-muted/50">
-                                            <TableHead className="w-[40%] font-bold text-foreground">Ejercicio</TableHead>
-                                            <TableHead className="text-center font-bold text-foreground">Series</TableHead>
-                                            <TableHead className="text-center font-bold text-foreground">Repeticiones</TableHead>
-                                            <TableHead className="text-center font-bold text-foreground">Peso</TableHead>
-                                            <TableHead className="text-center font-bold text-foreground">Descanso</TableHead>
-                                            <TableHead className="w-[80px]"></TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {exercises.length === 0 ? (
-                                            <TableRow>
-                                                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                                                    No hay ejercicios agregados
-                                                </TableCell>
-                                            </TableRow>
+                        <div className="flex-1 overflow-y-auto p-4 space-y-6 pb-24">
+                            {/* Datos de la rutina */}
+                            <div className="space-y-4">
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="mobile-name" className="text-sm font-medium">Nombre de la rutina</Label>
+                                    <Input
+                                        id="mobile-name"
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
+                                        placeholder="Ej: Pierna Hipertrofia A"
+                                        className="h-12 text-base rounded-xl"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Ejercicios */}
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="font-bold text-lg">Ejercicios</h3>
+                                    <span className="text-sm text-muted-foreground bg-muted px-2 py-0.5 rounded-md">
+                                        {exercises.length} {exercises.length === 1 ? 'ejercicio' : 'ejercicios'}
+                                    </span>
+                                </div>
+
+                                {exercises.length === 0 && !isAddingNewExercise ? (
+                                    <div className="py-12 flex flex-col items-center justify-center border-2 border-dashed rounded-2xl gap-4 bg-muted/20">
+                                        <p className="text-muted-foreground font-medium">Todavía no agregaste ejercicios</p>
+                                        <Button
+                                            onClick={() => {
+                                                setEditingExerciseIndex(null)
+                                                setIsAddingNewExercise(true)
+                                            }}
+                                            className="rounded-full px-6 h-12"
+                                        >
+                                            ➕ Agregar ejercicio
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {exercises.map((ex, index) => (
+                                            <div key={index}>
+                                                {editingExerciseIndex === index ? (
+                                                    <div className="bg-muted/30 p-4 rounded-2xl border-2 border-primary/20 animate-in fade-in zoom-in-95 duration-200">
+                                                        <ExerciseForm
+                                                            initialData={ex}
+                                                            onSave={handleSaveExercise}
+                                                            onCancel={() => setEditingExerciseIndex(null)}
+                                                            isMobile={true}
+                                                        />
+                                                    </div>
+                                                ) : (
+                                                    <div className="bg-card p-4 rounded-2xl border shadow-sm flex flex-col gap-3 active:scale-[0.98] transition-all">
+                                                        <div className="flex justify-between items-start">
+                                                            <div className="space-y-1 flex-1 pr-2" onClick={() => {
+                                                                setIsAddingNewExercise(false)
+                                                                setEditingExerciseIndex(index)
+                                                            }}>
+                                                                <p className="font-bold text-base leading-tight">{ex.name}</p>
+                                                                <div className="flex flex-wrap gap-2 items-center">
+                                                                    <p className="text-sm text-muted-foreground font-medium">
+                                                                        {ex.category === 'Cardio' ? (
+                                                                            ex.cardio_config?.type === 'continuous' ?
+                                                                                `${ex.cardio_config.duration} min · Int. ${ex.cardio_config.intensity === 'low' ? 'Baja' :
+                                                                                    ex.cardio_config.intensity === 'medium' ? 'Media' :
+                                                                                        ex.cardio_config.intensity === 'high' ? 'Alta' : 'HIIT'
+                                                                                }` :
+                                                                                `${ex.cardio_config.rounds} rondas · ${ex.cardio_config.work_time}s/${ex.cardio_config.rest_time}s`
+                                                                        ) : (() => {
+                                                                            const setsDetail = ex.sets_detail || []
+                                                                            const count = setsDetail.length || ex.sets || 0
+                                                                            const reps = setsDetail.length > 0 ? setsDetail.map((s: any) => parseInt(s.reps) || 0) : [parseInt(ex.reps) || 0]
+                                                                            const weights = setsDetail.length > 0 ? setsDetail.map((s: any) => parseFloat(s.weight) || 0) : [parseFloat(ex.weight) || 0]
+                                                                            const rests = setsDetail.length > 0 ? setsDetail.map((s: any) => parseInt(s.rest) || 0) : [parseInt(ex.rest) || 0]
+
+                                                                            const minReps = Math.min(...reps)
+                                                                            const maxReps = Math.max(...reps)
+                                                                            const minWeight = Math.min(...weights)
+                                                                            const maxWeight = Math.max(...weights)
+                                                                            const avgRest = Math.max(...rests)
+
+                                                                            const repsStr = minReps === maxReps ? `${minReps} reps` : `${minReps}-${maxReps} reps`
+                                                                            const weightStr = minWeight === maxWeight ? `${minWeight}kg` : `${minWeight}-${maxWeight}kg`
+
+                                                                            return `${count} series · ${repsStr} · ${weightStr} · ${avgRest}s`
+                                                                        })()}
+                                                                    </p>
+                                                                    {ex.muscle_group && (
+                                                                        <span className={`px-2 py-0.5 text-[10px] uppercase tracking-wider font-bold rounded-full ${getMuscleGroupColor(ex.muscle_group)}`}>
+                                                                            {ex.muscle_group}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex gap-1 shrink-0">
+                                                                <div className="flex flex-col gap-0.5 mr-1">
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        onClick={() => moveExercise(index, 'up')}
+                                                                        disabled={index === 0}
+                                                                        className="h-7 w-9 text-muted-foreground hover:bg-muted"
+                                                                    >
+                                                                        <ArrowUp01Icon className="h-4 w-4" />
+                                                                    </Button>
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        onClick={() => moveExercise(index, 'down')}
+                                                                        disabled={index === exercises.length - 1}
+                                                                        className="h-7 w-9 text-muted-foreground hover:bg-muted"
+                                                                    >
+                                                                        <ArrowDown01Icon className="h-4 w-4" />
+                                                                    </Button>
+                                                                </div>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    onClick={() => {
+                                                                        setIsAddingNewExercise(false)
+                                                                        setEditingExerciseIndex(index)
+                                                                    }}
+                                                                    className="h-11 w-11 text-primary hover:bg-primary/10 rounded-full"
+                                                                >
+                                                                    <PencilEdit02Icon className="h-5 w-5" />
+                                                                </Button>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    onClick={() => handleRemoveExercise(index)}
+                                                                    className="h-11 w-11 text-destructive hover:bg-destructive/10 rounded-full"
+                                                                >
+                                                                    <Delete02Icon className="h-5 w-5" />
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+
+                                        {isAddingNewExercise ? (
+                                            <div className="p-4 rounded-2xl border-2 border-primary/20 bg-muted/30 animate-in slide-in-from-bottom-2 duration-200">
+                                                <ExerciseForm
+                                                    onSave={handleSaveExercise}
+                                                    onCancel={() => setIsAddingNewExercise(false)}
+                                                    isMobile={true}
+                                                />
+                                            </div>
                                         ) : (
-                                            exercises.map((ex, index) => (
-                                                <TableRow key={index} className="group hover:bg-muted/30">
-                                                    <TableCell>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="font-medium">{ex.name}</span>
-                                                            {ex.category === 'Cardio' ? (
-                                                                <span className="px-2 py-0.5 text-xs rounded-full bg-orange-100 text-orange-700">
-                                                                    Cardio
-                                                                </span>
-                                                            ) : ex.muscle_group && (
-                                                                <span className={`px-2 py-0.5 text-xs rounded-full ${getMuscleGroupColor(ex.muscle_group)}`}>
-                                                                    {ex.muscle_group}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </TableCell>
-                                                    {ex.category === 'Cardio' ? (
-                                                        <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
-                                                            {ex.cardio_config?.type === 'continuous' ? (
-                                                                <span>{ex.cardio_config?.duration} min • Intensidad {
-                                                                    ex.cardio_config?.intensity === 'low' ? 'Baja' :
-                                                                        ex.cardio_config?.intensity === 'medium' ? 'Media' :
-                                                                            ex.cardio_config?.intensity === 'high' ? 'Alta' : 'HIIT'
-                                                                }</span>
-                                                            ) : (
-                                                                <span>{ex.cardio_config?.work_time}s / {ex.cardio_config?.rest_time}s × {ex.cardio_config?.rounds} rondas</span>
-                                                            )}
-                                                        </TableCell>
-                                                    ) : (
-                                                        <>
-                                                            <TableCell className="text-center font-semibold">{ex.sets}</TableCell>
-                                                            <TableCell className="text-center">{ex.reps}</TableCell>
-                                                            <TableCell className="text-center">{ex.weight}kg</TableCell>
-                                                            <TableCell className="text-center">{ex.rest} min</TableCell>
-                                                        </>
-                                                    )}
-                                                    <TableCell>
-                                                        <div className="flex justify-end gap-1">
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="h-8 w-8 text-primary hover:text-primary hover:bg-muted"
-                                                                onClick={() => setEditingExerciseIndex(index)}
-                                                            >
-                                                                <PencilEdit02Icon className="h-4 w-4" />
-                                                            </Button>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="h-8 w-8 text-destructive hover:bg-red-50"
-                                                                onClick={() => handleRemoveExercise(index)}
-                                                            >
-                                                                <Delete02Icon className="h-4 w-4" />
-                                                            </Button>
-                                                        </div>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))
+                                            <Button
+                                                variant="outline"
+                                                className="w-full h-14 border-dashed border-2 rounded-2xl text-base font-medium flex gap-2 hover:bg-muted/50"
+                                                onClick={() => {
+                                                    setEditingExerciseIndex(null)
+                                                    setIsAddingNewExercise(true)
+                                                }}
+                                            >
+                                                <PlusSignIcon className="h-5 w-5" /> Agregar ejercicio
+                                            </Button>
                                         )}
-                                    </TableBody>
-                                </Table>
+                                    </div>
+                                )}
                             </div>
-
-                            <Button
-                                variant="outline"
-                                className="w-full py-6 border-dashed border-2 flex gap-2 text-muted-foreground hover:text-foreground"
-                                onClick={() => setIsAddingNewExercise(true)}
-                            >
-                                <PlusSignIcon className="h-5 w-5" /> Agregar nuevo ejercicio
-                            </Button>
                         </div>
 
-                        <div className="flex justify-end gap-3 pt-4 border-t">
-                            <Button variant="outline" onClick={() => setOpen(false)}>
-                                Cancelar
-                            </Button>
+                        <div className="p-4 border-t sticky bottom-0 bg-background z-20 pb-8">
                             <Button
                                 onClick={handleSubmit}
-                                disabled={loading || !name}
-                                className="bg-primary text-white hover:bg-primary/90"
+                                disabled={loading || !name || exercises.length === 0}
+                                className="w-full h-14 text-lg font-bold rounded-2xl shadow-lg active:scale-[0.99] transition-transform"
                             >
-                                {loading ? 'Guardando...' : 'Guardar Rutina'}
+                                {loading ? 'Guardando...' : 'Guardar rutina'}
                             </Button>
                         </div>
                     </div>
-                )
-                }
+                ) : (
+                    isEditingExercise ? (
+                        <div className="animate-in fade-in slide-in-from-right-4 duration-200">
+                            <ExerciseForm
+                                initialData={editingExerciseIndex !== null ? exercises[editingExerciseIndex] : undefined}
+                                onSave={handleSaveExercise}
+                                onCancel={() => {
+                                    setEditingExerciseIndex(null)
+                                    setIsAddingNewExercise(false)
+                                }}
+                            />
+                        </div>
+                    ) : (
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-1 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="name">Nombre de la Rutina</Label>
+                                    <Input
+                                        id="name"
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
+                                        placeholder="Ej: Pierna Hipertrofia A"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="border rounded-lg overflow-hidden bg-background">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow className="bg-muted/50 hover:bg-muted/50">
+                                                <TableHead className="w-[40%] font-bold text-foreground">Ejercicio</TableHead>
+                                                <TableHead className="text-center font-bold text-foreground">Series</TableHead>
+                                                <TableHead className="text-center font-bold text-foreground">Repeticiones</TableHead>
+                                                <TableHead className="text-center font-bold text-foreground">Peso</TableHead>
+                                                <TableHead className="text-center font-bold text-foreground">Descanso</TableHead>
+                                                <TableHead className="w-[80px]"></TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {exercises.length === 0 ? (
+                                                <TableRow>
+                                                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                                                        No hay ejercicios agregados
+                                                    </TableCell>
+                                                </TableRow>
+                                            ) : (
+                                                exercises.map((ex, index) => (
+                                                    <TableRow key={index} className="group hover:bg-muted/30">
+                                                        <TableCell>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="font-medium">{ex.name}</span>
+                                                                {ex.category === 'Cardio' ? (
+                                                                    <span className="px-2 py-0.5 text-xs rounded-full bg-orange-100 text-orange-700">
+                                                                        Cardio
+                                                                    </span>
+                                                                ) : ex.muscle_group && (
+                                                                    <span className={`px-2 py-0.5 text-xs rounded-full ${getMuscleGroupColor(ex.muscle_group)}`}>
+                                                                        {ex.muscle_group}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </TableCell>
+                                                        {ex.category === 'Cardio' ? (
+                                                            <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
+                                                                {ex.cardio_config?.type === 'continuous' ? (
+                                                                    <span>{ex.cardio_config?.duration} min • Intensidad {
+                                                                        ex.cardio_config?.intensity === 'low' ? 'Baja' :
+                                                                            ex.cardio_config?.intensity === 'medium' ? 'Media' :
+                                                                                ex.cardio_config?.intensity === 'high' ? 'Alta' : 'HIIT'
+                                                                    }</span>
+                                                                ) : (
+                                                                    <span>{ex.cardio_config?.work_time}s / {ex.cardio_config?.rest_time}s × {ex.cardio_config?.rounds} rondas</span>
+                                                                )}
+                                                            </TableCell>
+                                                        ) : (
+                                                            <>
+                                                                <TableCell className="text-center font-semibold">{ex.sets}</TableCell>
+                                                                <TableCell className="text-center">{ex.reps}</TableCell>
+                                                                <TableCell className="text-center">{ex.weight}kg</TableCell>
+                                                                <TableCell className="text-center">{ex.rest} min</TableCell>
+                                                            </>
+                                                        )}
+                                                        <TableCell>
+                                                            <div className="flex justify-end gap-1">
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-8 w-8 text-primary hover:text-primary hover:bg-muted"
+                                                                    onClick={() => setEditingExerciseIndex(index)}
+                                                                >
+                                                                    <PencilEdit02Icon className="h-4 w-4" />
+                                                                </Button>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-8 w-8 text-destructive hover:bg-red-50"
+                                                                    onClick={() => handleRemoveExercise(index)}
+                                                                >
+                                                                    <Delete02Icon className="h-4 w-4" />
+                                                                </Button>
+                                                            </div>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+
+                                <Button
+                                    variant="outline"
+                                    className="w-full py-6 border-dashed border-2 flex gap-2 text-muted-foreground hover:text-foreground"
+                                    onClick={() => setIsAddingNewExercise(true)}
+                                >
+                                    <PlusSignIcon className="h-5 w-5" /> Agregar nuevo ejercicio
+                                </Button>
+                            </div>
+
+                            <div className="flex justify-end gap-3 pt-4 border-t">
+                                <Button variant="outline" onClick={() => setOpen(false)}>
+                                    Cancelar
+                                </Button>
+                                <Button
+                                    onClick={handleSubmit}
+                                    disabled={loading || !name}
+                                    className="bg-primary text-white hover:bg-primary/90"
+                                >
+                                    {loading ? 'Guardando...' : 'Guardar Rutina'}
+                                </Button>
+                            </div>
+                        </div>
+                    )
+                )}
             </DialogContent >
         </Dialog >
     )
@@ -330,18 +529,20 @@ export function WorkoutDialog({
 function ExerciseForm({
     initialData,
     onSave,
-    onCancel
+    onCancel,
+    isMobile
 }: {
     initialData?: any,
     onSave: (data: any) => void,
-    onCancel: () => void
+    onCancel: () => void,
+    isMobile?: boolean
 }) {
     const [name, setName] = useState(initialData?.name || '')
     const [exerciseId, setExerciseId] = useState(initialData?.exercise_id || '')
     const [muscleGroup, setMuscleGroup] = useState(initialData?.muscle_group || '')
     const [category, setCategory] = useState(initialData?.category || '')
     const [sets, setSets] = useState<any[]>(
-        initialData?.sets_detail || [{ reps: '10', weight: '40', rest: '1' }]
+        initialData?.sets_detail || [{ reps: '10', weight: '0', rest: '60' }]
     )
 
     // Cardio config state
@@ -419,12 +620,32 @@ function ExerciseForm({
                 }
             })
         } else {
-            onSave({
-                exercise_id: exerciseId || undefined,
-                name: name,
-                muscle_group: muscleGroup || undefined,
-                sets_detail: sets
-            })
+            if (isMobile) {
+                // Validation: Ensure all sets have reps
+                if (sets.some(s => !s.reps)) {
+                    alert('Por favor, completa las repeticiones en todas las series.')
+                    return
+                }
+
+                onSave({
+                    exercise_id: exerciseId || undefined,
+                    name: name,
+                    muscle_group: muscleGroup || undefined,
+                    sets_detail: sets,
+                    // Legacy support for desktop summary (first set)
+                    sets: sets.length.toString(),
+                    reps: sets[0]?.reps || '0',
+                    weight: sets[0]?.weight || '0',
+                    rest: sets[0]?.rest || '0'
+                })
+            } else {
+                onSave({
+                    exercise_id: exerciseId || undefined,
+                    name: name,
+                    muscle_group: muscleGroup || undefined,
+                    sets_detail: sets
+                })
+            }
         }
     }
 
@@ -590,8 +811,11 @@ function ExerciseForm({
                                     key={level}
                                     type="button"
                                     variant={intensity === level ? 'default' : 'outline'}
-                                    size="sm"
-                                    className={intensity === level ? 'bg-primary text-white' : ''}
+                                    size={isMobile ? "default" : "sm"}
+                                    className={cn(
+                                        intensity === level ? 'bg-primary text-white' : '',
+                                        isMobile && "flex-1 min-w-[30%] h-11"
+                                    )}
                                     onClick={() => setIntensity(level)}
                                 >
                                     {level === 'low' && 'Baja'}
@@ -604,90 +828,182 @@ function ExerciseForm({
                     </div>
                 </div>
             ) : (
-                /* Strength Form - Original */
-                <div className="space-y-2">
-                    <Label className="block mb-2">Series</Label>
-                    <div className="border rounded-md overflow-hidden bg-background">
-                        <Table>
-                            <TableHeader>
-                                <TableRow className="bg-muted/50 hover:bg-muted/50">
-                                    <TableHead className="w-[60px]">Series</TableHead>
-                                    <TableHead className="text-center">Repeticiones</TableHead>
-                                    <TableHead className="text-center">Peso</TableHead>
-                                    <TableHead className="text-center">Descanso</TableHead>
-                                    <TableHead className="w-[50px]"></TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {sets.map((set, index) => (
-                                    <TableRow key={index}>
-                                        <TableCell className="font-medium text-center">{index + 1}</TableCell>
-                                        <TableCell className="text-center">
-                                            <div className="flex items-center justify-center">
-                                                <Input
-                                                    className="h-8 w-16 text-center border rounded-md bg-muted/30"
-                                                    value={set.reps}
-                                                    onChange={(e) => updateSet(index, 'reps', e.target.value)}
-                                                />
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            <div className="flex items-center justify-center gap-1">
-                                                <Input
-                                                    className="h-8 w-16 text-center border rounded-md bg-muted/30"
-                                                    value={set.weight}
-                                                    onChange={(e) => updateSet(index, 'weight', e.target.value)}
-                                                />
-                                                <span className="text-sm text-muted-foreground">kg</span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            <div className="flex items-center justify-center gap-1">
-                                                <Input
-                                                    className="h-8 w-16 text-center border rounded-md bg-muted/30"
-                                                    value={set.rest}
-                                                    onChange={(e) => updateSet(index, 'rest', e.target.value)}
-                                                />
-                                                <span className="text-sm text-muted-foreground">min</span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex justify-end gap-1">
+                /* Strength Form */
+                isMobile ? (
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <Label className="text-sm font-bold uppercase text-muted-foreground tracking-wider">Series</Label>
+                            <span className="text-xs text-muted-foreground">{sets.length} total</span>
+                        </div>
+
+                        {!name ? (
+                            <div className="py-8 px-4 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center text-center gap-2 bg-muted/5">
+                                <Search01Icon className="h-8 w-8 text-muted-foreground/40" />
+                                <p className="text-sm text-muted-foreground">Elegí un ejercicio arriba para<br />empezar a cargar las series</p>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="space-y-3">
+                                    {sets.map((set, index) => (
+                                        <div key={index} className="bg-card border rounded-2xl p-4 shadow-sm animate-in slide-in-from-right-2 duration-200">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <span className="text-sm font-bold bg-muted px-2.5 py-1 rounded-lg">Serie {index + 1}</span>
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    className="h-8 w-8 text-destructive hover:bg-red-50"
                                                     onClick={() => handleRemoveSet(index)}
                                                     disabled={sets.length === 1}
+                                                    className="h-9 w-9 text-destructive hover:bg-destructive/10 rounded-full"
                                                 >
-                                                    <Delete02Icon className="h-4 w-4" />
+                                                    <Delete02Icon className="h-4.5 w-4.5" />
                                                 </Button>
                                             </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                            <div className="grid grid-cols-3 gap-3">
+                                                <div className="space-y-1">
+                                                    <Label className="text-[10px] font-bold uppercase text-muted-foreground opacity-70">Reps</Label>
+                                                    <Input
+                                                        type="number"
+                                                        inputMode="numeric"
+                                                        className="h-11 text-base rounded-xl"
+                                                        value={set.reps}
+                                                        onChange={(e) => updateSet(index, 'reps', e.target.value)}
+                                                    />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <Label className="text-[10px] font-bold uppercase text-muted-foreground opacity-70">Peso (kg)</Label>
+                                                    <Input
+                                                        type="number"
+                                                        inputMode="decimal"
+                                                        className="h-11 text-base rounded-xl"
+                                                        value={set.weight}
+                                                        onChange={(e) => updateSet(index, 'weight', e.target.value)}
+                                                    />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <Label className="text-[10px] font-bold uppercase text-muted-foreground opacity-70">Desc. (s)</Label>
+                                                    <Input
+                                                        type="number"
+                                                        inputMode="numeric"
+                                                        className="h-11 text-base rounded-xl"
+                                                        value={set.rest}
+                                                        onChange={(e) => updateSet(index, 'rest', e.target.value)}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <Button
+                                    variant="outline"
+                                    className="w-full h-12 border-dashed border-2 rounded-xl text-sm font-bold flex gap-2 hover:bg-muted/50 transition-all active:scale-[0.98]"
+                                    onClick={handleAddSet}
+                                >
+                                    <PlusSignIcon className="h-5 w-5" /> Agregar serie
+                                </Button>
+                            </>
+                        )}
                     </div>
-                    <Button variant="outline" className="w-full mt-2" onClick={handleAddSet}>
-                        <PlusSignIcon className="h-4 w-4 mr-2" /> Agregar serie
-                    </Button>
-                </div>
+                ) : (
+                    /* Strength Form - Original (Desktop) */
+                    <div className="space-y-2">
+                        <Label className="block mb-2">Series</Label>
+                        {!name && (
+                            <div className="p-4 mb-2 text-center border-2 border-dashed rounded-lg bg-muted/5 text-sm text-muted-foreground">
+                                Selecciona un ejercicio para gestionar las series
+                            </div>
+                        )}
+                        <div className={cn("border rounded-md overflow-hidden bg-background", !name && "opacity-50 pointer-events-none")}>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow className="bg-muted/50 hover:bg-muted/50">
+                                        <TableHead className="w-[60px]">Series</TableHead>
+                                        <TableHead className="text-center">Repeticiones</TableHead>
+                                        <TableHead className="text-center">Peso</TableHead>
+                                        <TableHead className="text-center">Descanso</TableHead>
+                                        <TableHead className="w-[50px]"></TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {sets.map((set, index) => (
+                                        <TableRow key={index}>
+                                            <TableCell className="font-medium text-center">{index + 1}</TableCell>
+                                            <TableCell className="text-center">
+                                                <div className="flex items-center justify-center">
+                                                    <Input
+                                                        className="h-8 w-16 text-center border rounded-md bg-muted/30"
+                                                        value={set.reps}
+                                                        onChange={(e) => updateSet(index, 'reps', e.target.value)}
+                                                    />
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-center">
+                                                <div className="flex items-center justify-center gap-1">
+                                                    <Input
+                                                        className="h-8 w-16 text-center border rounded-md bg-muted/30"
+                                                        value={set.weight}
+                                                        onChange={(e) => updateSet(index, 'weight', e.target.value)}
+                                                    />
+                                                    <span className="text-sm text-muted-foreground">kg</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-center">
+                                                <div className="flex items-center justify-center gap-1">
+                                                    <Input
+                                                        className="h-8 w-16 text-center border rounded-md bg-muted/30"
+                                                        value={set.rest}
+                                                        onChange={(e) => updateSet(index, 'rest', e.target.value)}
+                                                    />
+                                                    <span className="text-sm text-muted-foreground">min</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex justify-end gap-1">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 text-destructive hover:bg-red-50"
+                                                        onClick={() => handleRemoveSet(index)}
+                                                        disabled={sets.length === 1}
+                                                    >
+                                                        <Delete02Icon className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
+                        <Button
+                            variant="outline"
+                            className="w-full mt-2"
+                            onClick={handleAddSet}
+                            disabled={!name}
+                        >
+                            <PlusSignIcon className="h-4 w-4 mr-2" /> Agregar serie
+                        </Button>
+                    </div>
+                )
             )}
 
-            <div className="flex justify-between items-center pt-4">
+            <div className="flex gap-3 pt-6">
                 <Button
                     variant="outline"
                     onClick={onCancel}
+                    className={cn(isMobile ? "flex-1 h-12 rounded-xl" : "")}
                 >
-                    Atras
+                    {isMobile ? "Cancelar" : "Atras"}
                 </Button>
                 <Button
                     onClick={handleSubmit}
                     disabled={!name}
-                    className="bg-primary hover:bg-primary/90 text-white"
+                    className={cn(
+                        "bg-primary hover:bg-primary/90 text-white shadow-md active:scale-[0.98] transition-all",
+                        isMobile ? "flex-[2] h-12 rounded-xl font-bold" : ""
+                    )}
                 >
-                    {initialData ? 'Guardar cambios' : 'Agregar ejercicio'}
+                    {isMobile ? "Guardar ejercicio" : (initialData ? 'Guardar cambios' : 'Agregar ejercicio')}
                 </Button>
             </div>
         </div>
