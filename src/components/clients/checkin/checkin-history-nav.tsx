@@ -109,7 +109,7 @@ export function CheckinHistoryNav({ checkins, selectedId, comparisonId, onSelect
     return (
         <>
             {/* Mobile Timeline View */}
-            <div className="lg:hidden flex flex-col gap-2">
+            <div className="lg:hidden flex flex-col gap-2 overflow-hidden">
                 <div className="flex items-center justify-between px-1">
                     <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">Línea de tiempo</h3>
                     <div className="flex gap-1">

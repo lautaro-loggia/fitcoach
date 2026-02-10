@@ -62,7 +62,8 @@ export async function inviteClient(prevState: any, formData: FormData) {
             data: {
                 full_name: fullName,
                 trainer_name: coachName,
-                role: 'client' // Optional meta
+                role: 'client',
+                needs_password: true
             }
         })
 

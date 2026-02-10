@@ -16,7 +16,8 @@ import {
     Coffee,
     ArrowRight,
     Footprints,
-    MessageSquare
+    MessageSquare,
+    KeyRound
 } from 'lucide-react'
 import Link from 'next/link'
 import { format } from 'date-fns'
@@ -165,6 +166,30 @@ export default async function ClientDashboard() {
 
     return (
         <div className="p-4 space-y-6 pb-6 max-w-md mx-auto">
+            {/* 0. Password Requirement Banner */}
+            {user.user_metadata?.needs_password !== false && user.user_metadata?.role === 'client' && (
+                <Card className="border-none shadow-md bg-amber-50 border-l-4 border-l-amber-500 overflow-hidden relative">
+                    <div className="p-4 flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 shrink-0">
+                                <KeyRound className="h-5 w-5" />
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-bold text-amber-900 leading-tight">Establece tu contraseña</h4>
+                                <p className="text-[11px] text-amber-700 mt-0.5 leading-tight">Evitá perder el acceso a tu cuenta en otros dispositivos.</p>
+                            </div>
+                        </div>
+                        <UpdatePasswordDialog
+                            trigger={
+                                <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold h-8 px-3 shrink-0">
+                                    Configurar
+                                </Button>
+                            }
+                        />
+                    </div>
+                </Card>
+            )}
+
             {/* 1. Header Compacto */}
             <div className="flex justify-between items-center py-1">
                 <div className="flex items-center gap-3">

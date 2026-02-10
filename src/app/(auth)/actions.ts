@@ -53,6 +53,7 @@ export async function signup(formData: FormData) {
         options: {
             data: {
                 full_name: fullName,
+                needs_password: false
             },
             emailRedirectTo: `${origin}/auth/callback`,
         },
@@ -128,7 +129,8 @@ export async function updatePassword(formData: FormData) {
     }
 
     const { error } = await supabase.auth.updateUser({
-        password: password
+        password: password,
+        data: { needs_password: false }
     })
 
     if (error) {
