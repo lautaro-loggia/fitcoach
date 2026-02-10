@@ -74,8 +74,9 @@ export function AddClientDialog({ defaultOpen = false }: AddClientDialogProps) {
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogTrigger asChild>
-                <Button className="bg-primary hover:bg-primary/90 text-white shadow-md">
-                    <PlusSignIcon className="mr-2 h-4 w-4" /> Nuevo asesorado
+                <Button className="bg-primary hover:bg-primary/90 text-white shadow-md px-3 md:px-4">
+                    <PlusSignIcon className="md:mr-2 h-4 w-4" />
+                    <span className="hidden md:inline">Nuevo asesorado</span>
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">

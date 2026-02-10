@@ -22,7 +22,7 @@ import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 
 const navigation = [
     { name: 'Inicio', href: '/', icon: Home01Icon },
-    { name: 'Mis asesorados', href: '/clients', icon: UserGroupIcon },
+    { name: 'Asesorados', href: '/clients', icon: UserGroupIcon },
     { name: 'Recetas', href: '/recipes', icon: KitchenUtensilsIcon },
     { name: 'Planes de entrenamiento', href: '/workouts', icon: Dumbbell01Icon },
     { name: 'Pagos y Planes', href: '/pagos', icon: CreditCardIcon },

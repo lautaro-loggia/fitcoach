@@ -43,65 +43,66 @@ export function AdvisedTopBar({ client, allClients = [], activeTab }: AdvisedTop
     ]
 
     return (
-        <header className="sticky top-0 z-40 w-full border-b bg-white h-16 md:h-[72px]">
-            <div className="flex h-full items-center px-4 md:px-6 gap-2 md:gap-4">
-                {/* 1. Back Button & Breadcrumb */}
-                <div className="flex items-center gap-1 md:gap-2 shrink-0">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-9 w-9 text-muted-foreground hover:bg-muted"
-                        onClick={() => router.push('/clients')}
-                    >
-                        <ArrowLeft02Icon className="h-5 w-5" />
-                    </Button>
-                </div>
-
-                {/* 2. Identity Section */}
-                <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1 md:flex-initial">
-                    <ClientAvatar
-                        name={client.full_name}
-                        avatarUrl={client.avatar_url}
-                        size="sm"
-                    />
-                    <div className="flex flex-col md:flex-row md:items-center gap-0 md:gap-2 min-w-0">
-                        {allClients.length > 0 ? (
-                            <Select
-                                defaultValue={client.id}
-                                onValueChange={(value) => router.push(`/clients/${value}?tab=${activeTab}`)}
-                            >
-                                <SelectTrigger className="w-auto h-auto p-0 border-0 font-bold tracking-tight bg-transparent shadow-none hover:bg-transparent focus:ring-0 gap-1 px-1">
-                                    <SelectValue placeholder={client.full_name} />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {allClients.map((c) => (
-                                        <SelectItem key={c.id} value={c.id}>
-                                            {c.full_name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        ) : (
-                            <span className="font-bold text-sm md:text-base text-gray-900 truncate">
-                                {client.full_name}
-                            </span>
-                        )}
-                        <Badge
-                            variant={client.status === 'active' ? 'outline' : 'secondary'}
-                            className={cn(
-                                "text-[9px] md:text-[10px] uppercase tracking-wider h-4 md:h-5 px-1 md:px-1.5 w-fit",
-                                client.status === 'active'
-                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                    : "bg-gray-100 text-gray-500 border-gray-200"
-                            )}
+        <header className="sticky top-0 z-40 w-full border-b bg-white/80 backdrop-blur-md">
+            <div className="flex flex-col md:flex-row md:h-[72px] md:items-center px-4 md:px-6 gap-y-2 py-2 md:py-0">
+                {/* Mobile & Desktop Row 1: Identity & Back */}
+                <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
+                    <div className="flex items-center gap-1 shrink-0">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-10 w-10 -ml-2 text-muted-foreground hover:bg-muted rounded-full"
+                            onClick={() => router.push('/clients')}
                         >
-                            {client.status === 'active' ? 'ACTIVO' : 'INACTIVO'}
-                        </Badge>
+                            <ArrowLeft02Icon className="h-5 w-5" />
+                        </Button>
+                    </div>
+
+                    <div className="flex items-center gap-3 min-w-0">
+                        <ClientAvatar
+                            name={client.full_name}
+                            avatarUrl={client.avatar_url}
+                            size="sm"
+                        />
+                        <div className="flex items-baseline md:items-center gap-1.5 md:gap-3 min-w-0">
+                            {allClients.length > 0 ? (
+                                <Select
+                                    defaultValue={client.id}
+                                    onValueChange={(value) => router.push(`/clients/${value}?tab=${activeTab}`)}
+                                >
+                                    <SelectTrigger className="w-auto h-auto p-0 border-0 font-bold tracking-tight bg-transparent shadow-none hover:bg-transparent focus:ring-0 gap-1 px-1 text-sm md:text-base">
+                                        <SelectValue placeholder={client.full_name} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {allClients.map((c) => (
+                                            <SelectItem key={c.id} value={c.id}>
+                                                {c.full_name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            ) : (
+                                <span className="font-bold text-sm md:text-base text-gray-900 truncate">
+                                    {client.full_name}
+                                </span>
+                            )}
+                            <Badge
+                                variant={client.status === 'active' ? 'outline' : 'secondary'}
+                                className={cn(
+                                    "text-[8px] md:text-[10px] uppercase font-bold tracking-widest h-4 md:h-5 px-1.5 w-fit rounded-full",
+                                    client.status === 'active'
+                                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                        : "bg-gray-50 text-gray-500 border-gray-200"
+                                )}
+                            >
+                                {client.status === 'active' ? 'ACTIVO' : 'INACTIVO'}
+                            </Badge>
+                        </div>
                     </div>
                 </div>
 
-                {/* 3. Navigation Tabs (Aligned to the right on desktop, scrollable on mobile) */}
-                <nav className="flex items-center ml-auto gap-0.5 md:gap-1 overflow-x-auto no-scrollbar scroll-smooth py-1">
+                {/* Mobile Row 2 / Desktop End: Navigation Tabs */}
+                <nav className="flex items-center overflow-x-auto no-scrollbar scroll-smooth gap-1 md:gap-1.5 -mx-4 px-4 md:mx-0 md:px-0 md:ml-auto">
                     {tabs.map((tab) => {
                         const isActive = activeTab === tab.id
                         return (
@@ -109,10 +110,10 @@ export function AdvisedTopBar({ client, allClients = [], activeTab }: AdvisedTop
                                 key={tab.id}
                                 href={tab.href}
                                 className={cn(
-                                    "px-3 md:px-4 py-1.5 md:py-2 text-xs md:text-sm font-semibold rounded-full transition-all whitespace-nowrap",
+                                    "px-4 md:px-5 py-2 md:py-2.5 text-xs md:text-sm font-semibold rounded-full transition-all whitespace-nowrap",
                                     isActive
-                                        ? "bg-gray-900 text-white"
-                                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                        ? "bg-gray-900 text-white shadow-sm"
+                                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                                 )}
                             >
                                 {tab.label}

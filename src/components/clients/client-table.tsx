@@ -323,7 +323,7 @@ export function ClientTable({ clients, presentialWorkouts, defaultOpenNew, hideH
                 </div>
                 <div className="space-y-2">
                     <h3 className="font-semibold text-lg">No tienes asesorados aún</h3>
-                    <p className="text-muted-foreground max-w-sm">Comenzá agregando a tu primer cliente para gestionar sus entrenamientos.</p>
+                    <p className="text-muted-foreground max-w-sm">Comenzá agregando a tu primer asesorado para gestionar sus entrenamientos.</p>
                 </div>
                 <AddClientDialog defaultOpen={defaultOpenNew} />
             </div>
@@ -386,22 +386,22 @@ export function ClientTable({ clients, presentialWorkouts, defaultOpenNew, hideH
         <div className="flex flex-col">
             {!hideHeader && (
                 <DashboardTopBar
-                    title="Mis Asesorados"
-                    subtitle="Gestioná tus clientes, sus planes y seguimiento"
+                    title="Asesorados"
+                    subtitle="Gestioná tus asesorados, sus planes y seguimiento"
                 >
-                    <div className="flex items-center gap-2 md:gap-4">
+                    <div className="flex items-center gap-1.5 md:gap-4">
                         {/* Search in Header */}
-                        <div className="relative w-48 md:w-80">
-                            <Search01Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <div className="relative w-28 md:w-80">
+                            <Search01Icon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                             <Input
                                 placeholder="Buscar..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-10 pr-10 h-10 text-sm border-gray-200 focus:border-primary rounded-xl"
+                                className="pl-8 pr-8 h-9 text-xs border-gray-200 focus:border-primary rounded-xl"
                             />
                             {searchQuery && (
-                                <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                                    <Cancel01Icon className="h-4 w-4" />
+                                <button onClick={() => setSearchQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                                    <Cancel01Icon className="h-3.5 w-3.5" />
                                 </button>
                             )}
                         </div>
@@ -595,31 +595,79 @@ export function ClientTable({ clients, presentialWorkouts, defaultOpenNew, hideH
                             </Table>
                         </div>
 
-                        {/* Mobile Cards (Simplified for consistency, though user asked for Table improvements, Mobile usually falls back to cards) */}
-                        <div className="md:hidden space-y-3">
+                        {/* Mobile Cards (Redesigned) */}
+                        <div className="md:hidden space-y-4">
                             {filteredClients.map((client) => {
                                 const checkinInfo = getCheckinStatus(client);
                                 return (
-                                    <div key={client.id} className="flex flex-col gap-3 p-4 border rounded-xl bg-white shadow-sm cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => handleRowClick(client.id)}>
-                                        <div className="flex justify-between items-start">
-                                            <div className="flex items-center gap-3">
-                                                <ClientAvatar name={client.full_name} avatarUrl={client.avatar_url} size="md" />
-                                                <div>
-                                                    <p className="font-medium">{client.full_name}</p>
-                                                    <p className="text-sm text-muted-foreground">{getGoalLabel(client.main_goal)}</p>
-                                                </div>
-                                            </div>
+                                    <div
+                                        key={client.id}
+                                        className="group relative flex flex-col bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all active:scale-[0.99] overflow-hidden"
+                                        onClick={() => handleRowClick(client.id)}
+                                    >
+                                        <div className="absolute top-4 right-4 z-10">
                                             <ActionMenu client={client} />
                                         </div>
-                                        <div className="flex items-center justify-between text-sm">
-                                            <div className="flex items-center gap-2">
-                                                <div className={`h-2.5 w-2.5 rounded-full ${client.status === 'active' ? 'bg-green-500' : 'bg-gray-300'}`} />
-                                                <span>{client.status === 'active' ? 'Activo' : 'Inactivo'}</span>
+
+                                        <div className="p-5 flex flex-col gap-4">
+                                            {/* Header: Avatar & Name */}
+                                            <div className="flex items-start gap-4 pr-8">
+                                                <ClientAvatar name={client.full_name} avatarUrl={client.avatar_url} size="lg" className="h-14 w-14 ring-2 ring-gray-50" />
+                                                <div className="flex flex-col min-w-0">
+                                                    <h3 className="font-bold text-lg text-gray-900 leading-tight truncate">
+                                                        {client.full_name}
+                                                    </h3>
+                                                    <p className="text-sm text-muted-foreground truncate mb-1">
+                                                        {client.email || 'Sin email'}
+                                                    </p>
+                                                    <div className="flex flex-wrap gap-2 mt-1">
+                                                        <Badge variant="outline" className={cn(
+                                                            "px-2 py-0.5 h-5 text-[10px] font-black uppercase tracking-wider border-0",
+                                                            client.status === 'active' ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-500"
+                                                        )}>
+                                                            {client.status === 'active' ? 'Activo' : 'Inactivo'}
+                                                        </Badge>
+                                                        <Badge variant="outline" className="px-2 py-0.5 h-5 text-[10px] font-black uppercase tracking-wider border-gray-200 text-gray-600">
+                                                            {getGoalLabel(client.main_goal)}
+                                                        </Badge>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <span className={`${checkinInfo.color}`}>
-                                                Check-in: {checkinInfo.labels}
-                                            </span>
+
+                                            {/* Divider */}
+                                            <div className="h-px bg-gray-50 w-full" />
+
+                                            {/* Stats / Check-in */}
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Próximo Check-in</span>
+                                                    <div className="flex items-center gap-2 mt-0.5">
+                                                        <Calendar03Icon className={cn("h-4 w-4", checkinInfo.color)} />
+                                                        <span className={cn("text-sm font-bold", checkinInfo.color)}>
+                                                            {checkinInfo.labels}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-8 rounded-full text-xs font-semibold hover:bg-primary/5 hover:text-primary -mr-2"
+                                                >
+                                                    Ver Perfil
+                                                    <ArrowDown01Icon className="ml-1 h-3 w-3 -rotate-90" />
+                                                </Button>
+                                            </div>
                                         </div>
+
+                                        {/* Status Indicator Bar */}
+                                        <div className={cn(
+                                            "absolute left-0 top-0 bottom-0 w-1",
+                                            checkinInfo.status === 'overdue' ? "bg-red-500" :
+                                                checkinInfo.status === 'due_soon' ? "bg-amber-500" :
+                                                    checkinInfo.status === 'pending_review' ? "bg-orange-500" :
+                                                        "bg-transparent"
+                                        )} />
                                     </div>
                                 )
                             })}

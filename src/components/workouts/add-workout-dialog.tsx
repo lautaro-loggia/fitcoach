@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { PlusSignIcon, Cancel01Icon, DragDropVerticalIcon, PencilEdit02Icon, Delete02Icon, Tick01Icon, ArrowUpDownIcon, ArrowLeft01Icon, Search01Icon, ArrowUp01Icon, ArrowDown01Icon } from 'hugeicons-react'
+import { PlusSignIcon, Cancel01Icon, DragDropVerticalIcon, PencilEdit02Icon, Delete02Icon, Tick01Icon, ArrowUpDownIcon, ArrowLeft01Icon, Search01Icon, ArrowUp01Icon, ArrowDown01Icon, MinusSignIcon } from 'hugeicons-react'
 import { ExerciseSelector } from './exercise-selector'
 import { createWorkoutAction, updateWorkoutAction } from '@/app/(dashboard)/workouts/actions'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -16,6 +16,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { createClient } from '@/lib/supabase/client'
 import { cn, normalizeText } from '@/lib/utils'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerClose } from '@/components/ui/drawer'
 
 
 
@@ -213,6 +214,38 @@ export function WorkoutDialog({
                         </DialogHeader>
 
                         <div className="flex-1 overflow-y-auto p-4 space-y-6 pb-24">
+                            {/* Drawer for Exercise Form (Mobile Only) */}
+                            {isMobile && (
+                                <Drawer
+                                    open={isEditingExercise}
+                                    onOpenChange={(open) => {
+                                        if (!open) {
+                                            setEditingExerciseIndex(null)
+                                            setIsAddingNewExercise(false)
+                                        }
+                                    }}
+                                >
+                                    <DrawerContent className="h-[90vh] flex flex-col z-[70]">
+                                        <DrawerHeader className="border-b shrink-0">
+                                            <DrawerTitle>
+                                                {editingExerciseIndex !== null ? 'Editar ejercicio' : 'Agregar ejercicio'}
+                                            </DrawerTitle>
+                                        </DrawerHeader>
+                                        <div className="flex-1 overflow-y-auto p-4">
+                                            <ExerciseForm
+                                                initialData={editingExerciseIndex !== null ? exercises[editingExerciseIndex] : undefined}
+                                                onSave={handleSaveExercise}
+                                                onCancel={() => {
+                                                    setEditingExerciseIndex(null)
+                                                    setIsAddingNewExercise(false)
+                                                }}
+                                                isMobile={true}
+                                            />
+                                        </div>
+                                    </DrawerContent>
+                                </Drawer>
+                            )}
+
                             {/* Datos de la rutina */}
                             <div className="space-y-4">
                                 <div className="space-y-1.5">
@@ -253,125 +286,106 @@ export function WorkoutDialog({
                                     <div className="space-y-3">
                                         {exercises.map((ex, index) => (
                                             <div key={index}>
-                                                {editingExerciseIndex === index ? (
-                                                    <div className="bg-muted/30 p-4 rounded-2xl border-2 border-primary/20 animate-in fade-in zoom-in-95 duration-200">
-                                                        <ExerciseForm
-                                                            initialData={ex}
-                                                            onSave={handleSaveExercise}
-                                                            onCancel={() => setEditingExerciseIndex(null)}
-                                                            isMobile={true}
-                                                        />
-                                                    </div>
-                                                ) : (
-                                                    <div className="bg-card p-4 rounded-2xl border shadow-sm flex flex-col gap-3 active:scale-[0.98] transition-all">
-                                                        <div className="flex justify-between items-start">
-                                                            <div className="space-y-1 flex-1 pr-2" onClick={() => {
-                                                                setIsAddingNewExercise(false)
-                                                                setEditingExerciseIndex(index)
-                                                            }}>
-                                                                <p className="font-bold text-base leading-tight">{ex.name}</p>
-                                                                <div className="flex flex-wrap gap-2 items-center">
-                                                                    <p className="text-sm text-muted-foreground font-medium">
-                                                                        {ex.category === 'Cardio' ? (
-                                                                            ex.cardio_config?.type === 'continuous' ?
-                                                                                `${ex.cardio_config.duration} min · Int. ${ex.cardio_config.intensity === 'low' ? 'Baja' :
-                                                                                    ex.cardio_config.intensity === 'medium' ? 'Media' :
-                                                                                        ex.cardio_config.intensity === 'high' ? 'Alta' : 'HIIT'
-                                                                                }` :
-                                                                                `${ex.cardio_config.rounds} rondas · ${ex.cardio_config.work_time}s/${ex.cardio_config.rest_time}s`
-                                                                        ) : (() => {
-                                                                            const setsDetail = ex.sets_detail || []
-                                                                            const count = setsDetail.length || ex.sets || 0
-                                                                            const reps = setsDetail.length > 0 ? setsDetail.map((s: any) => parseInt(s.reps) || 0) : [parseInt(ex.reps) || 0]
-                                                                            const weights = setsDetail.length > 0 ? setsDetail.map((s: any) => parseFloat(s.weight) || 0) : [parseFloat(ex.weight) || 0]
-                                                                            const rests = setsDetail.length > 0 ? setsDetail.map((s: any) => parseInt(s.rest) || 0) : [parseInt(ex.rest) || 0]
+                                                {/* Mobile: Exercise rendering is handled by the list below, editing via Drawer */}
+                                                <div className="bg-card p-4 rounded-2xl border shadow-sm flex flex-col gap-3 active:scale-[0.98] transition-all">
+                                                    <div className="flex justify-between items-start">
+                                                        <div className="space-y-1 flex-1 pr-2" onClick={() => {
+                                                            setIsAddingNewExercise(false)
+                                                            setEditingExerciseIndex(index)
+                                                        }}>
+                                                            <p className="font-bold text-base leading-tight">{ex.name}</p>
+                                                            <div className="flex flex-wrap gap-2 items-center">
+                                                                <p className="text-sm text-muted-foreground font-medium">
+                                                                    {ex.category === 'Cardio' ? (
+                                                                        ex.cardio_config?.type === 'continuous' ?
+                                                                            `${ex.cardio_config.duration} min · Int. ${ex.cardio_config.intensity === 'low' ? 'Baja' :
+                                                                                ex.cardio_config.intensity === 'medium' ? 'Media' :
+                                                                                    ex.cardio_config.intensity === 'high' ? 'Alta' : 'HIIT'
+                                                                            }` :
+                                                                            `${ex.cardio_config.rounds} rondas · ${ex.cardio_config.work_time}s/${ex.cardio_config.rest_time}s`
+                                                                    ) : (() => {
+                                                                        const setsDetail = ex.sets_detail || []
+                                                                        const count = setsDetail.length || ex.sets || 0
+                                                                        const reps = setsDetail.length > 0 ? setsDetail.map((s: any) => parseInt(s.reps) || 0) : [parseInt(ex.reps) || 0]
+                                                                        const weights = setsDetail.length > 0 ? setsDetail.map((s: any) => parseFloat(s.weight) || 0) : [parseFloat(ex.weight) || 0]
+                                                                        const rests = setsDetail.length > 0 ? setsDetail.map((s: any) => parseInt(s.rest) || 0) : [parseInt(ex.rest) || 0]
 
-                                                                            const minReps = Math.min(...reps)
-                                                                            const maxReps = Math.max(...reps)
-                                                                            const minWeight = Math.min(...weights)
-                                                                            const maxWeight = Math.max(...weights)
-                                                                            const avgRest = Math.max(...rests)
+                                                                        const minReps = Math.min(...reps)
+                                                                        const maxReps = Math.max(...reps)
+                                                                        const minWeight = Math.min(...weights)
+                                                                        const maxWeight = Math.max(...weights)
+                                                                        const avgRest = Math.max(...rests)
 
-                                                                            const repsStr = minReps === maxReps ? `${minReps} reps` : `${minReps}-${maxReps} reps`
-                                                                            const weightStr = minWeight === maxWeight ? `${minWeight}kg` : `${minWeight}-${maxWeight}kg`
+                                                                        const repsStr = minReps === maxReps ? `${minReps} reps` : `${minReps}-${maxReps} reps`
+                                                                        const weightStr = minWeight === maxWeight ? `${minWeight}kg` : `${minWeight}-${maxWeight}kg`
 
-                                                                            return `${count} series · ${repsStr} · ${weightStr} · ${avgRest}s`
-                                                                        })()}
-                                                                    </p>
-                                                                    {ex.muscle_group && (
-                                                                        <span className={`px-2 py-0.5 text-[10px] uppercase tracking-wider font-bold rounded-full ${getMuscleGroupColor(ex.muscle_group)}`}>
-                                                                            {ex.muscle_group}
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                            <div className="flex gap-1 shrink-0">
-                                                                <div className="flex flex-col gap-0.5 mr-1">
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="icon"
-                                                                        onClick={() => moveExercise(index, 'up')}
-                                                                        disabled={index === 0}
-                                                                        className="h-7 w-9 text-muted-foreground hover:bg-muted"
-                                                                    >
-                                                                        <ArrowUp01Icon className="h-4 w-4" />
-                                                                    </Button>
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="icon"
-                                                                        onClick={() => moveExercise(index, 'down')}
-                                                                        disabled={index === exercises.length - 1}
-                                                                        className="h-7 w-9 text-muted-foreground hover:bg-muted"
-                                                                    >
-                                                                        <ArrowDown01Icon className="h-4 w-4" />
-                                                                    </Button>
-                                                                </div>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    onClick={() => {
-                                                                        setIsAddingNewExercise(false)
-                                                                        setEditingExerciseIndex(index)
-                                                                    }}
-                                                                    className="h-11 w-11 text-primary hover:bg-primary/10 rounded-full"
-                                                                >
-                                                                    <PencilEdit02Icon className="h-5 w-5" />
-                                                                </Button>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    onClick={() => handleRemoveExercise(index)}
-                                                                    className="h-11 w-11 text-destructive hover:bg-destructive/10 rounded-full"
-                                                                >
-                                                                    <Delete02Icon className="h-5 w-5" />
-                                                                </Button>
+                                                                        return `${count} series · ${repsStr} · ${weightStr} · ${avgRest}s`
+                                                                    })()}
+                                                                </p>
+                                                                {ex.muscle_group && (
+                                                                    <span className={`px-2 py-0.5 text-[10px] uppercase tracking-wider font-bold rounded-full ${getMuscleGroupColor(ex.muscle_group)}`}>
+                                                                        {ex.muscle_group}
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                         </div>
+                                                        <div className="flex gap-1 shrink-0">
+                                                            <div className="flex flex-col gap-0.5 mr-1">
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    onClick={() => moveExercise(index, 'up')}
+                                                                    disabled={index === 0}
+                                                                    className="h-7 w-9 text-muted-foreground hover:bg-muted"
+                                                                >
+                                                                    <ArrowUp01Icon className="h-4 w-4" />
+                                                                </Button>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    onClick={() => moveExercise(index, 'down')}
+                                                                    disabled={index === exercises.length - 1}
+                                                                    className="h-7 w-9 text-muted-foreground hover:bg-muted"
+                                                                >
+                                                                    <ArrowDown01Icon className="h-4 w-4" />
+                                                                </Button>
+                                                            </div>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() => {
+                                                                    setIsAddingNewExercise(false)
+                                                                    setEditingExerciseIndex(index)
+                                                                }}
+                                                                className="h-11 w-11 text-primary hover:bg-primary/10 rounded-full"
+                                                            >
+                                                                <PencilEdit02Icon className="h-5 w-5" />
+                                                            </Button>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() => handleRemoveExercise(index)}
+                                                                className="h-11 w-11 text-destructive hover:bg-destructive/10 rounded-full"
+                                                            >
+                                                                <Delete02Icon className="h-5 w-5" />
+                                                            </Button>
+                                                        </div>
                                                     </div>
-                                                )}
+                                                </div>
                                             </div>
                                         ))}
 
-                                        {isAddingNewExercise ? (
-                                            <div className="p-4 rounded-2xl border-2 border-primary/20 bg-muted/30 animate-in slide-in-from-bottom-2 duration-200">
-                                                <ExerciseForm
-                                                    onSave={handleSaveExercise}
-                                                    onCancel={() => setIsAddingNewExercise(false)}
-                                                    isMobile={true}
-                                                />
-                                            </div>
-                                        ) : (
-                                            <Button
-                                                variant="outline"
-                                                className="w-full h-14 border-dashed border-2 rounded-2xl text-base font-medium flex gap-2 hover:bg-muted/50"
-                                                onClick={() => {
-                                                    setEditingExerciseIndex(null)
-                                                    setIsAddingNewExercise(true)
-                                                }}
-                                            >
-                                                <PlusSignIcon className="h-5 w-5" /> Agregar ejercicio
-                                            </Button>
-                                        )}
+                                        {/* Mobile: Add Button triggers Drawer via state, no inline form */}
+                                        <Button
+                                            variant="outline"
+                                            className="w-full h-14 border-dashed border-2 rounded-2xl text-base font-medium flex gap-2 hover:bg-muted/50"
+                                            onClick={() => {
+                                                setEditingExerciseIndex(null)
+                                                setIsAddingNewExercise(true)
+                                            }}
+                                        >
+                                            <PlusSignIcon className="h-5 w-5" /> Agregar ejercicio
+                                        </Button>
                                     </div>
                                 )}
                             </div>
@@ -843,51 +857,107 @@ function ExerciseForm({
                             </div>
                         ) : (
                             <>
-                                <div className="space-y-3">
+                                <div className="space-y-4">
                                     {sets.map((set, index) => (
-                                        <div key={index} className="bg-card border rounded-2xl p-4 shadow-sm animate-in slide-in-from-right-2 duration-200">
-                                            <div className="flex items-center justify-between mb-3">
-                                                <span className="text-sm font-bold bg-muted px-2.5 py-1 rounded-lg">Serie {index + 1}</span>
+                                        <div key={index} className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm space-y-4 relative">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-900 text-xs font-bold text-white shadow-md">
+                                                        {index + 1}
+                                                    </div>
+                                                    <span className="text-sm font-bold text-gray-900">Serie</span>
+                                                </div>
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
                                                     onClick={() => handleRemoveSet(index)}
                                                     disabled={sets.length === 1}
-                                                    className="h-9 w-9 text-destructive hover:bg-destructive/10 rounded-full"
+                                                    className="h-8 w-8 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
                                                 >
                                                     <Delete02Icon className="h-4.5 w-4.5" />
                                                 </Button>
                                             </div>
+
                                             <div className="grid grid-cols-3 gap-3">
-                                                <div className="space-y-1">
-                                                    <Label className="text-[10px] font-bold uppercase text-muted-foreground opacity-70">Reps</Label>
-                                                    <Input
-                                                        type="number"
-                                                        inputMode="numeric"
-                                                        className="h-11 text-base rounded-xl"
-                                                        value={set.reps}
-                                                        onChange={(e) => updateSet(index, 'reps', e.target.value)}
-                                                    />
+                                                {/* Reps Stepper */}
+                                                <div className="flex flex-col gap-2">
+                                                    <Label className="text-[10px] font-black text-gray-400 uppercase text-center tracking-wider">Reps</Label>
+                                                    <div className="flex items-center bg-gray-50 rounded-2xl p-1 h-14 border border-transparent focus-within:border-primary/20 focus-within:bg-white transition-all">
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => { e.preventDefault(); updateSet(index, 'reps', String(Math.max(0, Number(set.reps) - 1))) }}
+                                                            className="h-full w-10 flex items-center justify-center text-gray-400 hover:text-primary active:scale-90 transition-transform"
+                                                        >
+                                                            <MinusSignIcon className="h-4 w-4" />
+                                                        </button>
+                                                        <Input
+                                                            type="number"
+                                                            className="h-full flex-1 bg-transparent border-0 text-center font-black text-xl p-0 focus-visible:ring-0 text-gray-900"
+                                                            value={set.reps}
+                                                            onChange={(e) => updateSet(index, 'reps', e.target.value)}
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => { e.preventDefault(); updateSet(index, 'reps', String(Number(set.reps) + 1)) }}
+                                                            className="h-full w-10 flex items-center justify-center text-gray-400 hover:text-primary active:scale-90 transition-transform"
+                                                        >
+                                                            <PlusSignIcon className="h-4 w-4" />
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                                <div className="space-y-1">
-                                                    <Label className="text-[10px] font-bold uppercase text-muted-foreground opacity-70">Peso (kg)</Label>
-                                                    <Input
-                                                        type="number"
-                                                        inputMode="decimal"
-                                                        className="h-11 text-base rounded-xl"
-                                                        value={set.weight}
-                                                        onChange={(e) => updateSet(index, 'weight', e.target.value)}
-                                                    />
+
+                                                {/* Weight Stepper */}
+                                                <div className="flex flex-col gap-2">
+                                                    <Label className="text-[10px] font-black text-gray-400 uppercase text-center tracking-wider">Kilos</Label>
+                                                    <div className="flex items-center bg-gray-50 rounded-2xl p-1 h-14 border border-transparent focus-within:border-primary/20 focus-within:bg-white transition-all">
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => { e.preventDefault(); updateSet(index, 'weight', String(Math.max(0, Number(set.weight) - 1.25))) }}
+                                                            className="h-full w-10 flex items-center justify-center text-gray-400 hover:text-primary active:scale-90 transition-transform"
+                                                        >
+                                                            <MinusSignIcon className="h-4 w-4" />
+                                                        </button>
+                                                        <Input
+                                                            type="number"
+                                                            className="h-full flex-1 bg-transparent border-0 text-center font-black text-xl p-0 focus-visible:ring-0 text-gray-900"
+                                                            value={set.weight}
+                                                            onChange={(e) => updateSet(index, 'weight', e.target.value)}
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => { e.preventDefault(); updateSet(index, 'weight', String(Number(set.weight) + 1.25)) }}
+                                                            className="h-full w-10 flex items-center justify-center text-gray-400 hover:text-primary active:scale-90 transition-transform"
+                                                        >
+                                                            <PlusSignIcon className="h-4 w-4" />
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                                <div className="space-y-1">
-                                                    <Label className="text-[10px] font-bold uppercase text-muted-foreground opacity-70">Desc. (s)</Label>
-                                                    <Input
-                                                        type="number"
-                                                        inputMode="numeric"
-                                                        className="h-11 text-base rounded-xl"
-                                                        value={set.rest}
-                                                        onChange={(e) => updateSet(index, 'rest', e.target.value)}
-                                                    />
+
+                                                {/* Rest Stepper */}
+                                                <div className="flex flex-col gap-2">
+                                                    <Label className="text-[10px] font-black text-gray-400 uppercase text-center tracking-wider">Desc.</Label>
+                                                    <div className="flex items-center bg-gray-50 rounded-2xl p-1 h-14 border border-transparent focus-within:border-primary/20 focus-within:bg-white transition-all">
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => { e.preventDefault(); updateSet(index, 'rest', String(Math.max(0, Number(set.rest) - 10))) }}
+                                                            className="h-full w-10 flex items-center justify-center text-gray-400 hover:text-primary active:scale-90 transition-transform"
+                                                        >
+                                                            <MinusSignIcon className="h-4 w-4" />
+                                                        </button>
+                                                        <Input
+                                                            type="number"
+                                                            className="h-full flex-1 bg-transparent border-0 text-center font-black text-xl p-0 focus-visible:ring-0 text-gray-900"
+                                                            value={set.rest}
+                                                            onChange={(e) => updateSet(index, 'rest', e.target.value)}
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => { e.preventDefault(); updateSet(index, 'rest', String(Number(set.rest) + 10)) }}
+                                                            className="h-full w-10 flex items-center justify-center text-gray-400 hover:text-primary active:scale-90 transition-transform"
+                                                        >
+                                                            <PlusSignIcon className="h-4 w-4" />
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
