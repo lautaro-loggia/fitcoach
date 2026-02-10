@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { PresentialTrainings } from '@/components/dashboard/presential-trainings'
 import { UrgentActions } from '@/components/dashboard/urgent-actions'
 import { redirect } from 'next/navigation'
+import { FloatingActionButton } from '@/components/ui/fab'
 
 
 
@@ -106,7 +107,8 @@ export default async function DashboardPage() {
     const overduePayments = upcomingPayments.filter(p => p.status === 'overdue')
 
     return (
-        <div className="p-4 md:p-8 pt-20 md:pt-8">
+        <div className="p-4 md:p-8 pt-6 md:pt-8 bg-background min-h-full">
+            <FloatingActionButton />
             <div className="space-y-6 md:space-y-8">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
@@ -128,7 +130,7 @@ export default async function DashboardPage() {
                 </div>
 
                 {/* Status Cards Row */}
-                <div className="grid gap-4 md:grid-cols-4">
+                <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
                     {/* Active Clients Card */}
                     <Card className="border bg-white">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -137,9 +139,9 @@ export default async function DashboardPage() {
                                 Asesorados activos
                             </CardTitle>
                         </CardHeader>
-                        <CardContent>
-                            <div className="text-4xl font-bold text-foreground">{stats.activeClients}</div>
-                            <p className="text-xs font-medium text-muted-foreground mt-1">
+                        <CardContent className="p-4 pt-0">
+                            <div className="text-2xl md:text-4xl font-bold text-foreground">{stats.activeClients}</div>
+                            <p className="text-[10px] md:text-xs font-medium text-muted-foreground mt-1">
                                 Total clientes activos
                             </p>
                         </CardContent>
@@ -153,10 +155,10 @@ export default async function DashboardPage() {
                                 Pagos vencidos
                             </CardTitle>
                         </CardHeader>
-                        <CardContent>
-                            <div className="text-4xl font-bold text-foreground">{stats.pendingPaymentsCount}</div>
-                            <p className="text-xs font-medium text-red-500 mt-1">
-                                Requieren atención inmediata
+                        <CardContent className="p-4 pt-0">
+                            <div className="text-2xl md:text-4xl font-bold text-foreground">{stats.pendingPaymentsCount}</div>
+                            <p className="text-[10px] md:text-xs font-medium text-red-500 mt-1">
+                                Requieren atención
                             </p>
                         </CardContent>
                     </Card>
@@ -169,9 +171,9 @@ export default async function DashboardPage() {
                                 Check-ins pendientes
                             </CardTitle>
                         </CardHeader>
-                        <CardContent>
-                            <div className="text-4xl font-bold text-foreground">{stats.pendingCheckinsCount}</div>
-                            <p className="text-xs font-medium text-amber-500 mt-1">
+                        <CardContent className="p-4 pt-0">
+                            <div className="text-2xl md:text-4xl font-bold text-foreground">{stats.pendingCheckinsCount}</div>
+                            <p className="text-[10px] md:text-xs font-medium text-amber-500 mt-1">
                                 Esperando revisión
                             </p>
                         </CardContent>
@@ -188,9 +190,9 @@ export default async function DashboardPage() {
                                 <UserCheck className="h-3 w-3 text-green-600" />
                             </div>
                         </CardHeader>
-                        <CardContent>
-                            <div className="text-4xl font-bold text-foreground">{presentialTrainings.length}</div>
-                            <p className="text-xs font-medium text-green-500 mt-1">
+                        <CardContent className="p-4 pt-0">
+                            <div className="text-2xl md:text-4xl font-bold text-foreground">{presentialTrainings.length}</div>
+                            <p className="text-[10px] md:text-xs font-medium text-green-500 mt-1">
                                 Todo en orden
                             </p>
                         </CardContent>
