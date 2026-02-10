@@ -13,9 +13,10 @@ import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 
 interface UpdatePasswordDialogProps {
     asMenuItem?: boolean
+    trigger?: React.ReactNode
 }
 
-export function UpdatePasswordDialog({ asMenuItem }: UpdatePasswordDialogProps) {
+export function UpdatePasswordDialog({ asMenuItem, trigger }: UpdatePasswordDialogProps) {
     const [open, setOpen] = useState(false)
     const [password, setPassword] = useState('')
     const [confirmPassword, setConfirmPassword] = useState('')
@@ -36,7 +37,10 @@ export function UpdatePasswordDialog({ asMenuItem }: UpdatePasswordDialogProps) 
 
         setLoading(true)
         const supabase = createClient()
-        const { error } = await supabase.auth.updateUser({ password: password })
+        const { error } = await supabase.auth.updateUser({
+            password: password,
+            data: { needs_password: false }
+        })
 
         if (error) {
             toast.error(error.message)
@@ -52,7 +56,7 @@ export function UpdatePasswordDialog({ asMenuItem }: UpdatePasswordDialogProps) 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                {asMenuItem ? (
+                {trigger ? trigger : asMenuItem ? (
                     <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-pointer">
                         <KeyRound className="mr-2 h-4 w-4" />
                         <span>Cambiar contraseña</span>

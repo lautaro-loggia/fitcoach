@@ -73,7 +73,7 @@ export default async function ClientNotesPage({
             activeTab={defaultTab}
         >
             {/* Cabecera de la sección actual (Título y Acciones) */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-1 mb-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-1 mb-8 overflow-hidden">
                 <div className="space-y-1">
                     <h1 className="text-3xl font-bold tracking-tight text-gray-900">{currentHeader.title}</h1>
                     <p className="text-gray-500 font-medium leading-none">{currentHeader.subtitle}</p>

@@ -51,9 +51,9 @@ export function CheckinSelector({
     }
 
     return (
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-4 bg-white p-4 lg:px-6 rounded-2xl border border-border/40 shadow-sm w-full min-h-[80px]">
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-4 bg-white p-4 lg:px-6 rounded-2xl border border-border/40 shadow-sm w-full min-h-[80px] min-w-0">
             {/* IZQUIERDA: Contexto Principal */}
-            <div className="flex items-center gap-4 flex-1">
+            <div className="flex items-center gap-4 flex-1 min-w-0">
                 <div className="h-10 w-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 shrink-0 border border-gray-100">
                     <Calendar03Icon className="h-5 w-5" />
                 </div>
@@ -62,18 +62,13 @@ export function CheckinSelector({
                         Check-in seleccionado
                     </Label>
                     <Select value={selectedId || ""} onValueChange={onSelect}>
-                        <SelectTrigger className="h-7 border-none bg-transparent p-0 focus:ring-0 text-base font-bold shadow-none w-auto gap-2">
-                            <SelectValue placeholder="Seleccionar fecha" />
+                        <SelectTrigger className="h-7 border-none bg-transparent p-0 focus:ring-0 text-base font-bold shadow-none w-full max-w-full sm:max-w-none gap-2 overflow-hidden">
+                            <SelectValue placeholder="Seleccionar fecha" className="truncate" />
                         </SelectTrigger>
                         <SelectContent>
                             {sortedCheckins.map((c) => (
                                 <SelectItem key={c.id} value={c.id}>
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-bold">{format(new Date(c.date), "dd MMMM yyyy", { locale: es })}</span>
-                                        <span className="text-[10px] text-muted-foreground font-medium uppercase">
-                                            ({getRelativeTime(c.date)})
-                                        </span>
-                                    </div>
+                                    <span className="font-bold">{format(new Date(c.date), "dd MMMM yyyy", { locale: es })}</span>
                                 </SelectItem>
                             ))}
                         </SelectContent>
@@ -89,7 +84,7 @@ export function CheckinSelector({
             <div className="hidden lg:block h-10 w-px bg-border/40 mx-2" />
 
             {/* CENTRO: Acción de Análisis */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 lg:gap-8 flex-1">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 lg:gap-8 flex-1 min-w-0">
                 <div className="flex items-center gap-3">
                     <Switch
                         id="compare-mode"
@@ -112,8 +107,8 @@ export function CheckinSelector({
                             Comparar con:
                         </Label>
                         <Select value={comparisonId || ""} onValueChange={onComparisonSelect}>
-                            <SelectTrigger className="h-7 border-none bg-transparent p-0 focus:ring-0 text-sm font-bold shadow-none w-auto gap-2">
-                                <SelectValue placeholder="Elegir fecha..." />
+                            <SelectTrigger className="h-7 border-none bg-transparent p-0 focus:ring-0 text-sm font-bold shadow-none w-full max-w-full sm:max-w-none gap-2 overflow-hidden">
+                                <SelectValue placeholder="Elegir fecha..." className="truncate" />
                             </SelectTrigger>
                             <SelectContent>
                                 {sortedCheckins
