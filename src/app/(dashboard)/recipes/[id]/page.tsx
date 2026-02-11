@@ -13,6 +13,7 @@ export default async function RecipeDetailPage({ params }: { params: Promise<{ i
         .from('recipes')
         .select('*')
         .eq('id', id)
+        .eq('trainer_id', user?.id)
         .single()
 
     if (error || !recipe) {

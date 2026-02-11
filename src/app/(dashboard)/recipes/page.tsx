@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { AddRecipeDialog } from '@/components/recipes/add-recipe-dialog'
 import { RecipeCard } from '@/components/recipes/recipe-card'
@@ -61,6 +62,7 @@ export default function RecipesPage() {
 
     const [isAdmin, setIsAdmin] = useState(false)
 
+
     // Check admin status
     useEffect(() => {
         const checkUser = async () => {
@@ -94,6 +96,13 @@ export default function RecipesPage() {
         setLoading(true)
         const supabase = createClient()
 
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
+            setLoading(false)
+            return
+        }
+
         // Calculate offset
         const from = (currentPage - 1) * RECIPES_PER_PAGE
         const to = from + RECIPES_PER_PAGE - 1
@@ -102,6 +111,7 @@ export default function RecipesPage() {
         let query = supabase
             .from('recipes')
             .select('*', { count: 'exact' })
+            .eq('trainer_id', user.id)
 
         // Apply search filter
         if (debouncedSearch) {
@@ -441,7 +451,14 @@ export default function RecipesPage() {
                     </>
                 ) : totalCount === 0 && !searchQuery && !hasActiveFilters ? (
                     <div className="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed rounded-lg">
-                        <Utensils className="h-12 w-12 text-muted-foreground mb-4" />
+                        <div className="relative w-48 h-48 mb-4">
+                            <Image
+                                src="/images/recipe-empty-state.png"
+                                alt="No hay recetas"
+                                fill
+                                className="object-contain"
+                            />
+                        </div>
                         <h3 className="text-lg font-semibold">No hay recetas aún</h3>
                         <p className="text-muted-foreground">Creá tu primera receta para empezar</p>
                     </div>

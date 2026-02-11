@@ -8,7 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Plus, Search, Loader2, AlertTriangle } from "lucide-react"
+import { Plus, Search, Loader2, AlertTriangle, Utensils } from "lucide-react"
 import { RecipeCard } from "@/components/recipes/recipe-card"
 import { AddRecipeDialog } from "@/components/recipes/add-recipe-dialog"
 import { checkRecipeAllergens, checkDietaryCompliance } from "@/lib/allergen-utils"
@@ -51,6 +51,8 @@ export function AddDishDialog({ mealId, contextLabel, onConfirm, clientAllergens
 
     const nameInputRef = useRef<HTMLInputElement>(null)
 
+    const [isLoadingRecipes, setIsLoadingRecipes] = useState(true)
+
     useEffect(() => {
         if (isOpen && recipes.length === 0) {
             fetchRecipes()
@@ -64,9 +66,23 @@ export function AddDishDialog({ mealId, contextLabel, onConfirm, clientAllergens
     }, [isOpen])
 
     const fetchRecipes = async () => {
+        setIsLoadingRecipes(true)
         const supabase = createClient()
-        const { data } = await supabase.from('recipes').select('*').order('name')
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
+            setIsLoadingRecipes(false)
+            return
+        }
+
+        const { data } = await supabase
+            .from('recipes')
+            .select('*')
+            .eq('trainer_id', user.id)
+            .order('name')
+
         if (data) setRecipes(data)
+        setIsLoadingRecipes(false)
     }
 
     const filteredRecipes = useMemo(() => {
@@ -205,9 +221,16 @@ export function AddDishDialog({ mealId, contextLabel, onConfirm, clientAllergens
 
                         {/* Recipe Grid */}
                         <div className="flex-1 overflow-y-auto pr-2 min-h-0 border rounded-lg p-2">
-                            {recipes.length === 0 && !loading ? (
+                            {isLoadingRecipes ? (
                                 <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
                                     <Loader2 className="h-6 w-6 animate-spin mb-2" />
+                                    <p className="text-xs">Cargando recetas...</p>
+                                </div>
+                            ) : recipes.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                                    <Utensils className="h-8 w-8 mb-2 opacity-50" />
+                                    <p className="text-sm font-medium">No tenés recetas guardadas</p>
+                                    <p className="text-xs">Creá una nueva o seleccioná "Crear desde cero"</p>
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -222,6 +245,11 @@ export function AddDishDialog({ mealId, contextLabel, onConfirm, clientAllergens
                                             }}
                                         />
                                     ))}
+                                    {filteredRecipes.length === 0 && searchQuery && (
+                                        <div className="col-span-full py-8 text-center text-muted-foreground">
+                                            No se encontraron recetas que coincidan con "{searchQuery}"
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
