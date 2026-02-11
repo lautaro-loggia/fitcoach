@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home01Icon, UserGroupIcon, Dumbbell01Icon } from 'hugeicons-react'
+import { Home01Icon, UserGroupIcon, Dumbbell01Icon, Settings01Icon } from 'hugeicons-react'
 import { cn } from '@/lib/utils'
 
 export function BottomNav() {
@@ -26,6 +26,12 @@ export function BottomNav() {
             href: '/workouts',
             icon: Dumbbell01Icon,
             activePatterns: ['/workouts']
+        },
+        {
+            label: 'Ajustes',
+            href: '/settings',
+            icon: Settings01Icon,
+            activePatterns: ['/settings']
         }
     ]
 
@@ -34,7 +40,7 @@ export function BottomNav() {
             {navItems.map((item) => {
                 const isActive = item.activePatterns.some(p =>
                     p === '/' ? pathname === '/' : pathname.startsWith(p)
-                ) && pathname !== '/settings' // Exclude settings if needed, or handle precise matching
+                )
 
                 return (
                     <Link

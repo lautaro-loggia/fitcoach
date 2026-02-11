@@ -198,7 +198,7 @@ export function ProfileTab({ client }: ProfileTabProps) {
             <div className="grid gap-3 grid-cols-1 md:grid-cols-3">
                 <StrengthProgressCard clientId={client.id} />
 
-                <Card className="bg-white flex flex-col justify-center p-4 py-0">
+                <Card className="bg-white flex flex-col justify-center p-6">
                     <div className="space-y-0.5">
                         <h3 className="text-[17px] font-bold text-gray-900 leading-tight">Objetivo</h3>
                         <p className="text-[15px] text-gray-600 leading-snug">
@@ -208,7 +208,7 @@ export function ProfileTab({ client }: ProfileTabProps) {
                     </div>
                 </Card>
 
-                <Card className="bg-white flex flex-col justify-center p-4 py-0">
+                <Card className="bg-white flex flex-col justify-center p-6">
                     <div className="space-y-0.5">
                         <h3 className="text-[17px] font-bold text-gray-900 leading-tight">Nivel de actividad</h3>
                         <p className="text-[15px] text-gray-600 leading-snug">
@@ -485,11 +485,11 @@ export function ProfileTab({ client }: ProfileTabProps) {
             {/* Bottom Row */}
             <div className="grid gap-3 grid-cols-1 md:grid-cols-3">
                 {/* Updates */}
-                <Card className="md:col-span-2">
+                <Card className="md:col-span-2 flex flex-col md:h-[340px]">
                     <CardHeader>
                         <CardTitle className="text-base font-bold text-muted-foreground">Actualizaciones</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="flex-1 min-h-0 overflow-y-auto">
                         <div className="space-y-6">
                             {activityLoading ? (
                                 <div className="space-y-4">
@@ -529,7 +529,7 @@ export function ProfileTab({ client }: ProfileTabProps) {
                 </Card>
 
                 {/* General Info */}
-                <Card>
+                <Card className="flex flex-col md:h-[340px]">
                     <CardHeader>
                         <CardTitle className="text-base font-bold">Información General</CardTitle>
                     </CardHeader>

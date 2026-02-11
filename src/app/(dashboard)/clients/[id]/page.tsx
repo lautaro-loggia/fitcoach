@@ -73,38 +73,39 @@ export default async function ClientNotesPage({
             activeTab={defaultTab}
         >
             {/* Cabecera de la sección actual (Título y Acciones) */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-1 mb-8 overflow-hidden">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-4 px-1 mb-2 md:mb-8 overflow-hidden">
                 <div className="space-y-1">
                     <h1 className="text-3xl font-bold tracking-tight text-gray-900">{currentHeader.title}</h1>
                     <p className="text-gray-500 font-medium leading-none">{currentHeader.subtitle}</p>
                 </div>
 
-                <div className="flex items-center gap-2 min-h-[44px]">
-                    {defaultTab === 'checkin' && (
-                        <ScheduleNextCheckinDialog
-                            clientId={client.id}
-                            currentDate={client.next_checkin_date}
-                            checkinFrequency={client.checkin_frequency_days}
-                        />
-                    )}
-                    {defaultTab === 'training' && (
-                        <TrainingActionsWrapper
-                            clientId={client.id}
-                            clientName={client.full_name}
-                        />
-                    )}
-                    {defaultTab === 'diet' && (
-                        <MealPlanActionsWrapper
-                            clientId={client.id}
-                            clientName={client.full_name}
-                        />
-                    )}
-                    {/* Aquí se pueden agregar más acciones específicas por tab si fuera necesario */}
-                </div>
+                {(defaultTab === 'checkin' || defaultTab === 'training' || defaultTab === 'diet') && (
+                    <div className="flex items-center gap-2 min-h-[44px]">
+                        {defaultTab === 'checkin' && (
+                            <ScheduleNextCheckinDialog
+                                clientId={client.id}
+                                currentDate={client.next_checkin_date}
+                                checkinFrequency={client.checkin_frequency_days}
+                            />
+                        )}
+                        {defaultTab === 'training' && (
+                            <TrainingActionsWrapper
+                                clientId={client.id}
+                                clientName={client.full_name}
+                            />
+                        )}
+                        {defaultTab === 'diet' && (
+                            <MealPlanActionsWrapper
+                                clientId={client.id}
+                                clientName={client.full_name}
+                            />
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Contenido dinámico según el tab activo */}
-            <div className="mt-6">
+            <div className="mt-2 md:mt-6">
                 {defaultTab === 'profile' && <ProfileTab client={client} />}
                 {defaultTab === 'checkin' && <CheckinTab client={client} />}
                 {defaultTab === 'training' && <TrainingTab client={client} />}

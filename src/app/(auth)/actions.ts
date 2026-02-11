@@ -104,8 +104,11 @@ export async function requestPasswordReset(formData: FormData) {
         return { error: 'Por favor ingrese su correo electrónico' }
     }
 
+    const redirectUrl = new URL(`${origin}/auth/callback`)
+    redirectUrl.searchParams.set('next', '/reset-password')
+
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${origin}/auth/callback?next=/reset-password`,
+        redirectTo: redirectUrl.toString(),
     })
 
     if (error) {

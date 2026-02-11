@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -18,13 +18,21 @@ export function LoginForm() {
     const [userType, setUserType] = useState<'coach' | 'client'>('coach')
     const router = useRouter()
 
+    const searchParams = useSearchParams()
+
     useEffect(() => {
         // Load preference from localStorage
         const savedType = localStorage.getItem('orbit_login_user_type')
         if (savedType === 'coach' || savedType === 'client') {
             setUserType(savedType)
         }
-    }, [])
+
+        // Check for error in URL
+        const errorParam = searchParams.get('error')
+        if (errorParam) {
+            setError(decodeURIComponent(errorParam))
+        }
+    }, [searchParams])
 
     const handleUserTypeChange = (value: string) => {
         const type = value as 'coach' | 'client'

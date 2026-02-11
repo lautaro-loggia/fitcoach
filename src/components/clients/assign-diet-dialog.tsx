@@ -31,6 +31,8 @@ export function AssignDietDialog({ client }: AssignDietDialogProps) {
         return recipes.filter(r => r.name.toLowerCase().includes(searchQuery.toLowerCase()))
     }, [recipes, searchQuery])
 
+    const [isLoadingRecipes, setIsLoadingRecipes] = useState(true)
+
     // Warning State
     const [warningOpen, setWarningOpen] = useState(false)
     const [detectedAllergen, setDetectedAllergen] = useState<string | null>(null)
@@ -43,9 +45,23 @@ export function AssignDietDialog({ client }: AssignDietDialogProps) {
     }, [open])
 
     const fetchRecipes = async () => {
+        setIsLoadingRecipes(true)
         const supabase = createClient()
-        const { data } = await supabase.from('recipes').select('*').order('name')
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
+            setIsLoadingRecipes(false)
+            return
+        }
+
+        const { data } = await supabase
+            .from('recipes')
+            .select('*')
+            .eq('trainer_id', user.id)
+            .order('name')
+
         if (data) setRecipes(data)
+        setIsLoadingRecipes(false)
     }
 
     const validateAndSubmit = async (force: boolean = false) => {
@@ -161,10 +177,15 @@ export function AssignDietDialog({ client }: AssignDietDialogProps) {
 
                         {/* Recipes Grid Scrollable */}
                         <div className="flex-1 overflow-y-auto pr-2">
-                            {loading ? (
+                            {isLoadingRecipes ? (
                                 <div className="flex flex-col items-center justify-center h-40">
                                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                                     <p className="text-muted-foreground mt-2">Cargando recetas...</p>
+                                </div>
+                            ) : recipes.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center h-40 text-muted-foreground text-center">
+                                    <p className="font-medium">No hay recetas disponibles</p>
+                                    <p className="text-sm">Creá recetas en la sección de Recetas para verlas aquí</p>
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-4">
