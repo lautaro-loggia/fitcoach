@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { ClientAvatar } from '@/components/clients/client-avatar'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-import Link from 'next/link'
+// import Link from 'next/link'
 import {
     Select,
     SelectContent,
@@ -14,6 +14,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import { useTransition, useState } from 'react'
+import { Loader2 } from 'lucide-react'
 
 interface AdvisedTopBarProps {
     client: {
@@ -31,6 +33,8 @@ interface AdvisedTopBarProps {
 
 export function AdvisedTopBar({ client, allClients = [], activeTab }: AdvisedTopBarProps) {
     const router = useRouter()
+    const [isPending, startTransition] = useTransition()
+    const [targetTab, setTargetTab] = useState<string | null>(null)
 
     // Mapeo de tabs con sus respectivos IDs y labels
     // Usaremos los IDs que ya maneja la app actualmente: profile, checkin, training, diet, settings
@@ -41,6 +45,20 @@ export function AdvisedTopBar({ client, allClients = [], activeTab }: AdvisedTop
         { id: 'diet', label: 'Nutrición', href: `/clients/${client.id}?tab=diet` },
         { id: 'settings', label: 'Ajustes', href: `/clients/${client.id}?tab=settings` },
     ]
+
+    const handleTabChange = (tabId: string, href: string) => {
+        if (tabId === activeTab) return
+        setTargetTab(tabId)
+        startTransition(() => {
+            router.push(href)
+        })
+    }
+
+    const handleClientChange = (clientId: string) => {
+        startTransition(() => {
+            router.push(`/clients/${clientId}?tab=${activeTab}`)
+        })
+    }
 
     return (
         <header className="sticky top-0 z-40 w-full border-b bg-white/80 backdrop-blur-md overflow-hidden">
@@ -68,7 +86,7 @@ export function AdvisedTopBar({ client, allClients = [], activeTab }: AdvisedTop
                             {allClients.length > 0 ? (
                                 <Select
                                     defaultValue={client.id}
-                                    onValueChange={(value) => router.push(`/clients/${value}?tab=${activeTab}`)}
+                                    onValueChange={handleClientChange}
                                 >
                                     <SelectTrigger className="w-auto h-auto p-0 border-0 font-bold tracking-tight bg-transparent shadow-none hover:bg-transparent focus:ring-0 gap-1 px-1 text-sm md:text-base">
                                         <SelectValue placeholder={client.full_name} />
@@ -105,19 +123,25 @@ export function AdvisedTopBar({ client, allClients = [], activeTab }: AdvisedTop
                 <nav className="flex items-center overflow-x-auto no-scrollbar scroll-smooth gap-1 md:gap-1.5 -mx-4 px-4 md:mx-0 md:px-0 md:ml-auto">
                     {tabs.map((tab) => {
                         const isActive = activeTab === tab.id
+                        const isLoading = isPending && targetTab === tab.id
+
                         return (
-                            <Link
+                            <button
                                 key={tab.id}
-                                href={tab.href}
+                                onClick={() => handleTabChange(tab.id, tab.href)}
+                                disabled={isPending}
                                 className={cn(
-                                    "px-4 md:px-5 py-2 md:py-2.5 text-xs md:text-sm font-semibold rounded-full transition-all whitespace-nowrap",
+                                    "px-4 md:px-5 py-2 md:py-2.5 text-xs md:text-sm font-semibold rounded-full transition-all whitespace-nowrap flex items-center justify-center gap-2",
                                     isActive
                                         ? "bg-gray-900 text-white shadow-sm"
-                                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                                    // Dim other tabs while pending, but keep the target tab fully visible (just with spinner)
+                                    isPending && tab.id !== targetTab && !isActive && "opacity-50"
                                 )}
                             >
+                                {isLoading && <Loader2 className="h-3 w-3 animate-spin" />}
                                 {tab.label}
-                            </Link>
+                            </button>
                         )
                     })}
                 </nav>
