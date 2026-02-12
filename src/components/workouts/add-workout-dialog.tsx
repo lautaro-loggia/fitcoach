@@ -9,7 +9,11 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { PlusSignIcon, Cancel01Icon, DragDropVerticalIcon, PencilEdit02Icon, Delete02Icon, Tick01Icon, ArrowUpDownIcon, ArrowLeft01Icon, Search01Icon, ArrowUp01Icon, ArrowDown01Icon, MinusSignIcon } from 'hugeicons-react'
 import { ExerciseSelector } from './exercise-selector'
-import { createWorkoutAction, updateWorkoutAction } from '@/app/(dashboard)/workouts/actions'
+import {
+    createWorkoutAction,
+    updateWorkoutAction,
+    searchExercises
+} from '@/app/(dashboard)/workouts/actions'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
@@ -17,6 +21,7 @@ import { createClient } from '@/lib/supabase/client'
 import { cn, normalizeText } from '@/lib/utils'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerClose } from '@/components/ui/drawer'
+import { ExerciseInfoDialog } from '@/components/workout-session/exercise-info-dialog'
 
 
 
@@ -293,7 +298,16 @@ export function WorkoutDialog({
                                                             setIsAddingNewExercise(false)
                                                             setEditingExerciseIndex(index)
                                                         }}>
-                                                            <p className="font-bold text-base leading-tight">{ex.name}</p>
+                                                            <div className="flex items-center gap-2">
+                                                                <p className="font-bold text-base leading-tight">{ex.name}</p>
+                                                                <div onClick={(e) => e.stopPropagation()}>
+                                                                    <ExerciseInfoDialog
+                                                                        name={ex.name}
+                                                                        gifUrl={ex.gif_url}
+                                                                        instructions={ex.instructions}
+                                                                    />
+                                                                </div>
+                                                            </div>
                                                             <div className="flex flex-wrap gap-2 items-center">
                                                                 <p className="text-sm text-muted-foreground font-medium">
                                                                     {ex.category === 'Cardio' ? (
@@ -453,6 +467,11 @@ export function WorkoutDialog({
                                                         <TableCell>
                                                             <div className="flex items-center gap-2">
                                                                 <span className="font-medium">{ex.name}</span>
+                                                                <ExerciseInfoDialog
+                                                                    name={ex.name}
+                                                                    gifUrl={ex.gif_url}
+                                                                    instructions={ex.instructions}
+                                                                />
                                                                 {ex.category === 'Cardio' ? (
                                                                     <span className="px-2 py-0.5 text-xs rounded-full bg-orange-100 text-orange-700">
                                                                         Cardio
@@ -555,9 +574,12 @@ function ExerciseForm({
     const [exerciseId, setExerciseId] = useState(initialData?.exercise_id || '')
     const [muscleGroup, setMuscleGroup] = useState(initialData?.muscle_group || '')
     const [category, setCategory] = useState(initialData?.category || '')
+    const [gifUrl, setGifUrl] = useState(initialData?.gif_url || '')
+    const [instructions, setInstructions] = useState<string[]>(initialData?.instructions || [])
     const [sets, setSets] = useState<any[]>(
         initialData?.sets_detail || [{ reps: '10', weight: '0', rest: '60' }]
     )
+
 
     // Cardio config state
     const [cardioType, setCardioType] = useState<'continuous' | 'intervals'>(
@@ -575,29 +597,63 @@ function ExerciseForm({
     const [exercisesList, setExercisesList] = useState<any[]>([])
     const [openCombobox, setOpenCombobox] = useState(false)
     const [searchQuery, setSearchQuery] = useState('')
+    const [loading, setLoading] = useState(false)
+    const [offset, setOffset] = useState(0)
+    const [hasMore, setHasMore] = useState(true)
 
     const isCardio = category === 'Cardio'
 
-    // Filter exercises based on search query (accent-insensitive)
-    const filteredExercises = exercisesList.filter((ex) => {
-        const query = normalizeText(searchQuery)
-        return normalizeText(ex.name).includes(query) ||
-            (normalizeText(ex.main_muscle_group || '').includes(query))
-    })
+    useEffect(() => {
+        setOffset(0)
+        setHasMore(true)
+        const timer = setTimeout(() => {
+            handleSearch(searchQuery, 0)
+        }, 500)
+        return () => clearTimeout(timer)
+    }, [searchQuery])
+
+    const handleSearch = async (query: string, currentOffset: number) => {
+        setLoading(true)
+        try {
+            // Updated to fetch 50 at a time
+            const { exercises } = await searchExercises(query, 50, currentOffset)
+
+            if (currentOffset === 0) {
+                setExercisesList(exercises || [])
+            } else {
+                setExercisesList((prev: any[]) => {
+                    const newExercises = (exercises || []).filter(
+                        (newEx: any) => !prev.some((prevEx: any) => prevEx.id === newEx.id)
+                    )
+                    return [...prev, ...newExercises]
+                })
+            }
+
+            setHasMore((exercises || []).length === 50)
+
+        } catch (error) {
+            console.error("Error searching exercises", error)
+            if (currentOffset === 0) setExercisesList([])
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const loadMore = () => {
+        if (!loading && hasMore) {
+            const nextOffset = offset + 50
+            setOffset(nextOffset)
+            handleSearch(searchQuery, nextOffset)
+        }
+    }
+
 
     useEffect(() => {
-        fetchExercises()
+        if (!initialData) {
+            handleSearch('', 0)
+        }
     }, [])
 
-    const fetchExercises = async () => {
-        const supabase = createClient()
-        const { data } = await supabase
-            .from('exercises')
-            .select('id, name, main_muscle_group, category')
-            .order('name')
-
-        if (data) setExercisesList(data)
-    }
 
     const handleAddSet = () => {
         const lastSet = sets[sets.length - 1]
@@ -645,6 +701,8 @@ function ExerciseForm({
                     exercise_id: exerciseId || undefined,
                     name: name,
                     muscle_group: muscleGroup || undefined,
+                    gif_url: gifUrl || undefined,
+                    instructions: instructions.length > 0 ? instructions : undefined,
                     sets_detail: sets,
                     // Legacy support for desktop summary (first set)
                     sets: sets.length.toString(),
@@ -657,6 +715,8 @@ function ExerciseForm({
                     exercise_id: exerciseId || undefined,
                     name: name,
                     muscle_group: muscleGroup || undefined,
+                    gif_url: gifUrl || undefined,
+                    instructions: instructions.length > 0 ? instructions : undefined,
                     sets_detail: sets
                 })
             }
@@ -695,14 +755,41 @@ function ExerciseForm({
                                 overflowY: 'auto',
                                 overflowX: 'hidden'
                             }}
+                            onScroll={(e) => {
+                                const target = e.currentTarget
+                                if (target.scrollHeight - target.scrollTop === target.clientHeight) {
+                                    loadMore()
+                                }
+                            }}
                         >
                             <div className="p-1">
-                                {filteredExercises.length === 0 ? (
+                                {searchQuery.trim().length > 0 && !exercisesList.some(ex => ex.name.toLowerCase() === searchQuery.toLowerCase()) && (
+                                    <div
+                                        className="relative flex cursor-pointer items-center gap-2 rounded-sm px-2 py-3 text-sm outline-none hover:bg-accent hover:text-accent-foreground border-b mb-1"
+                                        onClick={() => {
+                                            setName(searchQuery)
+                                            setExerciseId('')
+                                            setMuscleGroup('')
+                                            setCategory('')
+                                            setGifUrl('')
+                                            setInstructions([])
+                                            setOpenCombobox(false)
+                                            setSearchQuery('')
+                                        }}
+                                    >
+                                        <PlusSignIcon className="h-4 w-4 text-primary" />
+                                        <div className="flex flex-col">
+                                            <span className="font-medium text-primary line-clamp-1">Usar: "{searchQuery}"</span>
+                                            <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Crear manual</span>
+                                        </div>
+                                    </div>
+                                )}
+                                {exercisesList.length === 0 ? (
                                     <div className="py-6 text-center text-sm text-muted-foreground">
-                                        No se encontraron ejercicios.
+                                        {loading ? "Buscando..." : "No se encontraron ejercicios."}
                                     </div>
                                 ) : (
-                                    filteredExercises.map((ex) => (
+                                    exercisesList.map((ex: any) => (
                                         <div
                                             key={ex.id}
                                             className={cn(
@@ -714,6 +801,8 @@ function ExerciseForm({
                                                 setExerciseId(ex.id)
                                                 setMuscleGroup(ex.main_muscle_group || '')
                                                 setCategory(ex.category || '')
+                                                setGifUrl(ex.gif_url || '')
+                                                setInstructions(ex.instructions || [])
                                                 setOpenCombobox(false)
                                                 setSearchQuery('')
                                             }}
@@ -734,6 +823,11 @@ function ExerciseForm({
                                             </div>
                                         </div>
                                     ))
+                                )}
+                                {hasMore && (
+                                    <div className="py-2 text-center text-xs text-muted-foreground w-full">
+                                        {loading ? "Cargando..." : "Desplázate para ver más"}
+                                    </div>
                                 )}
                             </div>
                         </div>

@@ -170,7 +170,14 @@ export function TrainingTab({ client }: TrainingTabProps) {
                                         />
                                     ))}
                                     {workouts.length === 0 && (
-                                        <div className="col-span-full text-center py-16 border-2 border-dashed rounded-3xl bg-gray-50/50 border-gray-200">
+                                        <div className="col-span-full flex flex-col items-center justify-center py-12 px-4 text-center border-2 border-dashed rounded-3xl bg-gray-50/50 border-gray-200">
+                                            <div className="relative w-full max-w-[200px] aspect-square mb-4">
+                                                <img
+                                                    src="/images/training-empty-state.png"
+                                                    alt="No hay rutinas"
+                                                    className="w-full h-full object-contain opacity-70"
+                                                />
+                                            </div>
                                             <p className="text-gray-400 font-medium text-sm">No hay rutinas asignadas aún.</p>
                                         </div>
                                     )}

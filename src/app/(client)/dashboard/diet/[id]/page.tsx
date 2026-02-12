@@ -8,7 +8,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
-    if (!user) redirect('/auth/login')
+    if (!user) redirect('/login')
 
     // 1. Get client ID
     const { data: client } = await supabase

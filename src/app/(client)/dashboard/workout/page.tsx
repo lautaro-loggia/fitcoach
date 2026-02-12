@@ -8,12 +8,13 @@ import { Calendar, ChevronRight, Dumbbell, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { getARTDate } from '@/lib/utils'
+import { WorkoutStartDialog } from '@/components/clients/workout-start-dialog'
 
 export default async function WorkoutPage() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
-    if (!user) redirect('/auth/login')
+    if (!user) redirect('/login')
 
     const adminClient = createAdminClient()
     const { data: client } = await adminClient
@@ -79,8 +80,12 @@ export default async function WorkoutPage() {
             {todayWorkout && !isTodayCompleted && (
                 <div className="mb-6">
                     <p className="text-sm text-gray-500 font-medium mb-2 uppercase tracking-wide">Hoy</p>
-                    <Link href={`/dashboard/workout/${todayWorkout.id}`}>
-                        <Card className="p-5 bg-blue-600 text-white shadow-lg shadow-blue-200">
+                    <WorkoutStartDialog
+                        workoutId={todayWorkout.id}
+                        workoutName={todayWorkout.name}
+                        exercisesCount={todayWorkout.structure?.length || 0}
+                    >
+                        <Card className="p-5 bg-blue-600 text-white shadow-lg shadow-blue-200 cursor-pointer transition-transform active:scale-[0.98]">
                             <div className="flex justify-between items-center">
                                 <div>
                                     <h3 className="font-bold text-lg">{todayWorkout.name}</h3>
@@ -91,15 +96,21 @@ export default async function WorkoutPage() {
                                 </div>
                             </div>
                         </Card>
-                    </Link>
+                    </WorkoutStartDialog>
                 </div>
             )}
 
             <p className="text-sm text-gray-500 font-medium uppercase tracking-wide">Todas las rutinas</p>
             <div className="flex flex-col gap-4">
                 {workouts?.map(workout => (
-                    <Link key={workout.id} href={`/dashboard/workout/${workout.id}`} className="block">
-                        <Card className="p-4 flex flex-row items-center justify-between hover:bg-gray-50 rounded-2xl border-gray-200 shadow-sm transition-all">
+                    <WorkoutStartDialog
+                        key={workout.id}
+                        workoutId={workout.id}
+                        workoutName={workout.name}
+                        exercisesCount={workout.structure?.length || 0}
+                        estimatedTime={`${(workout.structure?.length || 0) * 4} min aprox.`}
+                    >
+                        <Card className="p-4 flex flex-row items-center justify-between hover:bg-gray-50 rounded-2xl border-gray-200 shadow-sm transition-all cursor-pointer">
                             <div className="flex items-center gap-3">
                                 <div className="h-10 w-10 bg-gray-100 rounded-full flex items-center justify-center">
                                     <Dumbbell className="h-5 w-5 text-gray-500" />
@@ -113,14 +124,23 @@ export default async function WorkoutPage() {
                             </div>
                             <ChevronRight className="h-5 w-5 text-gray-400" />
                         </Card>
-                    </Link>
+                    </WorkoutStartDialog>
                 ))}
             </div>
 
             {(!workouts || workouts.length === 0) && (
-                <div className="text-center py-10 text-gray-400">
-                    <Dumbbell className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                    <p>No tenés rutinas asignadas.</p>
+                <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                    <div className="relative w-full max-w-[280px] aspect-square mb-6">
+                        <img
+                            src="/images/training-empty-state.png"
+                            alt="No hay rutinas"
+                            className="w-full h-full object-contain opacity-90"
+                        />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">Sin rutinas asignadas</h3>
+                    <p className="text-gray-500 max-w-[250px]">
+                        Tu coach todavía no te asignó rutinas. ¡Pronto aparecerán acá!
+                    </p>
                 </div>
             )}
         </div>
