@@ -3,6 +3,79 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 
+interface ExerciseDBResponse {
+    exerciseId: string
+    name: string
+    bodyParts: string[]
+    targetMuscles: string[]
+    equipments: string[]
+    gifUrl: string
+    instructions: string[]
+    secondaryMuscles: string[]
+}
+
+
+const RAPID_API_KEY = '3c36fcafccmsh1a5cd56792ce5e6p1cad51jsne555597de070'
+const RAPID_API_HOST = 'edb-with-videos-and-images-by-ascendapi.p.rapidapi.com'
+const API_BASE_URL = `https://${RAPID_API_HOST}/api/v1`
+
+export async function searchExercises(query: string = '', limit: number = 50, offset: number = 0) {
+    const supabase = await createClient()
+
+    try {
+        // Fetch ALL exercises. 
+        // Since we are now using a curated list of ~150 exercises, bringing them all to memory 
+        // is extremely fast and allows for perfect fuzzy search (accents, partial matches) in Node.js
+        const { data, error } = await supabase
+            .from('exercises_v2')
+            .select('*')
+
+        if (error) {
+            console.error('Error fetching exercises from DB:', error)
+            return { exercises: [] }
+        }
+
+        let exercises = (data || []).map((ex: any) => ({
+            id: ex.id,
+            name: ex.name,
+            main_muscle_group: ex.muscle_group,
+            category: ex.target,
+            equipment: ex.equipment,
+            gif_url: ex.gif_url,
+            instructions: ex.instructions || []
+        }))
+
+        // Normalize string helper
+        const normalize = (str: string) => str ? str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : ""
+
+        if (query.trim().length > 0) {
+            const normalizedQuery = normalize(query)
+
+            exercises = exercises.filter(ex =>
+                normalize(ex.name).includes(normalizedQuery) ||
+                normalize(ex.main_muscle_group).includes(normalizedQuery) ||
+                (ex.category && normalize(ex.category).includes(normalizedQuery))
+            )
+        }
+
+        // Apply pagination manually
+        const paginatedExercises = exercises.slice(offset, offset + limit)
+
+        return { exercises: paginatedExercises }
+
+    } catch (error) {
+        console.error('Unexpected error searching exercises from DB:', error)
+        return { exercises: [] }
+    }
+}
+
+function mappingTitleCase(str: string) {
+    if (!str) return ''
+    return str.split(/[\s-]+/)
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+        .join(' ')
+}
+
 export async function createWorkoutAction(data: {
     name: string
     description?: string
@@ -83,8 +156,36 @@ export async function assignWorkoutToClientsAction(templateId: string, clientIds
         return { error: "Error al asignar rutina" }
     }
 
-    // Revalidate client paths? Hard to know all IDs. 
-    // Usually fetching in tabs is dynamic so it's fine.
+    revalidatePath('/workouts')
+    return { success: true }
+}
+
+export async function createExerciseAction(data: {
+    name: string
+    muscle_group: string
+    video_url?: string
+}) {
+    const supabase = await createClient()
+
+    if (!data.name?.trim()) {
+        return { error: 'El nombre es requerido' }
+    }
+
+    const { error } = await supabase.from('exercises_v2').insert({
+        name: data.name.trim(),
+        english_name: data.name.trim(), // Use same name for english
+        muscle_group: data.muscle_group,
+        gif_url: data.video_url || null,
+        target: null,
+        equipment: null,
+        instructions: [],
+    })
+
+    if (error) {
+        console.error('Error creating exercise:', error)
+        return { error: 'Error al crear el ejercicio' }
+    }
+
     revalidatePath('/workouts')
     return { success: true }
 }

@@ -10,7 +10,7 @@ export default async function OnboardingPage(props: {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
-    if (!user) redirect('/auth/login')
+    if (!user) redirect('/login')
 
     let { data: client, error } = await supabase
         .from('clients')

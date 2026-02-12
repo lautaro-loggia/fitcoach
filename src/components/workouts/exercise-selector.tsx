@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
@@ -10,6 +10,7 @@ import { Tick01Icon, ArrowUpDownIcon, PlusSignIcon, Delete02Icon } from 'hugeico
 import { cn, normalizeText } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { CreateExerciseDialog } from './create-exercise-dialog'
 
 interface ExerciseSelectorProps {
     onAdd: (exercise: any, details: any) => void
@@ -25,25 +26,37 @@ export function ExerciseSelector({ onAdd }: ExerciseSelectorProps) {
     const [exercises, setExercises] = useState<any[]>([])
     const [open, setOpen] = useState(false)
     const [selectedExercise, setSelectedExercise] = useState<any>(null)
+    const [searchTerm, setSearchTerm] = useState('')
+    const [loading, setLoading] = useState(false)
 
     // List of sets for the currently selected exercise
     const [sets, setSets] = useState<SetDetail[]>([
         { reps: '10-12', weight: '0', rest: '90' } // Default first set
     ])
 
+    // Effect for debounced search or initial load
     useEffect(() => {
-        fetchExercises()
-    }, [])
+        const timer = setTimeout(() => {
+            handleSearch(searchTerm)
+        }, 500)
 
-    const fetchExercises = async () => {
-        const supabase = createClient()
-        const { data } = await supabase
-            .from('exercises')
-            .select('id, name, main_muscle_group, category')
-            .order('name')
+        return () => clearTimeout(timer)
+    }, [searchTerm])
 
-        if (data) {
-            setExercises(data)
+    const handleSearch = async (query: string) => {
+        setLoading(true)
+        try {
+            // Import dynamically or assume it's available. To be safe, we'll use the imported action.
+            // Since this is a client component, we import the server action.
+            // Note: We need to ensure the import path is correct in the file header.
+            const { searchExercises } = await import('@/app/(dashboard)/workouts/actions')
+            const { exercises } = await searchExercises(query, 50)
+            setExercises(exercises || [])
+        } catch (error) {
+            console.error("Error searching exercises", error)
+            setExercises([])
+        } finally {
+            setLoading(false)
         }
     }
 
@@ -78,13 +91,14 @@ export function ExerciseSelector({ onAdd }: ExerciseSelectorProps) {
             // Reset fields
             setSelectedExercise(null)
             setSets([{ reps: '10-12', weight: '0', rest: '90' }])
+            setSearchTerm('') // Optional: clear search
         }
     }
 
     return (
         <div className="space-y-4 p-4 border rounded-lg bg-muted/20">
             <div className="space-y-2">
-                <Label>Seleccionar Ejercicio</Label>
+                <Label>Seleccionar Ejercicio (ExerciseDB)</Label>
                 <Popover open={open} onOpenChange={setOpen}>
                     <PopoverTrigger asChild>
                         <Button
@@ -97,20 +111,26 @@ export function ExerciseSelector({ onAdd }: ExerciseSelectorProps) {
                             <ArrowUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-[400px] p-0">
-                        <Command filter={(value, search) => {
-                            const normalizedValue = normalizeText(value)
-                            const normalizedSearch = normalizeText(search)
-                            return normalizedValue.includes(normalizedSearch) ? 1 : 0
-                        }}>
-                            <CommandInput placeholder="Buscar por nombre o grupo muscular..." />
+                    <PopoverContent className="w-[400px] p-0" align="start">
+                        <Command shouldFilter={false}>
+                            <CommandInput
+                                placeholder="Buscar por nombre (ej. bench press)..."
+                                value={searchTerm}
+                                onValueChange={setSearchTerm}
+                            />
                             <CommandList style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                                <CommandEmpty>No se encontraron ejercicios.</CommandEmpty>
+                                {loading && <div className="py-6 text-center text-sm text-muted-foreground">Buscando...</div>}
+                                {!loading && exercises.length === 0 && (
+                                    <CommandEmpty className="py-2 px-2">
+                                        <p className="text-sm text-muted-foreground mb-2">No se encontró el ejercicio.</p>
+                                        <CreateExerciseDialog defaultName={searchTerm} onSuccess={() => handleSearch(searchTerm)} />
+                                    </CommandEmpty>
+                                )}
                                 <CommandGroup>
                                     {exercises.map((ex) => (
                                         <CommandItem
                                             key={ex.id}
-                                            value={`${ex.name} ${ex.main_muscle_group || ''}`}
+                                            value={ex.name} // Value for selection
                                             onSelect={() => {
                                                 setSelectedExercise(ex)
                                                 setOpen(false)
@@ -122,13 +142,23 @@ export function ExerciseSelector({ onAdd }: ExerciseSelectorProps) {
                                                     selectedExercise?.id === ex.id ? "opacity-100" : "opacity-0"
                                                 )}
                                             />
-                                            <div className="flex items-center justify-between w-full">
-                                                <span>{ex.name}</span>
-                                                {ex.main_muscle_group && (
-                                                    <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600">
-                                                        {ex.main_muscle_group}
-                                                    </span>
+                                            <div className="flex items-center gap-3 w-full overflow-hidden">
+                                                {/* Miniature GIF preview if available */}
+                                                {ex.gif_url && (
+                                                    <img
+                                                        src={ex.gif_url}
+                                                        alt="preview"
+                                                        className="h-8 w-8 object-cover rounded bg-white"
+                                                        loading="lazy"
+                                                    />
                                                 )}
+                                                <div className="flex flex-col min-w-0">
+                                                    <span className="truncate font-medium">{ex.name}</span>
+                                                    <div className="flex gap-2 text-xs text-muted-foreground">
+                                                        {ex.main_muscle_group && <span>{ex.main_muscle_group}</span>}
+                                                        {ex.equipment && <span>• {ex.equipment}</span>}
+                                                    </div>
+                                                </div>
                                             </div>
                                         </CommandItem>
                                     ))}

@@ -36,12 +36,13 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { WeeklyProgress } from '@/components/clients/weekly-progress'
 import { NextMilestone } from '@/components/clients/next-milestone'
 import { getARTDate, getTodayString } from '@/lib/utils'
+import { WorkoutStartDialog } from '@/components/clients/workout-start-dialog'
 
 export default async function ClientDashboard() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
-    if (!user) redirect('/auth/login')
+    if (!user) redirect('/login')
 
     const adminClient = createAdminClient()
 
@@ -53,6 +54,11 @@ export default async function ClientDashboard() {
 
     if (error || !client) {
         return <div className="p-8 text-center text-gray-500">No se pudo cargar el dashboard.</div>
+    }
+
+    // Si el cliente no ha completado el onboarding, lo redirigimos
+    if (client.onboarding_status !== 'completed') {
+        redirect('/onboarding')
     }
 
     // 1. Get Today's Workout (ART Time)
@@ -367,12 +373,17 @@ export default async function ClientDashboard() {
                                 </div>
                             </div>
 
-                            <Link href="/dashboard/workout">
-                                <div className="border-t border-gray-100 bg-gray-50/50 p-3 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-blue-600 font-bold text-sm">
+                            <WorkoutStartDialog
+                                workoutId={todayWorkout.id}
+                                workoutName={todayWorkout.name}
+                                exercisesCount={todayWorkout.structure?.length || 0}
+                                estimatedTime={`${(todayWorkout.structure?.length || 0) * 4} min aprox.`}
+                            >
+                                <div className="border-t border-gray-100 bg-gray-50/50 p-3 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-blue-600 font-bold text-sm cursor-pointer">
                                     <Play className="h-4 w-4" fill="currentColor" />
                                     Comenzar Rutina
                                 </div>
-                            </Link>
+                            </WorkoutStartDialog>
                         </div>
                     </Card>
                 ) : (

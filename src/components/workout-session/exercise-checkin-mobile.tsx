@@ -7,6 +7,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { ArrowLeft, MoreVertical, Plus, Dumbbell } from 'lucide-react'
 import { SetRow } from './set-row'
 import { RestTimer } from './rest-timer'
+import { ExerciseInfoDialog } from './exercise-info-dialog'
+import { Info } from 'lucide-react'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -27,6 +29,8 @@ import {
 interface Exercise {
     name: string
     exercise_id?: string
+    gif_url?: string
+    instructions?: string[]
     sets_detail: Array<{ reps: string; weight: string; rest: string }>
 }
 
@@ -195,7 +199,14 @@ export function ExerciseCheckinMobile({
                                 <Dumbbell className="h-6 w-6 text-muted-foreground" />
                             </div>
                             <div>
-                                <h1 className="text-lg font-bold text-primary">{exercise.name}</h1>
+                                <div className="flex items-center gap-2">
+                                    <h1 className="text-lg font-bold text-primary">{exercise.name}</h1>
+                                    <ExerciseInfoDialog
+                                        name={exercise.name}
+                                        gifUrl={exercise.gif_url}
+                                        instructions={exercise.instructions}
+                                    />
+                                </div>
                                 <p className="text-xs text-muted-foreground">{clientName}</p>
                             </div>
                         </div>

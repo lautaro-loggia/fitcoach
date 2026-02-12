@@ -6,6 +6,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Plus } from 'lucide-react'
 import { SetRow } from './set-row'
 import { RestTimer } from './rest-timer'
+import { ExerciseInfoDialog } from './exercise-info-dialog'
+import { Info } from 'lucide-react'
 import {
     getOrCreateExerciseCheckin,
     getExerciseCheckinWithSets,
@@ -21,6 +23,8 @@ interface Exercise {
     name: string
     exercise_id?: string
     category?: string
+    gif_url?: string
+    instructions?: string[]
     sets_detail?: Array<{ reps: string; weight: string; rest: string }>
     cardio_config?: {
         type: 'continuous' | 'intervals'
@@ -162,7 +166,14 @@ function ExerciseCard({ sessionId, exerciseIndex, exercise, initialCheckin }: Ex
     return (
         <div className="space-y-4 py-2">
             <div className="space-y-2">
-                <h3 className="font-bold text-lg leading-none">{exercise.name}</h3>
+                <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-lg leading-none">{exercise.name}</h3>
+                    <ExerciseInfoDialog
+                        name={exercise.name}
+                        gifUrl={exercise.gif_url}
+                        instructions={exercise.instructions}
+                    />
+                </div>
 
                 {/* Notes Input styled as plain text */}
                 <div className="relative group">
@@ -252,11 +263,18 @@ function CardioExerciseCard({ exercise }: CardioExerciseCardProps) {
     return (
         <div className="space-y-4 py-2">
             <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-lg leading-none">{exercise.name}</h3>
-                    <span className="px-2 py-0.5 text-xs rounded-full bg-orange-100 text-orange-700">
-                        Cardio
-                    </span>
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <h3 className="font-bold text-lg leading-none">{exercise.name}</h3>
+                        <span className="px-2 py-0.5 text-xs rounded-full bg-orange-100 text-orange-700">
+                            Cardio
+                        </span>
+                    </div>
+                    <ExerciseInfoDialog
+                        name={exercise.name}
+                        gifUrl={exercise.gif_url}
+                        instructions={exercise.instructions}
+                    />
                 </div>
             </div>
 

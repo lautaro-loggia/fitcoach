@@ -42,7 +42,7 @@ export async function updateSession(request: NextRequest) {
             !request.nextUrl.pathname.startsWith('/register') &&
             !request.nextUrl.pathname.startsWith('/forgot-password') &&
             !request.nextUrl.pathname.startsWith('/reset-password') &&
-            !request.nextUrl.pathname.startsWith('/auth')
+            !request.nextUrl.pathname.startsWith('/auth/callback')
         ) {
             const url = request.nextUrl.clone()
             url.pathname = '/login'
@@ -59,8 +59,24 @@ export async function updateSession(request: NextRequest) {
             (request.nextUrl.pathname.startsWith('/login') ||
                 request.nextUrl.pathname.startsWith('/register'))
         ) {
+            const role = user.user_metadata?.role
             const url = request.nextUrl.clone()
-            url.pathname = '/'
+            url.pathname = role === 'client' ? '/dashboard' : '/'
+            return NextResponse.redirect(url)
+        }
+
+        // Redirect clients from coach routes to client dashboard
+        const isCoachRoute = !request.nextUrl.pathname.startsWith('/dashboard') &&
+            !request.nextUrl.pathname.startsWith('/onboarding') &&
+            !request.nextUrl.pathname.startsWith('/login') &&
+            !request.nextUrl.pathname.startsWith('/register') &&
+            !request.nextUrl.pathname.startsWith('/forgot-password') &&
+            !request.nextUrl.pathname.startsWith('/reset-password') &&
+            !request.nextUrl.pathname.startsWith('/auth')
+
+        if (user && user.user_metadata?.role === 'client' && isCoachRoute) {
+            const url = request.nextUrl.clone()
+            url.pathname = '/dashboard'
             return NextResponse.redirect(url)
         }
 

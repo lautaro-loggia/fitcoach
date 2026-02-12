@@ -40,7 +40,7 @@ export function MobileNav() {
 
     return (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-md pointer-events-none">
-            <nav className="bg-white/75 backdrop-blur-lg border border-black/[0.06] shadow-[0_10px_40px_rgba(0,0,0,0.08)] rounded-[40px] px-6 py-3 flex items-center justify-between pointer-events-auto">
+            <nav className="bg-white/90 backdrop-blur-lg border border-zinc-200 shadow-[0_10px_40px_rgba(0,0,0,0.1)] rounded-[40px] px-6 py-3 flex items-center justify-between pointer-events-auto">
                 {navItems.map((item) => {
                     const active = item.isActive(pathname)
                     return (
@@ -55,13 +55,13 @@ export function MobileNav() {
                             <item.icon
                                 className={cn(
                                     "h-6 w-6 transition-all duration-300",
-                                    active ? "text-[#5254D9]" : "text-gray-400"
+                                    active ? "text-black" : "text-gray-400"
                                 )}
-                                strokeWidth={active ? 1.8 : 1.5}
+                                strokeWidth={active ? 2 : 1.5}
                             />
                             <span className={cn(
                                 "text-[10px] font-semibold leading-none transition-colors duration-200",
-                                active ? "text-[#5254D9]" : "text-gray-400"
+                                active ? "text-black" : "text-gray-400"
                             )}>
                                 {item.label}
                             </span>

@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Download, Pencil } from "lucide-react"
 import { generateWorkoutPDF } from '@/lib/pdf-utils'
+import { ExerciseInfoDialog } from '@/components/workout-session/exercise-info-dialog'
 
 interface WorkoutDetailDialogProps {
     isOpen: boolean
@@ -61,6 +62,11 @@ export function WorkoutDetailDialog({ isOpen, onClose, workout, client, onEdit }
                                     <div className="bg-muted/30 p-3 font-semibold text-sm border-b flex justify-between items-center">
                                         <div className="flex items-center gap-2">
                                             <span>{ex.name}</span>
+                                            <ExerciseInfoDialog
+                                                name={ex.name}
+                                                gifUrl={ex.gif_url}
+                                                instructions={ex.instructions}
+                                            />
                                             {isCardio ? (
                                                 <span className="px-2 py-0.5 text-xs rounded-full bg-orange-100 text-orange-700 font-normal">
                                                     Cardio

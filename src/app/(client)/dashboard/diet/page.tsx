@@ -18,7 +18,7 @@ export default async function DietPage() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
-    if (!user) redirect('/auth/login')
+    if (!user) redirect('/login')
 
     const adminClient = createAdminClient()
     // Fetch Client with Macros

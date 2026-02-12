@@ -17,7 +17,7 @@ export function ClientLogoutButton({ variant = 'menu-item', className }: ClientL
     const handleSignOut = async () => {
         const supabase = createClient()
         await supabase.auth.signOut()
-        router.push('/auth/login')
+        router.push('/login')
     }
 
     if (variant === 'button') {

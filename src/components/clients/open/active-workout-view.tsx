@@ -10,6 +10,7 @@ import { toast } from 'sonner' // Assuming sonner is used, if not we'll use stan
 import { completeWorkout } from '@/app/(client)/dashboard/workout/actions'
 import confetti from 'canvas-confetti'
 import WorkoutFeedbackForm, { WorkoutFeedback } from './workout-feedback-form'
+import { ExerciseInfoDialog } from '@/components/workout-session/exercise-info-dialog'
 
 interface Exercise {
     id: string
@@ -19,6 +20,8 @@ interface Exercise {
     rpe?: string
     notes?: string
     rest?: string
+    gif_url?: string
+    instructions?: string[]
 }
 
 interface Workout {
@@ -126,9 +129,18 @@ export default function ActiveWorkoutView({ workout, clientId }: { workout: Work
                                 </div>
 
                                 <div className="flex-1">
-                                    <h3 className={`font-bold text-base leading-tight ${isChecked ? 'text-green-900' : 'text-gray-900'}`}>
-                                        {exercise.name}
-                                    </h3>
+                                    <div className="flex items-center justify-between">
+                                        <h3 className={`font-bold text-base leading-tight ${isChecked ? 'text-green-900' : 'text-gray-900'}`}>
+                                            {exercise.name}
+                                        </h3>
+                                        <div onClick={(e) => e.stopPropagation()}>
+                                            <ExerciseInfoDialog
+                                                name={exercise.name}
+                                                gifUrl={exercise.gif_url}
+                                                instructions={exercise.instructions}
+                                            />
+                                        </div>
+                                    </div>
 
                                     {/* Quick Stats Grid */}
                                     <div className="grid grid-cols-3 gap-2 mt-3 w-full max-w-[300px]">

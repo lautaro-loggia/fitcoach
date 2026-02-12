@@ -385,13 +385,13 @@ export function ProfileTab({ client }: ProfileTabProps) {
                 </Card>
 
                 {/* Photos Card */}
-                <Card className="flex flex-col md:h-[320px]">
-                    <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                <Card className="flex flex-col h-[60vh] md:h-[320px] relative overflow-hidden">
+                    <CardHeader className="pb-2 flex flex-row items-center justify-between bg-white z-10 relative">
                         <CardTitle className="text-sm font-medium text-muted-foreground">Fotos del progreso</CardTitle>
 
                     </CardHeader>
-                    <CardContent className="flex-1 flex flex-col min-h-0">
-                        <div className="space-y-4 flex-1 overflow-y-auto scrollbar-hide py-2">
+                    <CardContent className="flex-1 flex flex-col min-h-0 p-0 relative">
+                        <div className="flex-1 overflow-y-auto py-2 px-6 scroll-smooth">
                             {photos.length === 0 && (
                                 <p className="text-xs text-muted-foreground text-center py-8">Sin fotos aún</p>
                             )}
@@ -465,18 +465,23 @@ export function ProfileTab({ client }: ProfileTabProps) {
                             })}
                         </div>
 
-                        <div className="flex gap-2 mt-4 pt-2 border-t text-right justify-end">
-                            <PhotoComparisonDialog photos={photos} />
+                        {/* Visual Fade Indicator */}
+                        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent pointer-events-none z-10" />
 
-                            <AddCheckinDialog
-                                clientId={client.id}
-                                // @ts-ignore
-                                trigger={
-                                    <Button className="flex-1 md:flex-none text-xs bg-black hover:bg-black/90 text-white">
-                                        <PlusSignIcon className="mr-2 h-3 w-3" /> Nuevo Check-in
-                                    </Button>
-                                }
-                            />
+                        <div className="sticky bottom-0 bg-white p-4 border-t z-20">
+                            <div className="flex gap-2 justify-end">
+                                <PhotoComparisonDialog photos={photos} />
+
+                                <AddCheckinDialog
+                                    clientId={client.id}
+                                    // @ts-ignore
+                                    trigger={
+                                        <Button className="flex-1 md:flex-none text-xs bg-black hover:bg-black/90 text-white h-9">
+                                            <PlusSignIcon className="mr-2 h-3 w-3" /> Nuevo Check-in
+                                        </Button>
+                                    }
+                                />
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
@@ -485,46 +490,50 @@ export function ProfileTab({ client }: ProfileTabProps) {
             {/* Bottom Row */}
             <div className="grid gap-3 grid-cols-1 md:grid-cols-3">
                 {/* Updates */}
-                <Card className="md:col-span-2 flex flex-col md:h-[340px]">
-                    <CardHeader>
+                <Card className="md:col-span-2 flex flex-col h-[75vh] md:h-[340px] relative overflow-hidden">
+                    <CardHeader className="bg-white z-10 relative border-b">
                         <CardTitle className="text-base font-bold text-muted-foreground">Actualizaciones</CardTitle>
                     </CardHeader>
-                    <CardContent className="flex-1 min-h-0 overflow-y-auto">
-                        <div className="space-y-6">
-                            {activityLoading ? (
-                                <div className="space-y-4">
-                                    {[1, 2, 3].map(i => (
-                                        <div key={i} className="flex justify-between items-start animate-pulse">
-                                            <div className="space-y-2">
-                                                <div className="h-4 w-40 bg-gray-100 rounded" />
-                                                <div className="h-3 w-60 bg-gray-50 rounded" />
+                    <CardContent className="flex-1 min-h-0 relative p-0">
+                        <div className="h-full overflow-y-auto p-6 pb-20 scroll-smooth">
+                            <div className="space-y-6">
+                                {activityLoading ? (
+                                    <div className="space-y-4">
+                                        {[1, 2, 3].map(i => (
+                                            <div key={i} className="flex justify-between items-start animate-pulse">
+                                                <div className="space-y-2">
+                                                    <div className="h-4 w-40 bg-gray-100 rounded" />
+                                                    <div className="h-3 w-60 bg-gray-50 rounded" />
+                                                </div>
+                                                <div className="h-3 w-12 bg-gray-50 rounded" />
                                             </div>
-                                            <div className="h-3 w-12 bg-gray-50 rounded" />
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : activity.length === 0 ? (
-                                <p className="text-sm text-muted-foreground">No hay actualizaciones recientes.</p>
-                            ) : (
-                                activity.map((event) => (
-                                    <div key={event.id} className="flex justify-between items-start pb-4 border-b last:border-0 last:pb-0">
-                                        <div className="flex gap-3">
-                                            <div className="h-8 w-8 rounded-full bg-gray-50 flex items-center justify-center shrink-0 border border-gray-100">
-                                                {event.type === 'meal' && <Utensils className="h-4 w-4 text-orange-500" />}
-                                                {event.type === 'workout' && <Dumbbell className="h-4 w-4 text-blue-500" />}
-                                                {event.type === 'checkin' && <Activity className="h-4 w-4 text-green-500" />}
-                                                {event.type === 'payment' && <DollarSign className="h-4 w-4 text-emerald-500" />}
-                                            </div>
-                                            <div>
-                                                <h4 className="font-semibold text-sm">{event.title}</h4>
-                                                <p className="text-sm text-muted-foreground">{event.description}</p>
-                                            </div>
-                                        </div>
-                                        <span className="text-xs text-muted-foreground whitespace-nowrap lowercase">{event.daysAgo}</span>
+                                        ))}
                                     </div>
-                                ))
-                            )}
+                                ) : activity.length === 0 ? (
+                                    <p className="text-sm text-muted-foreground">No hay actualizaciones recientes.</p>
+                                ) : (
+                                    activity.map((event) => (
+                                        <div key={event.id} className="flex justify-between items-start pb-4 border-b last:border-0 last:pb-0">
+                                            <div className="flex gap-3">
+                                                <div className="h-8 w-8 rounded-full bg-gray-50 flex items-center justify-center shrink-0 border border-gray-100">
+                                                    {event.type === 'meal' && <Utensils className="h-4 w-4 text-orange-500" />}
+                                                    {event.type === 'workout' && <Dumbbell className="h-4 w-4 text-blue-500" />}
+                                                    {event.type === 'checkin' && <Activity className="h-4 w-4 text-green-500" />}
+                                                    {event.type === 'payment' && <DollarSign className="h-4 w-4 text-emerald-500" />}
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-semibold text-sm">{event.title}</h4>
+                                                    <p className="text-sm text-muted-foreground">{event.description}</p>
+                                                </div>
+                                            </div>
+                                            <span className="text-xs text-muted-foreground whitespace-nowrap lowercase">{event.daysAgo}</span>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
                         </div>
+                        {/* Visual Fade Indicator */}
+                        <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-white to-transparent pointer-events-none z-10" />
                     </CardContent>
                 </Card>
 

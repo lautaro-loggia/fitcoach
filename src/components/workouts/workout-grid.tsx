@@ -38,10 +38,19 @@ export function WorkoutGrid({ workouts }: WorkoutGridProps) {
 
     if (!workouts || workouts.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed rounded-lg bg-muted/5">
-                <Dumbbell01Icon className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold">No hay rutinas creadas</h3>
-                <p className="text-muted-foreground mb-4">Empezá creando tu primera rutina de entrenamiento.</p>
+            <div className="flex flex-col items-center justify-center py-20 px-4 text-center border-2 border-dashed rounded-2xl bg-muted/5">
+                <div className="relative w-full max-w-[240px] aspect-square mb-6">
+                    <img
+                        src="/images/training-empty-state.png"
+                        alt="No hay rutinas"
+                        className="w-full h-full object-contain opacity-80"
+                    />
+                </div>
+                <h3 className="text-xl font-bold mb-2">No hay rutinas creadas</h3>
+                <p className="text-muted-foreground mb-6 max-w-[300px]">
+                    Empezá creando tu primera rutina de entrenamiento para tus asesorados.
+                </p>
+                <WorkoutDialog />
             </div>
         )
     }
