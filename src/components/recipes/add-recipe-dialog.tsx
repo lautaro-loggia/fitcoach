@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -13,7 +14,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
-import { Plus, X, Clock, Users, Camera, Loader2 } from 'lucide-react'
+import { Plus, X, Clock, Users, Camera, Loader2, ChevronRight, ChevronLeft, Check, PieChart, Utensils, Trash2 } from 'lucide-react'
+import { Progress } from '@/components/ui/progress'
 import { IngredientSelector } from './ingredient-selector'
 import { createRecipeAction, RecipeIngredient } from '@/app/(dashboard)/recipes/actions'
 import { createClient } from '@/lib/supabase/client'
@@ -30,6 +32,7 @@ interface SelectedIngredient {
     quantity_grams: number
     unit: string
     quantity: number
+    valid_units?: Record<string, number>
 }
 
 interface AddRecipeDialogProps {
@@ -46,6 +49,8 @@ export function AddRecipeDialog({ open: controlledOpen, onOpenChange, onSuccess,
     const setOpen = isControlled ? onOpenChange! : setInternalOpen
 
     const [loading, setLoading] = useState(false)
+    const [step, setStep] = useState(1)
+    const totalSteps = 3
     const [selectedIngredients, setSelectedIngredients] = useState<SelectedIngredient[]>([])
     const [recipeName, setRecipeName] = useState('')
     const [mealType, setMealType] = useState(defaultMealType || '')
@@ -53,6 +58,11 @@ export function AddRecipeDialog({ open: controlledOpen, onOpenChange, onSuccess,
     const [prepTime, setPrepTime] = useState(0)
     const [imageUrl, setImageUrl] = useState('')
     const [isUploading, setIsUploading] = useState(false)
+
+    // New state for Bebidas
+    const [manualMacros, setManualMacros] = useState({ kcal: 0, protein: 0, carbs: 0, fat: 0 })
+    const [servingUnit, setServingUnit] = useState('') // e.g., "1 taza", "300ml"
+
     const router = useRouter()
 
     const handleAddIngredient = (ingredient: any, grams: number, unit: string, quantity: number) => {
@@ -67,7 +77,42 @@ export function AddRecipeDialog({ open: controlledOpen, onOpenChange, onSuccess,
             quantity_grams: grams,
             unit: unit,
             quantity: quantity,
+            valid_units: ingredient.valid_units
         }])
+    }
+
+    const handleQuantityChange = (index: number, newQuantity: number) => {
+        const updated = [...selectedIngredients]
+        const ing = updated[index]
+
+        let grams = newQuantity
+        if (ing.unit !== 'g' && ing.valid_units && ing.valid_units[ing.unit]) {
+            grams = newQuantity * ing.valid_units[ing.unit]
+        }
+
+        updated[index] = { ...ing, quantity: newQuantity, quantity_grams: grams }
+        setSelectedIngredients(updated)
+    }
+
+    const handleUnitChange = (index: number, newUnit: string) => {
+        const updated = [...selectedIngredients]
+        const ing = updated[index]
+
+        let grams = ing.quantity
+        if (newUnit !== 'g' && ing.valid_units && ing.valid_units[newUnit]) {
+            grams = ing.quantity * ing.valid_units[newUnit]
+        } else {
+            // If switching to 'g', the quantity is the grams? Or should we keep the numeric value?
+            // Usually if I have "1 cup" (200g) and switch to 'g', it should probably stay "1" or convert?
+            // Simple approach: keep the number, recalc the grams. 
+            // If I have 1 cup and switch to grams, it becomes 1 gram. That's usually annoying.
+            // But if I have 200g and switch to cup, it becomes 200 cups.
+            // Let's stick to: keep number, recalc grams based on new unit definition.
+            grams = ing.quantity
+        }
+
+        updated[index] = { ...ing, unit: newUnit, quantity_grams: grams }
+        setSelectedIngredients(updated)
     }
 
     const handleRemoveIngredient = (index: number) => {
@@ -124,14 +169,20 @@ export function AddRecipeDialog({ open: controlledOpen, onOpenChange, onSuccess,
             quantity: ing.quantity,
         }))
 
+        let finalName = recipeName
+        if (mealType === 'bebida' && servingUnit?.trim()) {
+            finalName = `${recipeName} (${servingUnit.trim()})`
+        }
+
         const result = await createRecipeAction({
-            name: recipeName,
+            name: finalName,
             meal_type: mealType,
             servings: servings,
             prep_time_min: prepTime,
             instructions: '',
             ingredients: recipeIngredients,
-            image_url: imageUrl || null
+            image_url: imageUrl || null,
+            manual_macros: (mealType === 'bebida' && selectedIngredients.length === 0) ? manualMacros : undefined
         })
 
         if (result?.error) {
@@ -140,10 +191,8 @@ export function AddRecipeDialog({ open: controlledOpen, onOpenChange, onSuccess,
             resetForm()
             if (onSuccess) {
                 onSuccess(result.recipe)
-            } else {
                 setOpen(false)
-                // Navigate to the new recipe for editing only if no onSuccess is provided
-                router.push(`/recipes/${result.recipe.id}`)
+                router.refresh()
             }
         }
         setLoading(false)
@@ -157,6 +206,9 @@ export function AddRecipeDialog({ open: controlledOpen, onOpenChange, onSuccess,
         setPrepTime(0)
         setImageUrl('')
         setIsUploading(false)
+        setManualMacros({ kcal: 0, protein: 0, carbs: 0, fat: 0 })
+        setServingUnit('')
+        setStep(1)
     }
 
     // Calculate total macros
@@ -170,11 +222,16 @@ export function AddRecipeDialog({ open: controlledOpen, onOpenChange, onSuccess,
         }
     }, { kcal: 0, protein: 0, carbs: 0, fat: 0 })
 
+    // Use manual macros if it's a drink with no ingredients
+    const activeMacros = (mealType === 'bebida' && selectedIngredients.length === 0)
+        ? manualMacros
+        : totalMacros
+
     const macrosPerServing = {
-        kcal: totalMacros.kcal / servings,
-        protein: totalMacros.protein / servings,
-        carbs: totalMacros.carbs / servings,
-        fat: totalMacros.fat / servings,
+        kcal: activeMacros.kcal / servings,
+        protein: activeMacros.protein / servings,
+        carbs: activeMacros.carbs / servings,
+        fat: activeMacros.fat / servings,
     }
 
     return (
@@ -189,189 +246,351 @@ export function AddRecipeDialog({ open: controlledOpen, onOpenChange, onSuccess,
                     </Button>
                 </DialogTrigger>
             )}
-            <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle>Crear nueva receta</DialogTitle>
-                    <DialogDescription>
-                        Agregá los ingredientes y la información básica de la receta
-                    </DialogDescription>
-                </DialogHeader>
-
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Image & Basic Info Row */}
-                    <div className="flex gap-6 items-start">
-                        {/* Image Upload Area */}
-                        <div className="space-y-2">
-                            <Label>Imagen</Label>
-                            <div className="relative h-32 w-32 rounded-xl overflow-hidden bg-muted flex items-center justify-center border-2 border-dashed border-muted-foreground/20 hover:border-primary/50 transition-colors group cursor-pointer"
-                                onClick={() => document.getElementById('recipe-image-upload')?.click()}>
-                                {imageUrl ? (
-                                    <Image
-                                        src={imageUrl}
-                                        alt="Recipe"
-                                        fill
-                                        className="object-cover"
-                                    />
-                                ) : isUploading ? (
-                                    <Loader2 className="h-8 w-8 text-primary animate-spin" />
-                                ) : (
-                                    <div className="flex flex-col items-center gap-1 text-muted-foreground group-hover:text-primary">
-                                        <Camera className="h-8 w-8" />
-                                        <span className="text-[10px] font-medium">Subir</span>
-                                    </div>
-                                )}
-                                <input
-                                    type="file"
-                                    id="recipe-image-upload"
-                                    accept="image/*"
-                                    onChange={handleImageUpload}
-                                    className="hidden"
-                                />
+            <DialogContent className="w-full sm:max-w-[800px] h-[95vh] sm:h-[90vh] flex flex-col p-0 overflow-hidden">
+                <div className="p-4 sm:p-6 pb-2">
+                    <DialogHeader className="mb-4">
+                        <DialogTitle>Crear nueva receta</DialogTitle>
+                        <div className="pt-4">
+                            <div className="flex justify-between text-xs font-medium text-muted-foreground mb-2">
+                                <span>Paso {step} de {totalSteps}</span>
+                                <span>{Math.round((step / totalSteps) * 100)}%</span>
                             </div>
-                            {imageUrl && (
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    className="w-full h-7 text-[10px] text-destructive hover:text-destructive hover:bg-destructive/10"
-                                    onClick={() => setImageUrl('')}
-                                >
-                                    Quitar foto
-                                </Button>
-                            )}
+                            <Progress value={(step / totalSteps) * 100} className="h-2" />
                         </div>
+                    </DialogHeader>
+                </div>
 
-                        <div className="flex-1 grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="recipeName">Nombre de la receta *</Label>
-                                <Input
-                                    id="recipeName"
-                                    value={recipeName}
-                                    onChange={(e) => setRecipeName(e.target.value)}
-                                    placeholder="Ej: Pollo con arroz integral"
-                                    required
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Tipo de comida</Label>
-                                <Select value={mealType} onValueChange={setMealType}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Seleccionar" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="desayuno">Desayuno</SelectItem>
-                                        <SelectItem value="almuerzo">Almuerzo</SelectItem>
-                                        <SelectItem value="cena">Cena</SelectItem>
-                                        <SelectItem value="snack">Snack</SelectItem>
-                                        <SelectItem value="postre">Postre</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                    </div>
+                <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+                    <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="servings">
-                                <Users className="h-3.5 w-3.5 inline mr-1" />
-                                Porciones
-                            </Label>
-                            <Input
-                                id="servings"
-                                type="number"
-                                min="1"
-                                value={servings}
-                                onChange={(e) => setServings(parseInt(e.target.value) || 1)}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="prepTime">
-                                <Clock className="h-3.5 w-3.5 inline mr-1" />
-                                Tiempo de preparación (min)
-                            </Label>
-                            <Input
-                                id="prepTime"
-                                type="number"
-                                min="0"
-                                value={prepTime}
-                                onChange={(e) => setPrepTime(parseInt(e.target.value) || 0)}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Ingredient Selector */}
-                    <div>
-                        <h3 className="text-sm font-semibold mb-3">Ingredientes</h3>
-                        <IngredientSelector onAdd={handleAddIngredient} />
-                    </div>
-
-                    {selectedIngredients.length > 0 && (
-                        <div className="border rounded-lg p-4 bg-muted/20">
-                            <div className="space-y-2">
-                                {selectedIngredients.map((ing, index) => {
-                                    const factor = ing.quantity_grams / 100
-                                    const ingKcal = (ing.kcal_100g || 0) * factor
-                                    return (
-                                        <div key={index} className="flex items-center justify-between p-3 bg-background rounded-lg border">
-                                            <div className="flex-1">
-                                                <p className="font-medium">{ing.name}</p>
-                                                <p className="text-sm text-muted-foreground">
-                                                    {ing.unit && ing.unit !== 'g' ? `${ing.quantity} ${ing.unit} (${Math.round(ing.quantity_grams)}g)` : `${ing.quantity_grams}g`} · {Math.round(ingKcal)} kcal
-                                                </p>
-                                            </div>
+                        {/* STEP 1: BASIC INFO */}
+                        {step === 1 && (
+                            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                                <div className="flex flex-col md:flex-row gap-6">
+                                    {/* Image Upload - Enhanced Visuals */}
+                                    <div className="space-y-3 flex-shrink-0">
+                                        <Label className="text-base font-semibold">Foto del plato</Label>
+                                        <div className="relative h-40 md:h-48 w-full md:w-48 rounded-2xl overflow-hidden bg-muted flex items-center justify-center border-2 border-dashed border-muted-foreground/25 hover:border-primary/50 transition-all cursor-pointer group shadow-sm hover:shadow-md hover:bg-muted/50"
+                                            onClick={() => document.getElementById('recipe-image-upload')?.click()}>
+                                            {imageUrl ? (
+                                                <Image
+                                                    src={imageUrl}
+                                                    alt="Recipe"
+                                                    fill
+                                                    className="object-cover transition-transform group-hover:scale-105"
+                                                />
+                                            ) : isUploading ? (
+                                                <Loader2 className="h-10 w-10 text-primary animate-spin" />
+                                            ) : (
+                                                <div className="flex flex-col items-center gap-2 text-muted-foreground group-hover:text-primary transition-colors">
+                                                    <Camera className="h-10 w-10" />
+                                                    <span className="text-xs font-medium">Subir foto</span>
+                                                </div>
+                                            )}
+                                            <input
+                                                type="file"
+                                                id="recipe-image-upload"
+                                                accept="image/*"
+                                                onChange={handleImageUpload}
+                                                className="hidden"
+                                            />
+                                        </div>
+                                        {imageUrl && (
                                             <Button
                                                 type="button"
                                                 variant="ghost"
-                                                size="icon"
-                                                onClick={() => handleRemoveIngredient(index)}
-                                                className="hover:bg-destructive/10 text-destructive"
+                                                size="sm"
+                                                className="w-full text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                onClick={() => setImageUrl('')}
                                             >
-                                                <X className="h-4 w-4" />
+                                                Quitar foto
                                             </Button>
-                                        </div>
-                                    )
-                                })}
-                            </div>
-                        </div>
-                    )}
+                                        )}
+                                    </div>
 
-                    {/* Macros Summary */}
-                    <div className="border-t pt-4">
-                        <p className="text-sm text-muted-foreground mb-2">Por porción ({servings} {servings === 1 ? 'porción' : 'porciones'})</p>
-                        <div className="grid grid-cols-4 gap-4">
-                            <div className="text-center p-3 bg-muted dark:bg-muted/20 rounded-lg">
-                                <p className="text-xl font-bold text-primary dark:text-primary">{Math.round(macrosPerServing.kcal)}</p>
-                                <p className="text-xs text-muted-foreground">kcal</p>
+                                    <div className="flex-1 space-y-5">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="recipeName" className="text-base font-semibold">Nombre de la receta</Label>
+                                            <Input
+                                                id="recipeName"
+                                                value={recipeName}
+                                                onChange={(e) => setRecipeName(e.target.value)}
+                                                placeholder="Ej: Pollo al limón con papas"
+                                                className="text-lg h-12"
+                                                required
+                                                autoFocus
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="mealType" className="text-base font-semibold">Tipo de comida</Label>
+                                            <Select value={mealType} onValueChange={setMealType}>
+                                                <SelectTrigger className="h-12">
+                                                    <SelectValue placeholder="Seleccionar categoría" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="desayuno">Desayuno</SelectItem>
+                                                    <SelectItem value="almuerzo">Almuerzo</SelectItem>
+                                                    <SelectItem value="cena">Cena</SelectItem>
+                                                    <SelectItem value="snack">Snack</SelectItem>
+                                                    <SelectItem value="postre">Postre</SelectItem>
+                                                    <SelectItem value="bebida">Bebidas</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                                <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{Math.round(macrosPerServing.protein)}g</p>
-                                <p className="text-xs text-muted-foreground">Proteínas</p>
+                        )}
+
+
+
+                        {/* STEP 2: INGREDIENTS */}
+                        {step === 2 && (
+                            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-lg font-semibold flex items-center gap-2">
+                                            <Utensils className="h-5 w-5 text-primary" />
+                                            Ingredientes
+                                        </h3>
+                                        <span className="text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
+                                            {selectedIngredients.length} agregados
+                                        </span>
+                                    </div>
+
+                                    <div className="p-1">
+                                        <IngredientSelector onAdd={handleAddIngredient} />
+                                    </div>
+
+                                    {/* Editable Ingredient List */}
+                                    <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+                                        {selectedIngredients.length === 0 ? (
+                                            <div className="text-center py-10 border-2 border-dashed rounded-xl text-muted-foreground bg-muted/20">
+                                                <p>No hay ingredientes agregados aún.</p>
+                                                <p className="text-xs mt-1">Buscá y agregá arriba para empezar.</p>
+                                            </div>
+                                        ) : (
+                                            selectedIngredients.map((ing, index) => {
+                                                const factor = ing.quantity_grams / 100
+                                                const ingKcal = (ing.kcal_100g || 0) * factor
+                                                return (
+                                                    <div key={index} className="flex gap-2 sm:gap-3 items-center p-3 bg-card border rounded-xl shadow-sm hover:shadow-md transition-shadow group">
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="font-medium truncate text-sm sm:text-base" title={ing.name}>{ing.name}</p>
+                                                            <p className="text-xs text-muted-foreground">{Math.round(ingKcal)} kcal</p>
+                                                        </div>
+
+                                                        {/* Editable Quantity */}
+                                                        <div className="flex gap-1 sm:gap-2 items-center">
+                                                            <Input
+                                                                type="number"
+                                                                min="0"
+                                                                className="h-8 w-16 sm:w-20 text-center px-1 text-sm"
+                                                                value={ing.quantity || 0}
+                                                                onChange={(e) => handleQuantityChange(index, parseFloat(e.target.value) || 0)}
+                                                            />
+                                                            <Select
+                                                                value={ing.unit || 'g'}
+                                                                onValueChange={(val) => handleUnitChange(index, val)}
+                                                            >
+                                                                <SelectTrigger className="h-8 w-[65px] sm:w-[70px] px-1 sm:px-2 text-xs">
+                                                                    <SelectValue />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    <SelectItem value="g">g</SelectItem>
+                                                                    {ing.valid_units && Object.keys(ing.valid_units).map(u => (
+                                                                        <SelectItem key={u} value={u}>{u}</SelectItem>
+                                                                    ))}
+                                                                </SelectContent>
+                                                            </Select>
+                                                        </div>
+
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() => handleRemoveIngredient(index)}
+                                                            className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 flex-shrink-0"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                )
+                                            })
+                                        )}
+                                    </div>
+                                    {mealType === 'bebida' && selectedIngredients.length === 0 && (
+                                        <div className="grid grid-cols-4 gap-3 p-4 bg-muted/30 rounded-lg border border-dashed">
+                                            <div className="col-span-4 text-xs font-medium text-muted-foreground mb-1">
+                                                Macros manuales (si no usás ingredientes)
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label className="text-xs">Kcal</Label>
+                                                <Input
+                                                    type="number" min="0" value={manualMacros.kcal}
+                                                    onChange={(e) => setManualMacros({ ...manualMacros, kcal: parseFloat(e.target.value) || 0 })}
+                                                    className="h-8 text-sm"
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label className="text-xs">Prot</Label>
+                                                <Input
+                                                    type="number" min="0" value={manualMacros.protein}
+                                                    onChange={(e) => setManualMacros({ ...manualMacros, protein: parseFloat(e.target.value) || 0 })}
+                                                    className="h-8 text-sm"
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label className="text-xs">Carb</Label>
+                                                <Input
+                                                    type="number" min="0" value={manualMacros.carbs}
+                                                    onChange={(e) => setManualMacros({ ...manualMacros, carbs: parseFloat(e.target.value) || 0 })}
+                                                    className="h-8 text-sm"
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label className="text-xs">Grasa</Label>
+                                                <Input
+                                                    type="number" min="0" value={manualMacros.fat}
+                                                    onChange={(e) => setManualMacros({ ...manualMacros, fat: parseFloat(e.target.value) || 0 })}
+                                                    className="h-8 text-sm"
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                            <div className="text-center p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
-                                <p className="text-xl font-bold text-amber-600 dark:text-amber-400">{Math.round(macrosPerServing.carbs)}g</p>
-                                <p className="text-xs text-muted-foreground">Carbos</p>
+                        )}
+
+                        {/* STEP 3: REVIEW & CONFIRM */}
+                        {step === 3 && (
+                            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+
+                                <div className="flex gap-4 items-center mb-6">
+                                    <div className="relative h-16 w-16 sm:h-20 sm:w-20 rounded-xl overflow-hidden bg-muted border flex-shrink-0">
+                                        {imageUrl ? (
+                                            <Image src={imageUrl} alt="Recipe" fill className="object-cover" />
+                                        ) : (
+                                            <div className="flex items-center justify-center h-full w-full text-muted-foreground">
+                                                <Utensils className="h-8 w-8 opacity-20" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg sm:text-xl font-bold">{recipeName}</h3>
+                                        <p className="text-sm text-muted-foreground capitalize flex items-center gap-2">
+                                            {mealType || 'Sin categoría'}
+                                            <span className="w-1 h-1 rounded-full bg-muted-foreground/40"></span>
+                                            {servings} porciones
+                                            {prepTime > 0 && (
+                                                <>
+                                                    <span className="w-1 h-1 rounded-full bg-muted-foreground/40"></span>
+                                                    <Clock className="h-3 w-3 inline" /> {prepTime} min
+                                                </>
+                                            )}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <Card className="border-none shadow-md bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950">
+                                    <CardHeader className="pb-2">
+                                        <CardTitle className="text-lg flex items-center gap-2">
+                                            <PieChart className="h-5 w-5 text-primary" />
+                                            Información Nutricional
+                                            <span className="text-xs font-normal text-muted-foreground ml-auto">Por porción</span>
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                                            <div className="flex flex-col items-center p-3 bg-background rounded-xl shadow-sm border">
+                                                <span className="text-2xl font-bold text-foreground">{Math.round(macrosPerServing.kcal)}</span>
+                                                <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Kcal</span>
+                                            </div>
+                                            <div className="flex flex-col items-center p-3 bg-blue-50/50 dark:bg-blue-950/20 rounded-xl border border-blue-100 dark:border-blue-900/50">
+                                                <span className="text-xl font-bold text-blue-600 dark:text-blue-400">{Math.round(macrosPerServing.protein)}g</span>
+                                                <span className="text-xs text-blue-600/70 dark:text-blue-400/70 font-medium">Prot</span>
+                                            </div>
+                                            <div className="flex flex-col items-center p-3 bg-amber-50/50 dark:bg-amber-950/20 rounded-xl border border-amber-100 dark:border-amber-900/50">
+                                                <span className="text-xl font-bold text-amber-600 dark:text-amber-400">{Math.round(macrosPerServing.carbs)}g</span>
+                                                <span className="text-xs text-amber-600/70 dark:text-amber-400/70 font-medium">Carb</span>
+                                            </div>
+                                            <div className="flex flex-col items-center p-3 bg-rose-50/50 dark:bg-rose-950/20 rounded-xl border border-rose-100 dark:border-rose-900/50">
+                                                <span className="text-xl font-bold text-rose-600 dark:text-rose-400">{Math.round(macrosPerServing.fat)}g</span>
+                                                <span className="text-xs text-rose-600/70 dark:text-rose-400/70 font-medium">Grasa</span>
+                                            </div>
+                                        </div>
+                                        <div className="mt-4 pt-4 border-t text-xs text-muted-foreground flex justify-between">
+                                            <span>Total receta: {Math.round(activeMacros.kcal)} kcal</span>
+                                            <span>{selectedIngredients.length} ingredientes</span>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                <div className="bg-muted/20 p-4 rounded-xl border">
+                                    <h4 className="text-sm font-semibold mb-3">Resumen de ingredientes</h4>
+                                    <ul className="space-y-2 max-h-[150px] overflow-y-auto text-sm text-muted-foreground">
+                                        {selectedIngredients.length > 0 ? selectedIngredients.map((ing, i) => (
+                                            <li key={i} className="flex justify-between">
+                                                <span className="truncate pr-2">{ing.quantity} {ing.unit} {ing.name}</span>
+                                                <span className="flex-shrink-0">{Math.round((ing.kcal_100g || 0) * (ing.quantity_grams / 100))} kcal</span>
+                                            </li>
+                                        )) : (
+                                            <li className="italic">Sin ingredientes (macros manuales)</li>
+                                        )}
+                                    </ul>
+                                </div>
                             </div>
-                            <div className="text-center p-3 bg-rose-50 dark:bg-rose-900/20 rounded-lg">
-                                <p className="text-xl font-bold text-rose-600 dark:text-rose-400">{Math.round(macrosPerServing.fat)}g</p>
-                                <p className="text-xs text-muted-foreground">Grasas</p>
-                            </div>
-                        </div>
+                        )}
+
                     </div>
 
-                    <div className="flex justify-end gap-3 pt-4">
-                        <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-                            Cancelar
-                        </Button>
-                        <Button
-                            type="submit"
-                            disabled={loading || isUploading || selectedIngredients.length === 0 || !recipeName.trim()}
-                            className="bg-primary text-white hover:bg-primary/90"
-                        >
-                            {loading ? 'Creando...' : 'Crear receta'}
-                        </Button>
+                    <div className="p-4 sm:p-6 pt-4 border-t bg-background mt-auto flex justify-between">
+                        {step > 1 ? (
+                            <Button type="button" variant="ghost" onClick={() => setStep(step - 1)}>
+                                <ChevronLeft className="mr-2 h-4 w-4" />
+                                Atrás
+                            </Button>
+                        ) : (
+                            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+                                Cancelar
+                            </Button>
+                        )}
+
+                        {step < totalSteps ? (
+                            <Button
+                                type="button"
+                                onClick={() => setStep(step + 1)}
+                                className="bg-primary hover:bg-primary/90 text-white min-w-[120px]"
+                                disabled={
+                                    (step === 1 && (!recipeName.trim() || !mealType)) ||
+                                    (step === 2 && (mealType !== 'bebida' && selectedIngredients.length === 0))
+                                }
+                            >
+                                Siguiente
+                                <ChevronRight className="ml-2 h-4 w-4" />
+                            </Button>
+                        ) : (
+                            <Button
+                                type="submit"
+                                disabled={loading || isUploading}
+                                className="bg-primary text-white hover:bg-primary/90 min-w-[140px]"
+                            >
+                                {loading ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Creando...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Check className="mr-2 h-4 w-4" />
+                                        Crear Receta
+                                    </>
+                                )}
+                            </Button>
+                        )}
                     </div>
                 </form>
             </DialogContent>
-        </Dialog>
+        </Dialog >
     )
 }
