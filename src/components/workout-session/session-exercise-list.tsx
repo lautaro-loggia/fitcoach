@@ -164,7 +164,7 @@ function ExerciseCard({ sessionId, exerciseIndex, exercise, initialCheckin }: Ex
     }
 
     return (
-        <div className="space-y-4 py-2">
+        <div className="bg-card border rounded-2xl shadow-sm p-4 space-y-4">
             <div className="space-y-2">
                 <div className="flex items-center justify-between">
                     <h3 className="font-bold text-lg leading-none">{exercise.name}</h3>
@@ -243,9 +243,6 @@ function ExerciseCard({ sessionId, exerciseIndex, exercise, initialCheckin }: Ex
                 <Plus className="h-4 w-4 mr-2" />
                 Agregar serie
             </Button>
-
-            {/* Divider between exercises */}
-            <div className="pt-6 border-b border-border/40" />
         </div>
     )
 }
@@ -261,7 +258,7 @@ function CardioExerciseCard({ exercise }: CardioExerciseCardProps) {
             config?.intensity === 'high' ? 'Alta' : 'HIIT'
 
     return (
-        <div className="space-y-4 py-2">
+        <div className="bg-card border rounded-2xl shadow-sm p-4 space-y-4">
             <div className="space-y-2">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -316,9 +313,6 @@ function CardioExerciseCard({ exercise }: CardioExerciseCardProps) {
                     </div>
                 )}
             </div>
-
-            {/* Divider between exercises */}
-            <div className="pt-6 border-b border-border/40" />
         </div>
     )
 }
