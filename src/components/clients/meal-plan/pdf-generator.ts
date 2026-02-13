@@ -65,15 +65,52 @@ export function generateWeeklyPlanPDF(plan: any, clientName: string) {
             .map((meal: any) => {
                 const dishes = meal.items.map((item: any) => {
                     const name = item.custom_name || item.recipe?.name || "Sin nombre"
-                    const portions = item.portions > 1 ? ` (${item.portions} porc.)` : ""
-                    // Add basic macros if available?
-                    let macroInfo = ""
+                    const portions = item.portions || 1
+
+                    let details = `• ${name}`
+                    if (portions !== 1) details += ` (${portions} porc.)`
+
                     if (item.recipe) {
-                        const k = Math.round((item.recipe.kcal_per_serving || item.recipe.macros_calories || 0) * item.portions)
-                        if (k > 0) macroInfo = `\n~${k} kcal`
+                        const servings = item.recipe.servings || 1
+                        const factor = portions / servings
+
+                        // Ingredients
+                        if (item.recipe.ingredients && Array.isArray(item.recipe.ingredients) && item.recipe.ingredients.length > 0) {
+                            details += '\n  Ingredientes:'
+                            item.recipe.ingredients.forEach((ing: any) => {
+                                let amountStr = ''
+                                if (ing.quantity) {
+                                    // For items like "2 eggs", show decimal if needed but try to keep clean
+                                    const qty = ing.quantity * factor
+                                    // Format to max 1 decimal
+                                    const rounded = Math.round(qty * 10) / 10
+                                    amountStr = `${rounded} u` // 'u' or unit from ing?
+                                    if (ing.unit) amountStr = `${rounded} ${ing.unit}`
+                                    // sometimes unit is implicit for quantity, but usually 'unidades'
+                                } else if (ing.grams) {
+                                    const g = Math.round(ing.grams * factor)
+                                    amountStr = `${g}g`
+                                }
+
+                                if (amountStr) {
+                                    details += `\n  - ${ing.ingredient_name}: ${amountStr}`
+                                }
+                            })
+                        }
+
+                        // Macros
+                        const k = Math.round((item.recipe.macros_calories || 0) * factor)
+                        const p = Math.round((item.recipe.macros_protein_g || 0) * factor)
+                        const c = Math.round((item.recipe.macros_carbs_g || 0) * factor)
+                        const f = Math.round((item.recipe.macros_fat_g || 0) * factor)
+
+                        if (k > 0) {
+                            details += `\n  Aporta: ~${k} kcal | P: ${p}g | C: ${c}g | G: ${f}g`
+                        }
                     }
-                    return `• ${name}${portions}${macroInfo}`
-                }).join('\n')
+
+                    return details
+                }).join('\n\n') // Extra spacing between dishes
 
                 return [meal.name, dishes || "—"]
             })
