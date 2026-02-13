@@ -25,6 +25,12 @@ export interface RecipeData {
     instructions: string
     ingredients: RecipeIngredient[]
     image_url?: string | null
+    manual_macros?: {
+        kcal: number
+        protein: number
+        carbs: number
+        fat: number
+    }
 }
 
 export async function createRecipeAction(data: RecipeData) {
@@ -40,20 +46,34 @@ export async function createRecipeAction(data: RecipeData) {
         return { error: 'El nombre es requerido' }
     }
 
-    if (!data.ingredients || data.ingredients.length === 0) {
+    // Skip ingredients validation for drinks with manual macros
+    const isDrink = data.meal_type === 'bebida'
+    if (!isDrink && (!data.ingredients || data.ingredients.length === 0)) {
         return { error: 'Debe agregar al menos un ingrediente' }
     }
 
-    // Calculate total macros from ingredients
-    const macros = data.ingredients.reduce((acc, ing) => {
-        const factor = (ing.grams || 0) / 100
-        return {
-            kcal: acc.kcal + (ing.kcal_100g || 0) * factor,
-            protein: acc.protein + (ing.protein_100g || 0) * factor,
-            carbs: acc.carbs + (ing.carbs_100g || 0) * factor,
-            fat: acc.fat + (ing.fat_100g || 0) * factor,
-        }
-    }, { kcal: 0, protein: 0, carbs: 0, fat: 0 })
+    let macros = { kcal: 0, protein: 0, carbs: 0, fat: 0 }
+
+    if (data.ingredients && data.ingredients.length > 0) {
+        // Calculate total macros from ingredients
+        macros = data.ingredients.reduce((acc, ing) => {
+            const factor = (ing.grams || 0) / 100
+            return {
+                kcal: acc.kcal + (ing.kcal_100g || 0) * factor,
+                protein: acc.protein + (ing.protein_100g || 0) * factor,
+                carbs: acc.carbs + (ing.carbs_100g || 0) * factor,
+                fat: acc.fat + (ing.fat_100g || 0) * factor,
+            }
+        }, { kcal: 0, protein: 0, carbs: 0, fat: 0 })
+    } else if (isDrink && data.manual_macros) {
+        // Use manual macros for drinks without ingredients
+        // Scale by servings to store TOTAL macros for the recipe
+        // (Assuming manual_macros passed are per serving or total? 
+        // Usually manual entry is "per serving" in UI, but database stores TOTAL for the whole recipe.
+        // Let's assume UI sends TOTAL macros if servings > 1, OR we calculate here.
+        // Actually, for drinks, usually servings=1. Let's assume passed manual_macros are TOTAL.)
+        macros = data.manual_macros
+    }
 
     // Generate a unique recipe_code
     const recipe_code = `R${Date.now().toString(36).toUpperCase()}`
@@ -66,7 +86,7 @@ export async function createRecipeAction(data: RecipeData) {
         servings: data.servings || 1,
         prep_time_min: data.prep_time_min,
         instructions: data.instructions,
-        ingredients: data.ingredients,
+        ingredients: data.ingredients || [],
         image_url: data.image_url || null,
         macros_calories: macros.kcal,
         macros_protein_g: macros.protein,

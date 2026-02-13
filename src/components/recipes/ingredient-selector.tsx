@@ -31,10 +31,10 @@ export function IngredientSelector({ onAdd }: IngredientSelectorProps) {
     // Reset unit when ingredient changes
     useEffect(() => {
         if (selectedIngredient?.valid_units) {
-            // Default to the first unit if available, otherwise 'g'
-            // logic: custom units first?
             const units = Object.keys(selectedIngredient.valid_units)
-            if (units.length > 0) {
+            if (units.includes('taza')) {
+                setUnit('taza')
+            } else if (units.length > 0) {
                 setUnit(units[0])
             } else {
                 setUnit('g')
@@ -99,8 +99,8 @@ export function IngredientSelector({ onAdd }: IngredientSelectorProps) {
 
     return (
         <div className="space-y-4">
-            <div className="grid grid-cols-[2fr_1fr_auto] gap-4 items-end">
-                <div className="space-y-2">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-end">
+                <div className="space-y-2 w-full sm:flex-1">
                     <Label>Nombre del ingrediente</Label>
                     <Popover open={open} onOpenChange={setOpen}>
                         <PopoverTrigger asChild>
@@ -114,7 +114,7 @@ export function IngredientSelector({ onAdd }: IngredientSelectorProps) {
                                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                             </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-[400px] p-0">
+                        <PopoverContent className="w-[300px] sm:w-[400px] p-0" align="start">
                             <Command filter={(value, search) => {
                                 const normalizedValue = normalizeText(value)
                                 const normalizedSearch = normalizeText(search)
@@ -147,8 +147,8 @@ export function IngredientSelector({ onAdd }: IngredientSelectorProps) {
                     </Popover>
                 </div>
 
-                <div className="flex gap-2 min-w-[200px]">
-                    <div className="space-y-2 flex-1">
+                <div className="flex gap-2 items-end sm:w-auto">
+                    <div className="space-y-2 flex-1 sm:w-[120px] sm:flex-none">
                         <Label htmlFor="quantity">Cantidad</Label>
                         <Input
                             id="quantity"
@@ -159,7 +159,7 @@ export function IngredientSelector({ onAdd }: IngredientSelectorProps) {
                             min="0"
                         />
                     </div>
-                    <div className="space-y-2 w-[110px]">
+                    <div className="space-y-2 w-[100px] sm:w-[120px]">
                         <Label>Unidad</Label>
                         <Select value={unit} onValueChange={setUnit} disabled={!selectedIngredient}>
                             <SelectTrigger>
@@ -173,16 +173,15 @@ export function IngredientSelector({ onAdd }: IngredientSelectorProps) {
                             </SelectContent>
                         </Select>
                     </div>
+                    <Button
+                        type="button"
+                        onClick={handleAdd}
+                        disabled={!selectedIngredient || !quantity || parseFloat(quantity) <= 0}
+                        className="bg-primary hover:bg-primary/90 text-white h-10 w-12 shrink-0"
+                    >
+                        <Plus className="h-5 w-5" />
+                    </Button>
                 </div>
-
-                <Button
-                    type="button"
-                    onClick={handleAdd}
-                    disabled={!selectedIngredient || !quantity || parseFloat(quantity) <= 0}
-                    className="bg-primary hover:bg-primary/90 text-white h-10 w-10 p-0"
-                >
-                    <Plus className="h-5 w-5" />
-                </Button>
             </div>
 
             {macros && (
