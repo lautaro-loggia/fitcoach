@@ -134,7 +134,13 @@ export async function updateWorkoutAction(id: string, name: string, description:
     return { success: true }
 }
 
-export async function assignWorkoutToClientsAction(templateId: string, clientIds: string[], name: string, structure: any[]) {
+export async function assignWorkoutToClientsAction(
+    templateId: string,
+    clientIds: string[],
+    name: string,
+    structure: any[],
+    schedules: Record<string, string[]> = {}
+) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { error: "No autorizado" }
@@ -146,7 +152,7 @@ export async function assignWorkoutToClientsAction(templateId: string, clientIds
         origin_template_id: templateId,
         structure: structure,
         is_customized: false,
-        scheduled_days: [] // Default empty
+        scheduled_days: schedules[clientId] || []
     }))
 
     const { error } = await supabase.from('assigned_workouts').insert(inserts)
