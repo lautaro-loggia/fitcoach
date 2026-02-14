@@ -524,9 +524,10 @@ export async function validateSessionCompletionStatus(sessionId: string) {
     if (missingExercises.length > 0) {
         return {
             valid: false,
-            message: `Debes completar al menos 1 serie de cada ejercicio. Faltan: ${missingExercises.slice(0, 2).join(', ')}${missingExercises.length > 2 ? '...' : ''}`
+            message: `Debes completar al menos 1 serie de cada ejercicio. Faltan: ${missingExercises.slice(0, 2).join(', ')}${missingExercises.length > 2 ? '...' : ''}`,
+            missingExercises
         }
     }
 
-    return { valid: true }
+    return { valid: true, missingExercises: [] }
 }

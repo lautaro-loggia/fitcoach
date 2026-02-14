@@ -39,8 +39,8 @@ export function MobileNav() {
     ]
 
     return (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-md pointer-events-none">
-            <nav className="bg-white/90 backdrop-blur-lg border border-zinc-200 shadow-[0_10px_40px_rgba(0,0,0,0.1)] rounded-[40px] px-6 py-3 flex items-center justify-between pointer-events-auto">
+        <div className="z-50 w-full bg-white border-t border-zinc-100 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] pb-safe sticky bottom-0">
+            <nav className="flex items-center justify-between px-6 py-2 max-w-md mx-auto h-[68px]">
                 {navItems.map((item) => {
                     const active = item.isActive(pathname)
                     return (
@@ -49,19 +49,19 @@ export function MobileNav() {
                             href={item.href}
                             className={cn(
                                 "flex flex-col items-center justify-center space-y-1 transition-all duration-200 active:scale-95",
-                                "min-w-[44px]" // Área de toque cómoda
+                                "flex-1 min-w-[44px]"
                             )}
                         >
                             <item.icon
                                 className={cn(
-                                    "h-6 w-6 transition-all duration-300",
-                                    active ? "text-black" : "text-gray-400"
+                                    "h-5 w-5 transition-all duration-300",
+                                    active ? "text-primary" : "text-muted-foreground"
                                 )}
-                                strokeWidth={active ? 2 : 1.5}
+                                strokeWidth={active ? 2.5 : 2}
                             />
                             <span className={cn(
-                                "text-[10px] font-semibold leading-none transition-colors duration-200",
-                                active ? "text-black" : "text-gray-400"
+                                "text-[10px] font-bold leading-none transition-colors duration-200",
+                                active ? "text-primary" : "text-muted-foreground"
                             )}>
                                 {item.label}
                             </span>

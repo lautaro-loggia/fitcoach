@@ -8,6 +8,7 @@ import { SetRow } from './set-row'
 import { RestTimer } from './rest-timer'
 import { ExerciseInfoDialog } from './exercise-info-dialog'
 import { Info } from 'lucide-react'
+import { AddExtraExercise } from './add-extra-exercise'
 import {
     getOrCreateExerciseCheckin,
     getExerciseCheckinWithSets,
@@ -325,12 +326,29 @@ interface SessionExerciseListProps {
     initialCheckins: ExerciseCheckin[]
 }
 
-export function SessionExerciseList({ sessionId, exercises, clientName, workoutName, initialCheckins }: SessionExerciseListProps) {
+export function SessionExerciseList({ sessionId, exercises: scheduledExercises, clientName, workoutName, initialCheckins }: SessionExerciseListProps) {
+    // Combine scheduled exercises with any extra exercises already in checkins
+    const [extraExercises, setExtraExercises] = useState<Exercise[]>(() => {
+        const extras = initialCheckins.filter(c => c.exercise_index >= scheduledExercises.length)
+        return extras.map(c => ({
+            name: c.exercise_name,
+            sets_detail: [] // Actual sets are in checkin logs, not planned
+        }))
+    })
+
+    const handleAddExtra = (exercise: any) => {
+        // Add one default set detail so it shows up in the UI
+        const newExercise: Exercise = {
+            ...exercise,
+            sets_detail: [{ reps: '10', weight: '0', rest: '60' }]
+        }
+        setExtraExercises(prev => [...prev, newExercise])
+    }
+
     return (
-        <div className="space-y-6 pb-20">
-            {exercises.map((exercise, index) => {
+        <div className="space-y-6 pb-8">
+            {scheduledExercises.map((exercise, index) => {
                 const isCardio = exercise.category === 'Cardio'
-                // Find matching checkin or null
                 const existingCheckin = initialCheckins.find(c => c.exercise_index === index) || null
 
                 if (isCardio) {
@@ -352,6 +370,23 @@ export function SessionExerciseList({ sessionId, exercises, clientName, workoutN
                     />
                 )
             })}
+
+            {extraExercises.map((exercise, index) => {
+                const exerciseIndex = scheduledExercises.length + index
+                const existingCheckin = initialCheckins.find(c => c.exercise_index === exerciseIndex) || null
+
+                return (
+                    <ExerciseCard
+                        key={`extra-${index}`}
+                        sessionId={sessionId}
+                        exerciseIndex={exerciseIndex}
+                        exercise={exercise}
+                        initialCheckin={existingCheckin}
+                    />
+                )
+            })}
+
+            <AddExtraExercise onAdd={handleAddExtra} />
         </div>
     )
 }

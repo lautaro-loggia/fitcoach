@@ -171,7 +171,7 @@ export default async function ClientDashboard() {
     const isCheckinPrioritary = isFirstCheckin || isCheckinDue
 
     return (
-        <div className="p-4 space-y-6 pb-6 max-w-md mx-auto">
+        <div className="p-4 space-y-6 flex-1">
             {/* 0. Password Requirement Banner */}
             {user.user_metadata?.needs_password !== false && user.user_metadata?.role === 'client' && (
                 <Card className="border-none shadow-md bg-amber-50 border-l-4 border-l-amber-500 overflow-hidden relative">

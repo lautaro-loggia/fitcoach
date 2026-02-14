@@ -67,7 +67,7 @@ export default async function WorkoutPage() {
     }
 
     return (
-        <div className="p-4 space-y-6 pb-6">
+        <div className="p-4 space-y-6 flex-1">
             <div className="flex items-center gap-2">
                 <Link href="/dashboard">
                     <Button variant="ghost" size="icon" className="-ml-2 h-8 w-8">
