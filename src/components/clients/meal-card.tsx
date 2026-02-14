@@ -7,7 +7,10 @@ import { Button } from '@/components/ui/button'
 import { Utensils, Clock, X, ChefHat, Loader2 } from 'lucide-react'
 
 interface Ingredient {
+    ingredient_name?: string
     grams: number
+    unit?: string
+    quantity?: number
     kcal_100g?: number
     protein_100g?: number
     carbs_100g?: number
@@ -26,6 +29,7 @@ interface Recipe {
     macros_fat_g?: number | null
     ingredients?: Ingredient[] | null
     ingredients_data?: Ingredient[] | null
+    instructions?: string | null
 }
 
 interface MealItemProps {
@@ -57,9 +61,10 @@ export function MealCard({ item, mealName }: MealItemProps) {
         )
     }
 
+    const ingredientsList = (recipe.ingredients || recipe.ingredients_data || []) as Ingredient[]
+
     // Calculate Macros
     const getUnitMacros = () => {
-        const ingredientsList = recipe.ingredients || recipe.ingredients_data || []
         const hasNutritionalData = ingredientsList.some(ing => (ing.kcal_100g || 0) > 0)
 
         // 1. Use manual macros if no ingredient data
@@ -139,9 +144,9 @@ export function MealCard({ item, mealName }: MealItemProps) {
                 </div>
             </DialogTrigger>
 
-            <DialogContent className="max-w-[1200px] w-[95vw] p-0 gap-0 overflow-hidden bg-white border-0 shadow-xl rounded-3xl" showCloseButton={false}>
+            <DialogContent className="max-w-[1200px] w-[95vw] max-h-[90vh] p-0 gap-0 overflow-hidden bg-white border-0 shadow-xl rounded-3xl flex flex-col" showCloseButton={false}>
                 {/* Header Image */}
-                <div className="relative w-full aspect-[16/9] bg-gray-100 flex items-center justify-center">
+                <div className="relative w-full aspect-[16/9] bg-gray-100 flex items-center justify-center shrink-0">
                     <Loader2 className="h-8 w-8 animate-spin text-gray-300 absolute z-0" />
                     {recipe.image_url ? (
                         <Image
@@ -174,45 +179,76 @@ export function MealCard({ item, mealName }: MealItemProps) {
                     </DialogClose>
                 </div>
 
-                <div className="p-6 space-y-6">
-                    {/* Title & Meta */}
-                    <div className="space-y-2">
-                        <DialogTitle className="text-2xl font-bold text-gray-900 leading-tight">
-                            {title}
-                        </DialogTitle>
-                        <div className="flex items-center gap-4 text-sm text-gray-500">
-                            {recipe.prep_time_min && (
+                <div className="flex-1 overflow-y-auto">
+                    <div className="p-6 space-y-8 pb-24">
+                        {/* Title & Meta */}
+                        <div className="space-y-2">
+                            <DialogTitle className="text-2xl font-bold text-gray-900 leading-tight">
+                                {title}
+                            </DialogTitle>
+                            <div className="flex items-center gap-4 text-sm text-gray-500">
+                                {recipe.prep_time_min && (
+                                    <div className="flex items-center gap-1.5">
+                                        <Clock className="h-4 w-4" />
+                                        <span>{recipe.prep_time_min} min</span>
+                                    </div>
+                                )}
                                 <div className="flex items-center gap-1.5">
-                                    <Clock className="h-4 w-4" />
-                                    <span>{recipe.prep_time_min} min</span>
+                                    <ChefHat className="h-4 w-4" />
+                                    <span>{portions} {portions === 1 ? 'porción' : 'porciones'}</span>
                                 </div>
-                            )}
-                            <div className="flex items-center gap-1.5">
-                                <ChefHat className="h-4 w-4" />
-                                <span>{portions} {portions === 1 ? 'porcion' : 'porciones'}</span>
                             </div>
                         </div>
-                    </div>
 
-                    {/* Macros Grid */}
-                    <div className="grid grid-cols-4 gap-2">
-                        <MacroCard value={totalMacros.kcal} label="KCAL" color="bg-gray-50 text-gray-900" subColor="text-gray-500" />
-                        <MacroCard value={`${totalMacros.protein}g`} label="PROT" color="bg-blue-50 text-blue-600" subColor="text-blue-600/60" />
-                        <MacroCard value={`${totalMacros.carbs}g`} label="CARBS" color="bg-amber-50 text-amber-600" subColor="text-amber-600/60" />
-                        <MacroCard value={`${totalMacros.fat}g`} label="GRASAS" color="bg-rose-50 text-rose-600" subColor="text-rose-600/60" />
-                    </div>
+                        {/* Macros Grid */}
+                        <div className="grid grid-cols-4 gap-2">
+                            <MacroCard value={totalMacros.kcal} label="KCAL" color="bg-gray-50 text-gray-900" subColor="text-gray-500" />
+                            <MacroCard value={`${totalMacros.protein}g`} label="PROT" color="bg-blue-50 text-blue-600" subColor="text-blue-600/60" />
+                            <MacroCard value={`${totalMacros.carbs}g`} label="CARBS" color="bg-amber-50 text-amber-600" subColor="text-amber-600/60" />
+                            <MacroCard value={`${totalMacros.fat}g`} label="GRASAS" color="bg-rose-50 text-rose-600" subColor="text-rose-600/60" />
+                        </div>
 
-                    {/* Footer Button */}
-                    <div className="pt-2">
-                        <DialogClose asChild>
-                            <Button
-                                className="w-full h-12 rounded-xl text-base font-semibold"
-                                variant="outline"
-                            >
-                                Cerrar
-                            </Button>
-                        </DialogClose>
+                        {/* Ingredients Section */}
+                        {ingredientsList.length > 0 && (
+                            <div className="space-y-3">
+                                <h4 className="text-lg font-bold text-gray-900">Ingredientes</h4>
+                                <div className="grid gap-2">
+                                    {ingredientsList.map((ing, idx) => (
+                                        <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-gray-50 border border-gray-100">
+                                            <span className="font-medium text-gray-800">{ing.ingredient_name || 'Ingrediente'}</span>
+                                            <span className="text-sm font-semibold text-gray-500 bg-white px-2 py-1 rounded-lg border border-gray-100 shadow-sm">
+                                                {ing.quantity && ing.unit ? `${ing.quantity} ${ing.unit}` : `${Math.round(ing.grams * portions)}g`}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Instructions Section */}
+                        {recipe.instructions && (
+                            <div className="space-y-3">
+                                <h4 className="text-lg font-bold text-gray-900">Preparación</h4>
+                                <div className="p-4 rounded-xl border border-blue-50 bg-blue-50/20">
+                                    <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                                        {recipe.instructions}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
                     </div>
+                </div>
+
+                {/* Sticky Footer */}
+                <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-white via-white to-transparent pointer-events-none">
+                    <DialogClose asChild className="pointer-events-auto">
+                        <Button
+                            className="w-full h-12 rounded-xl text-base font-semibold shadow-lg"
+                            variant="default"
+                        >
+                            Cerrar
+                        </Button>
+                    </DialogClose>
                 </div>
             </DialogContent>
         </Dialog>

@@ -8,8 +8,9 @@ import { cn } from "@/lib/utils"
 export function MobileNav() {
     const pathname = usePathname()
 
-    // No mostrar el navbar durante el onboarding
+    // No mostrar el navbar durante el onboarding o entrenamientos activos
     if (pathname?.startsWith("/onboarding")) return null
+    if (pathname?.startsWith("/dashboard/workout/")) return null
 
     const navItems = [
         {
