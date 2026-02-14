@@ -19,6 +19,7 @@ import {
     type SetLog,
     type ExerciseCheckin
 } from '@/app/(client)/dashboard/workout/[id]/actions'
+import { useWorkoutSession } from './workout-session-context'
 
 interface Exercise {
     name: string
@@ -63,6 +64,14 @@ function ExerciseCard({ sessionId, exerciseIndex, exercise, initialCheckin }: Ex
     // autoStartTimer state can be kept if we want to auto-open the rest modal, 
     // but the design just shows "Descanso: APAGADO". We will keep the prop connected.
     const [autoStartTimer, setAutoStartTimer] = useState(false)
+
+    const { setExerciseCompleted } = useWorkoutSession()
+
+    // Notify context of completion status changes
+    useEffect(() => {
+        const isAnySetCompleted = setLogs.some(s => s.is_completed)
+        setExerciseCompleted(exerciseIndex, isAnySetCompleted)
+    }, [setLogs, exerciseIndex, setExerciseCompleted])
 
     // No useEffect fetch anymore!
 

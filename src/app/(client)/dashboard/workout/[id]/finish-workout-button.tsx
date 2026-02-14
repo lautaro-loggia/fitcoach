@@ -3,12 +3,14 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Check } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { WorkoutFeedback } from '@/components/clients/open/workout-feedback-form'
 import dynamic from 'next/dynamic'
 import { completeSession, validateSessionCompletionStatus } from './actions'
 import { useRouter } from 'next/navigation'
 import confetti from 'canvas-confetti'
 import { toast } from 'sonner'
+import { useWorkoutSession } from '@/components/workout-session/workout-session-context'
 
 // Dynamic import for the feedback form to avoid hydration issues and improve loading
 const WorkoutFeedbackForm = dynamic(() => import('@/components/clients/open/workout-feedback-form'), {
@@ -88,15 +90,22 @@ export function FinishWorkoutButton({ sessionId }: { sessionId: string }) {
         }
     }
 
+    const { isAllCompleted } = useWorkoutSession()
+
     return (
         <>
             <Button
                 onClick={handleFinishClick}
-                variant="default"
+                variant={isAllCompleted ? "default" : "outline"}
                 size="sm"
-                className="gap-1 bg-green-600 hover:bg-green-700 text-white font-semibold shadow-md"
+                className={cn(
+                    "gap-1 font-semibold shadow-sm transition-all duration-300",
+                    isAllCompleted
+                        ? "bg-black hover:bg-zinc-800 text-white border-black"
+                        : "bg-white hover:bg-gray-50 text-black border-gray-200"
+                )}
             >
-                <Check className="h-4 w-4" />
+                <Check className={cn("h-4 w-4", isAllCompleted ? "text-white" : "text-black")} />
                 Finalizar
             </Button>
 

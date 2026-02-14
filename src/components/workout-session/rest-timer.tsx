@@ -190,7 +190,7 @@ export function RestTimer({
                     <button className="flex items-center gap-2 transition-colors hover:opacity-80" style={{ color: '#5254D9' }}>
                         <Timer className="h-4 w-4" />
                         <span className="text-sm font-medium">
-                            Descanso: {enabled ? `${seconds}s` : 'APAGADO'}
+                            Descanso: {enabled ? formatTime(seconds) : 'APAGADO'}
                         </span>
                     </button>
                 </SheetTrigger>
@@ -209,20 +209,40 @@ export function RestTimer({
                         </div>
 
                         {localEnabled && (
-                            <div className="space-y-2">
-                                <Label>Segundos de descanso</Label>
-                                <Input
-                                    type="number"
-                                    value={localSeconds}
-                                    onChange={(e) => setLocalSeconds(parseInt(e.target.value) || 60)}
-                                    min={10}
-                                    max={300}
-                                    step={5}
-                                />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label>Minutos</Label>
+                                    <Input
+                                        type="number"
+                                        value={Math.floor(localSeconds / 60)}
+                                        onChange={(e) => {
+                                            const mins = parseInt(e.target.value) || 0
+                                            const secs = localSeconds % 60
+                                            setLocalSeconds(mins * 60 + (secs < 0 ? 0 : secs))
+                                        }}
+                                        min={0}
+                                        max={20}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Segundos</Label>
+                                    <Input
+                                        type="number"
+                                        value={localSeconds % 60}
+                                        onChange={(e) => {
+                                            const mins = Math.floor(localSeconds / 60)
+                                            const secs = parseInt(e.target.value) || 0
+                                            setLocalSeconds((mins * 60) + (secs < 0 ? 0 : secs))
+                                        }}
+                                        min={0}
+                                        max={59}
+                                        step={5}
+                                    />
+                                </div>
                             </div>
                         )}
 
-                        <Button onClick={handleSaveSettings} className="w-full">
+                        <Button onClick={handleSaveSettings} className="w-full bg-black text-white hover:bg-zinc-800 h-12 rounded-xl font-bold">
                             Guardar
                         </Button>
                     </div>
