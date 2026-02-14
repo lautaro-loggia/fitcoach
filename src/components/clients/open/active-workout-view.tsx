@@ -11,6 +11,16 @@ import { completeWorkout } from '@/app/(client)/dashboard/workout/actions'
 import confetti from 'canvas-confetti'
 import WorkoutFeedbackForm, { WorkoutFeedback } from './workout-feedback-form'
 import { ExerciseInfoDialog } from '@/components/workout-session/exercise-info-dialog'
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 interface Exercise {
     id: string
@@ -36,6 +46,7 @@ export default function ActiveWorkoutView({ workout, clientId }: { workout: Work
     const [checkedState, setCheckedState] = useState<Record<number, boolean>>({})
     const [showFeedback, setShowFeedback] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [showPendingWarning, setShowPendingWarning] = useState(false)
 
     const toggleExercise = (index: number) => {
         setCheckedState(prev => ({
@@ -49,6 +60,15 @@ export default function ActiveWorkoutView({ workout, clientId }: { workout: Work
     const progress = Math.round((completedCount / totalExercises) * 100)
 
     const handleFinishClick = () => {
+        if (completedCount < totalExercises) {
+            setShowPendingWarning(true)
+        } else {
+            setShowFeedback(true)
+        }
+    }
+
+    const confirmFinish = () => {
+        setShowPendingWarning(false)
         setShowFeedback(true)
     }
 
@@ -192,6 +212,34 @@ export default function ActiveWorkoutView({ workout, clientId }: { workout: Work
                     )}
                 </Button>
             </div>
+
+            {/* Warning Dialog for Pending Exercises */}
+            <AlertDialog open={showPendingWarning} onOpenChange={setShowPendingWarning}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>¿Finalizar con ejercicios pendientes?</AlertDialogTitle>
+                        <AlertDialogDescription asChild>
+                            <div className="text-sm text-muted-foreground">
+                                Aún no has registrado los siguientes ejercicios:
+                                <ul className="mt-3 space-y-1 list-disc list-inside text-amber-600 font-medium">
+                                    {workout.structure
+                                        .filter((_, idx) => !checkedState[idx])
+                                        .map((exercise, idx) => (
+                                            <li key={idx}>{exercise.name}</li>
+                                        ))
+                                    }
+                                </ul>
+                            </div>
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Continuar entrenando</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmFinish} className="bg-black hover:bg-gray-900 text-white">
+                            Sí, finalizar
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }

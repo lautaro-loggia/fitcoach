@@ -15,6 +15,17 @@ const WorkoutFeedbackForm = dynamic(() => import('@/components/clients/open/work
     ssr: false
 })
 
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+
 import { createPortal } from 'react-dom'
 import { useEffect } from 'react'
 
@@ -22,6 +33,8 @@ export function FinishWorkoutButton({ sessionId }: { sessionId: string }) {
     const [showFeedback, setShowFeedback] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [mounted, setMounted] = useState(false)
+    const [missingExercises, setMissingExercises] = useState<string[]>([])
+    const [showWarning, setShowWarning] = useState(false)
     const router = useRouter()
 
     useEffect(() => {
@@ -36,13 +49,16 @@ export function FinishWorkoutButton({ sessionId }: { sessionId: string }) {
         setIsSubmitting(false)
 
         if (!validation.valid) {
-            toast.error('No puedes finalizar aún', {
-                description: validation.message,
-                duration: 5000
-            })
+            setMissingExercises(validation.missingExercises || [])
+            setShowWarning(true)
             return
         }
 
+        setShowFeedback(true)
+    }
+
+    const handleConfirmFinish = () => {
+        setShowWarning(false)
         setShowFeedback(true)
     }
 
@@ -93,6 +109,31 @@ export function FinishWorkoutButton({ sessionId }: { sessionId: string }) {
                 </div>,
                 document.body
             )}
+
+            {/* Warning Dialog for Pending Exercises */}
+            <AlertDialog open={showWarning} onOpenChange={setShowWarning}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>¿Finalizar con ejercicios pendientes?</AlertDialogTitle>
+                        <AlertDialogDescription asChild>
+                            <div className="text-sm text-muted-foreground">
+                                Aún no has registrado series para los siguientes ejercicios:
+                                <ul className="mt-3 space-y-1 list-disc list-inside text-amber-600 font-medium">
+                                    {missingExercises.map((name, idx) => (
+                                        <li key={idx}>{name}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Continuar entrenando</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleConfirmFinish} className="bg-black hover:bg-gray-900 text-white">
+                            Sí, finalizar
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </>
     )
 }

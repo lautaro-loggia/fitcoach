@@ -27,10 +27,10 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     const existingCheckins = await getSessionCheckins(session.id)
 
     return (
-        <div className="min-h-screen bg-background pb-24">
+        <div className="flex-1 flex flex-col">
             {/* Header - Fixed on mobile, proper stacking - Adapted for Client */}
-            <div className="fixed top-0 left-0 right-0 z-30 bg-background border-b px-4 py-4 md:static md:border-b-0 md:bg-transparent md:mb-6 md:p-0">
-                <div className="flex items-center justify-between">
+            <div className="fixed top-0 left-0 right-0 z-30 bg-background/80 backdrop-blur-md border-b px-4 py-4 md:static md:border-b-0 md:bg-transparent md:mb-6 md:p-0">
+                <div className="flex items-center justify-between max-w-md mx-auto">
                     <div className="flex items-center gap-3">
                         <Link href="/dashboard/workout">
                             <Button variant="ghost" size="icon">
@@ -50,7 +50,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             <div className="h-[84px] md:hidden" />
 
             {/* Exercise List */}
-            <div className="p-4 pt-0 md:p-4">
+            <div className="p-4 pt-2 flex-1">
                 <SessionExerciseList
                     sessionId={session.id}
                     exercises={exercises}

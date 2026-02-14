@@ -19,12 +19,11 @@ export default async function ClientLayout({
     }
 
     return (
-        <div className="min-h-screen bg-neutral-50 text-slate-900 font-sans">
+        <div className="min-h-screen bg-background text-slate-900 font-sans flex flex-col">
             <ClientMainShell>
-                {/* Mobile First Container */}
                 {children}
-                <MobileNav />
             </ClientMainShell>
+            <MobileNav />
         </div>
     )
 }
