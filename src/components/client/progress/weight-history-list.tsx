@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { Calendar, ChevronRight } from 'lucide-react'
 import { format } from 'date-fns'
@@ -10,9 +10,10 @@ import { Badge } from '@/components/ui/badge'
 
 interface WeightHistoryListProps {
     checkins: any[]
+    initialCheckinId?: string
 }
 
-export function WeightHistoryList({ checkins }: WeightHistoryListProps) {
+export function WeightHistoryList({ checkins, initialCheckinId }: WeightHistoryListProps) {
     const [selectedCheckin, setSelectedCheckin] = useState<any>(null)
     const [isModalOpen, setIsModalOpen] = useState(false)
 
@@ -20,6 +21,15 @@ export function WeightHistoryList({ checkins }: WeightHistoryListProps) {
         setSelectedCheckin(checkin)
         setIsModalOpen(true)
     }
+
+    useEffect(() => {
+        if (initialCheckinId) {
+            const match = checkins.find(c => c.id === initialCheckinId)
+            if (match) {
+                handleOpenDetail(match)
+            }
+        }
+    }, [initialCheckinId, checkins])
 
     return (
         <>

@@ -12,6 +12,7 @@ import { es } from 'date-fns/locale'
 import { MessageSquare, Calendar, Scale, Ruler, CheckCircle2 } from 'lucide-react'
 import { markNoteAsSeenAction } from '@/app/(client)/dashboard/checkin/actions'
 import { Badge } from '@/components/ui/badge'
+import { useRouter } from 'next/navigation'
 
 interface CheckinDetailModalProps {
     checkin: any
@@ -20,11 +21,17 @@ interface CheckinDetailModalProps {
 }
 
 export function CheckinDetailModal({ checkin, open, onOpenChange }: CheckinDetailModalProps) {
+    const router = useRouter()
+
     useEffect(() => {
         if (open && checkin?.coach_note && !checkin.coach_note_seen_at) {
-            markNoteAsSeenAction(checkin.id)
+            const markAsSeen = async () => {
+                await markNoteAsSeenAction(checkin.id)
+                router.refresh()
+            }
+            markAsSeen()
         }
-    }, [open, checkin])
+    }, [open, checkin, router])
 
     if (!checkin) return null
 
