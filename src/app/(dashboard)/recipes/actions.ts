@@ -244,10 +244,22 @@ export async function getIngredientsAction() {
     return { ingredients: ingredients || [] }
 }
 
+const MEAL_ORDER: Record<string, number> = {
+    'Desayuno': 0,
+    'Almuerzo': 1,
+    'Merienda': 2,
+    'Cena': 3,
+    'Snack': 4,
+    'Postre': 5
+}
+
 export async function bulkAssignRecipeAction(data: {
     recipeId: string
-    clientIds: string[]
-    mealName: string | null
+    assignments: {
+        clientId: string
+        dayOfWeek: number
+        mealTime: string
+    }[]
 }) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -256,14 +268,14 @@ export async function bulkAssignRecipeAction(data: {
         return { error: 'No autorizado' }
     }
 
-    if (!data.clientIds.length) {
-        return { error: 'Seleccioná al menos un alumno' }
+    if (!data.assignments.length) {
+        return { error: 'No hay asignaciones para procesar' }
     }
 
-    // 1. Fetch the recipe to get ingredients and macros
+    // 1. Fetch the recipe details
     const { data: recipe, error: recipeError } = await supabase
         .from('recipes')
-        .select('*')
+        .select('id, name')
         .eq('id', data.recipeId)
         .single()
 
@@ -271,51 +283,109 @@ export async function bulkAssignRecipeAction(data: {
         return { error: 'Receta no encontrada' }
     }
 
-    // 2. Prepare diet data
-    // Use stored macros or calculate? Recipe should have storing macros.
-    // We'll trust stored macros for now, or fallback to 0.
-    // The `data` column in assigned_diets expects { ingredients, macros }
+    // 2. Iterate over assignments
+    const errors: string[] = []
 
-    const ingredients = recipe.ingredients || []
+    for (const assignment of data.assignments) {
+        const { clientId, dayOfWeek, mealTime } = assignment
 
-    // Simple macro object for the assigned diet JSON
-    const macros = {
-        total_calories: recipe.macros_calories || 0,
-        total_proteins: recipe.macros_protein_g || 0,
-        total_carbs: recipe.macros_carbs_g || 0,
-        total_fats: recipe.macros_fat_g || 0
+        if (!dayOfWeek || !mealTime) {
+            errors.push(clientId)
+            continue
+        }
+
+        const sortOrder = MEAL_ORDER[mealTime] ?? 99
+
+        try {
+            // A. Get or create active Weekly Meal Plan
+            let { data: plan } = await supabase
+                .from('weekly_meal_plans')
+                .select('id')
+                .eq('client_id', clientId)
+                .eq('status', 'active')
+                .single()
+
+            if (!plan) {
+                const { data: newPlan, error: createPlanError } = await supabase
+                    .from('weekly_meal_plans')
+                    .insert({
+                        client_id: clientId,
+                        status: 'active'
+                    })
+                    .select('id')
+                    .single()
+
+                if (createPlanError) throw createPlanError
+                plan = newPlan
+            }
+
+            // B. Get or create Day
+            let { data: day } = await supabase
+                .from('weekly_meal_plan_days')
+                .select('id')
+                .eq('plan_id', plan.id)
+                .eq('day_of_week', dayOfWeek)
+                .single()
+
+            if (!day) {
+                const { data: newDay, error: createDayError } = await supabase
+                    .from('weekly_meal_plan_days')
+                    .insert({
+                        plan_id: plan.id,
+                        day_of_week: dayOfWeek
+                    })
+                    .select('id')
+                    .single()
+
+                if (createDayError) throw createDayError
+                day = newDay
+            }
+
+            // C. Get or create Meal (Slot)
+            let { data: meal } = await supabase
+                .from('weekly_meal_plan_meals')
+                .select('id')
+                .eq('day_id', day.id)
+                .eq('name', mealTime)
+                .single()
+
+            if (!meal) {
+                const { data: newMeal, error: createMealError } = await supabase
+                    .from('weekly_meal_plan_meals')
+                    .insert({
+                        day_id: day.id,
+                        name: mealTime,
+                        sort_order: sortOrder
+                    })
+                    .select('id')
+                    .single()
+
+                if (createMealError) throw createMealError
+                meal = newMeal
+            }
+
+            // D. Insert Recipe Item
+            const { error: insertItemError } = await supabase
+                .from('weekly_meal_plan_items')
+                .insert({
+                    meal_id: meal.id,
+                    recipe_id: recipe.id,
+                    // custom_name removed as requested
+                    portions: 1
+                })
+
+            if (insertItemError) throw insertItemError
+
+        } catch (err: any) {
+            console.error(`Error assigning to client ${clientId}:`, err)
+            errors.push(clientId)
+        }
     }
 
-    const dietJsonData = {
-        ingredients,
-        macros
+    if (errors.length > 0) {
+        return { error: `Error al asignar a ${errors.length} asesorados.` }
     }
 
-    // 3. Insert specific diet entries for each client
-    const timestamp = new Date().toISOString()
-    const inserts = data.clientIds.map(clientId => ({
-        trainer_id: user.id,
-        client_id: clientId,
-        name: data.mealName || recipe.name, // Use custom name or recipe name (e.g. "Breakfast")
-        origin_template_id: recipe.id,
-        is_customized: false,
-        data: dietJsonData,
-        // created_at: timestamp, // Managed by default?
-    }))
-
-    const { error: insertError } = await supabase
-        .from('assigned_diets')
-        .insert(inserts)
-
-    if (insertError) {
-        console.error('Error assigning recipes:', insertError)
-        return { error: 'Hubo un error al asignar las comidas.' }
-    }
-
-    // Revalidate relevant client paths?
-    // Hard to revalidate individual client pages from here without knowing paths, 
-    // but typically we'd revalidate /clients/[id] when visited.
-    // We can just return success.    
-
+    revalidatePath('/dashboard/clients')
     return { success: true }
 }

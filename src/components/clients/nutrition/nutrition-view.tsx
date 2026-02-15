@@ -60,18 +60,17 @@ export function NutritionView({ client, mealPlan, dailyLogs }: NutritionViewProp
     const sortedMeals = [...meals].sort((a: any, b: any) => a.sort_order - b.sort_order)
 
     return (
-        <div className="space-y-6 pb-20">
+        <div className="space-y-6 pb-10">
             {/* 1. Daily Progress */}
             <DailyProgressCard {...fullProgressData} />
 
             {/* 2. Headline */}
-            <div>
-                <h2 className="text-lg font-bold text-gray-900">Tu menú de hoy</h2>
-                <p className="text-sm text-gray-500">Registra tus comidas para completar tus objetivos.</p>
+            <div className="space-y-1 px-1">
+                <h2 className="text-[19px] font-bold text-black">Tu menu de hoy</h2>
+                <p className="text-gray-400 text-[13px] leading-tight">Registra tus comidas parar completas tus objetivos</p>
             </div>
 
-            {/* 3. Accordion List */}
-            <div className="space-y-3">
+            <div className="space-y-6">
                 {sortedMeals.length > 0 ? (
                     sortedMeals.map((meal: any) => {
                         // Find log for this meal

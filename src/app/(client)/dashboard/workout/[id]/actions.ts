@@ -392,9 +392,40 @@ export async function updateRestSettings(checkinId: string, enabled: boolean, se
 }
 
 // Complete session
+// Complete session and log it to history
 export async function completeSession(sessionId: string, feedback?: any) {
     const adminSupabase = createAdminClient()
 
+    // 1. Fetch session details first
+    const { data: session } = await adminSupabase
+        .from('workout_sessions')
+        .select('*')
+        .eq('id', sessionId)
+        .single()
+
+    if (!session) {
+        return { error: 'Sesión no encontrada' }
+    }
+
+    // 2. Log to workout_logs (Vital for Dashboard stats)
+    // We try to log it. If it fails (e.g. duplicate for some reason), we log error but continue closing session.
+    const { error: logError } = await adminSupabase
+        .from('workout_logs')
+        .insert({
+            client_id: session.client_id,
+            workout_id: session.assigned_workout_id,
+            date: new Date().toISOString().split('T')[0],
+            completed_at: new Date().toISOString(),
+            exercises_log: [], // storing empty for now, detail is in set_logs
+            feedback: feedback || {}
+        })
+
+    if (logError) {
+        console.error('Error linking to workout_logs:', logError)
+        // We don't block completion, but valid to know
+    }
+
+    // 3. Close the session
     const { error } = await adminSupabase
         .from('workout_sessions')
         .update({

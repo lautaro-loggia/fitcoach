@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -58,6 +59,16 @@ export function AddRecipeDialog({ open: controlledOpen, onOpenChange, onSuccess,
     const [prepTime, setPrepTime] = useState(0)
     const [imageUrl, setImageUrl] = useState('')
     const [isUploading, setIsUploading] = useState(false)
+    const [canSubmit, setCanSubmit] = useState(false)
+
+    // Prevent accidental double-clicks when arriving at the final step
+    useEffect(() => {
+        if (step === totalSteps) {
+            setCanSubmit(false)
+            const timer = setTimeout(() => setCanSubmit(true), 800)
+            return () => clearTimeout(timer)
+        }
+    }, [step])
 
     // New state for Bebidas
     const [manualMacros, setManualMacros] = useState({ kcal: 0, protein: 0, carbs: 0, fat: 0 })
@@ -153,6 +164,10 @@ export function AddRecipeDialog({ open: controlledOpen, onOpenChange, onSuccess,
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
+
+        // Prevent submission if not on the final step
+        if (step !== totalSteps) return
+
         setLoading(true)
 
         // Transform SelectedIngredient to RecipeIngredient format
@@ -186,14 +201,15 @@ export function AddRecipeDialog({ open: controlledOpen, onOpenChange, onSuccess,
         })
 
         if (result?.error) {
-            alert(result.error)
+            toast.error(result.error)
         } else if (result.recipe) {
-            resetForm()
+            toast.success('Receta creada con éxito')
+            setOpen(false) // Close first
+            resetForm() // Then reset
             if (onSuccess) {
                 onSuccess(result.recipe)
-                setOpen(false)
-                router.refresh()
             }
+            router.refresh()
         }
         setLoading(false)
     }
@@ -572,7 +588,7 @@ export function AddRecipeDialog({ open: controlledOpen, onOpenChange, onSuccess,
                         ) : (
                             <Button
                                 type="submit"
-                                disabled={loading || isUploading}
+                                disabled={loading || isUploading || !canSubmit}
                                 className="bg-primary text-white hover:bg-primary/90 min-w-[140px]"
                             >
                                 {loading ? (

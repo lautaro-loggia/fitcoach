@@ -16,15 +16,14 @@ export interface DailyProgressCardProps {
 export function DailyProgressCard({ currentCalories, targetCalories, macros }: DailyProgressCardProps) {
     const caloriesRemaining = targetCalories - currentCalories
     const isOver = caloriesRemaining < 0
-    const progress = Math.min(100, Math.max(0, (currentCalories / targetCalories) * 100))
+    // const progress = Math.min(100, Math.max(0, (currentCalories / targetCalories) * 100))
 
     return (
-        <Card className="p-5 bg-white border shadow-sm space-y-5 rounded-2xl">
-            {/* Header / Calories */}
-            <div className="flex justify-between items-start">
+        <Card className="rounded-[24px] border-none shadow-[0_2px_20px_-10px_rgba(0,0,0,0.05)] bg-white p-6">
+            <div className="flex justify-between items-start mb-4">
                 <div>
-                    <h2 className="text-lg font-bold text-gray-900">Progreso</h2>
-                    <p className="text-sm text-gray-500 font-medium">
+                    <h3 className="text-[17px] font-bold text-black">Progreso</h3>
+                    <p className="text-gray-400 text-sm font-medium mt-0.5">
                         {isOver
                             ? `${Math.abs(caloriesRemaining)} kcal extra`
                             : `${caloriesRemaining} kcal faltantes`
@@ -32,69 +31,42 @@ export function DailyProgressCard({ currentCalories, targetCalories, macros }: D
                     </p>
                 </div>
                 <div className="text-right">
-                    <span className="text-2xl font-bold text-gray-900">{currentCalories}</span>
-                    <span className="text-sm text-gray-400 font-medium ml-1">/ {targetCalories} kcal</span>
+                    <span className="text-2xl font-bold text-black tracking-tight">{currentCalories}</span>
+                    <span className="text-gray-300 text-lg"> / {targetCalories} kcal</span>
                 </div>
             </div>
 
             {/* Main Progress Bar */}
-            <div className="h-3 w-full bg-gray-100 rounded-full overflow-hidden">
+            <div className="relative w-full h-4 bg-gray-100 rounded-full mb-6 overflow-hidden">
                 <div
-                    className={`h-full transition-all duration-500 ease-out ${isOver ? 'bg-red-500' : 'bg-zinc-900'}`}
-                    style={{ width: `${progress}%` }}
+                    className={`absolute top-0 left-0 h-full rounded-full ${isOver ? 'bg-red-500' : 'bg-black'}`}
+                    style={{ width: `${Math.min(100, (currentCalories / targetCalories) * 100)}%` }}
                 />
             </div>
 
-            {/* Macros Grid */}
-            <div className="grid grid-cols-3 gap-4 pt-1">
-                <MacroProgress
-                    label="Proteína"
-                    current={macros.protein.current}
-                    target={macros.protein.target}
-                    color="bg-blue-500"
-                    trackColor="bg-blue-50"
-                />
-                <MacroProgress
-                    label="Carbos"
-                    current={macros.carbs.current}
-                    target={macros.carbs.target}
-                    color="bg-amber-500"
-                    trackColor="bg-amber-50"
-                />
-                <MacroProgress
-                    label="Grasas"
-                    current={macros.fats.current}
-                    target={macros.fats.target}
-                    color="bg-rose-500"
-                    trackColor="bg-rose-50"
-                />
+            {/* Macros */}
+            <div className="grid grid-cols-3 gap-6">
+                <MacroItem label="Proteina" current={macros.protein.current} total={macros.protein.target} color="bg-blue-500" />
+                <MacroItem label="Carbs" current={macros.carbs.current} total={macros.carbs.target} color="bg-orange-500" />
+                <MacroItem label="Fats" current={macros.fats.current} total={macros.fats.target} color="bg-red-500" />
             </div>
         </Card>
     )
 }
 
-function MacroProgress({ label, current, target, color, trackColor }: {
-    label: string,
-    current: number,
-    target: number,
-    color: string,
-    trackColor: string
-}) {
-    const progress = Math.min(100, Math.max(0, (current / target) * 100))
-    const isComplete = progress >= 100
-
+function MacroItem({ label, current, total, color }: { label: string; current: number; total: number; color: string }) {
     return (
-        <div className="space-y-1.5">
-            <div className="flex justify-between items-baseline text-xs">
-                <span className="font-medium text-gray-500">{label}</span>
-                <span className={`font-bold ${isComplete ? 'text-gray-900' : 'text-gray-700'}`}>
-                    {Math.round(current)}<span className="text-gray-400 font-normal">/{target}g</span>
+        <div className="flex flex-col gap-2">
+            <div className="flex items-end justify-between text-[11px] leading-none">
+                <span className="text-gray-400 font-medium">{label}</span>
+                <span className="font-bold text-black ml-1">
+                    {Math.round(current)}<span className="text-gray-300">/{total}g</span>
                 </span>
             </div>
-            <div className={`h-1.5 w-full ${trackColor} rounded-full overflow-hidden`}>
+            <div className="relative w-full h-[5px] bg-gray-100 rounded-full overflow-hidden">
                 <div
-                    className={`h-full transition-all duration-500 ease-out ${color} ${isComplete ? 'opacity-100' : 'opacity-80'}`}
-                    style={{ width: `${progress}%` }}
+                    className={`absolute top-0 left-0 h-full rounded-full ${color}`}
+                    style={{ width: `${Math.min(100, (current / total) * 100)}%` }}
                 />
             </div>
         </div>

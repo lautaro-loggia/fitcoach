@@ -2,23 +2,29 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Card } from '@/components/ui/card'
-import { ArrowLeft, TrendingUp, Calendar, Trophy } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Bell, Flame, Dumbbell, Target } from 'lucide-react'
 import Link from 'next/link'
-import { format, subDays } from 'date-fns'
+import { format, subDays, isToday, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { WeightHistoryList } from '@/components/client/progress/weight-history-list'
+import { WeightChart } from '@/components/client/progress/weight-chart'
+import { RecentHistoryList } from '@/components/client/progress/recent-history-list'
 
-export default async function ProgressPage() {
+export default async function ProgressPage({
+    searchParams
+}: {
+    searchParams: Promise<{ checkinId: string }>
+}) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) redirect('/login')
 
     const adminClient = createAdminClient()
+
+    // Fetch Client Data including detailed stats
     const { data: client } = await adminClient
         .from('clients')
-        .select('id, full_name, main_goal')
+        .select('*')
         .eq('user_id', user.id)
         .single()
 
@@ -32,88 +38,167 @@ export default async function ProgressPage() {
         .eq('client_id', client.id)
         .gte('date', startDate)
 
-    // Estimate Target (e.g. 3 times a week * 4 weeks = 12)
-    // We should ideally fetch 'training_frequency' from client settings
-    // Defaulting to 12 for MVP if not set
+    // TODO: Fetch from client settings if available, else default to 12
     const targetCount = 12
-    const percentage = Math.min(100, Math.round(((completedCount || 0) / targetCount) * 100))
+    const actualCount = completedCount || 0
+    const percentage = Math.min(100, Math.round((actualCount / targetCount) * 100))
 
-    // 2. Body Weight History (Last 10 Checkins)
+    // 2. Fetch Checkins History
     const { data: checkins } = await adminClient
         .from('checkins')
-        .select('id, date, weight, body_fat, lean_mass, measurements, coach_note, coach_note_seen_at, status')
+        .select('*')
         .eq('client_id', client.id)
         .order('date', { ascending: false })
         .limit(10)
 
-    const latestWeight = checkins && checkins.length > 0 ? checkins[0].weight : '--'
-    const startWeight = checkins && checkins.length > 0 ? checkins[checkins.length - 1].weight : '--'
-    const weightDiff = typeof latestWeight === 'number' && typeof startWeight === 'number'
-        ? (latestWeight - startWeight).toFixed(1)
-        : null
+    const latestCheckin = checkins && checkins.length > 0 ? checkins[0] : null
+    const startCheckin = checkins && checkins.length > 0 ? checkins[checkins.length - 1] : null
+
+    // Determine values for UI
+    const currentWeight = latestCheckin?.weight || client.current_weight || client.initial_weight || 0
+    // If we have history, start from the oldest fetched, else initial
+    const startWeight = startCheckin?.weight || client.initial_weight || currentWeight
+
+    // Formatting Data for Chart
+    const chartData = checkins?.map(c => ({
+        date: format(new Date(c.date), 'dd MMM', { locale: es }),
+        weight: c.weight || 0
+    })) || []
+
+    // Translations
+    const GOAL_MAP: Record<string, string> = {
+        'lose_fat': 'Pérdida de grasa',
+        'gain_muscle': 'Ganancia muscular',
+        'recomp': 'Recomp. corporal',
+        'maintenance': 'Mantenimiento',
+        'strength': 'Fuerza',
+        'improve_endurance': 'Resistencia',
+        'lose_weight': 'Bajada de peso'
+    }
+
+    const ACTIVITY_MAP: Record<string, string> = {
+        'sedentary': 'Sedentario',
+        'light': 'Ligero',
+        'moderate': 'Moderado',
+        'active': 'Activo',
+        'very_active': 'Muy activo'
+    }
+
+    const goalLabel = client.main_goal ? (GOAL_MAP[client.main_goal] || client.main_goal) : 'Recomp. corporal'
+    const activityLabel = client.activity_level ? (ACTIVITY_MAP[client.activity_level] || client.activity_level) : 'Moderado'
 
     return (
-        <div className="p-4 space-y-6 pb-6">
-            <div className="flex items-center gap-2">
-                <Link href="/dashboard">
-                    <Button variant="ghost" size="icon" className="-ml-2 h-8 w-8">
-                        <ArrowLeft className="h-5 w-5" />
-                    </Button>
-                </Link>
-                <h1 className="text-xl font-bold">Mi Progreso</h1>
-            </div>
-
-            {/* Compliance Card */}
-            <Card className="p-6 bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg overflow-hidden relative">
-                <div className="relative z-10">
-                    <div className="flex justify-between items-start mb-4">
-                        <div>
-                            <p className="text-indigo-100 font-medium text-sm">Constancia (30 días)</p>
-                            <h2 className="text-4xl font-bold mt-1">{percentage}%</h2>
-                        </div>
-                        <div className="h-10 w-10 bg-white/20 rounded-full flex items-center justify-center">
-                            <Trophy className="h-6 w-6 text-white" />
-                        </div>
+        <div className="min-h-screen bg-gray-50/30 pb-24 font-sans">
+            <div className="px-5 pt-8 pb-6 space-y-8 max-w-md mx-auto">
+                {/* 1. Header */}
+                <header className="flex justify-between items-start">
+                    <div className="space-y-1">
+                        <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider">Seguimiento de tu evolución</p>
+                        <h1 className="text-[28px] font-bold text-gray-900 leading-tight">Tu Progreso</h1>
                     </div>
-                    <p className="text-sm text-indigo-100">
-                        {completedCount} sesiones completadas de {targetCount} objetivo.
-                    </p>
-                    {/* Progress Bar */}
-                    <div className="mt-4 h-2 bg-black/20 rounded-full overflow-hidden">
-                        <div className="h-full bg-white/90 rounded-full" style={{ width: `${percentage}%` }} />
+                    <div className="h-9 w-9 flex items-center justify-center rounded-full bg-gray-50 hover:bg-gray-100 transition-colors relative mt-1 ring-1 ring-gray-200/50 shadow-sm">
+                        <Bell className="h-4 w-4 text-gray-600" />
+                        <span className="absolute top-2 right-2.5 h-1.5 w-1.5 bg-red-500 rounded-full ring-2 ring-white hidden"></span>
+                    </div>
+                </header>
+
+                {/* 2. Constancia Card */}
+                {/* Custom gradient card to match "violet -> blue" */}
+                <div className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-[#7F56D9] to-[#3B82F6] p-0 shadow-lg shadow-indigo-200/50">
+                    <div className="relative h-full w-full bg-gradient-to-r from-violet-500 to-blue-500 p-7 text-white/90 overflow-hidden">
+
+                        {/* Background stylistic flame icon */}
+                        <div className="absolute top-5 right-5 opacity-20 transform">
+                            <Flame className="h-6 w-6 text-white" fill="white" />
+                        </div>
+
+                        <div className="relative z-10 flex flex-col h-full justify-between space-y-10">
+                            <div>
+                                <h3 className="text-white font-medium text-base mb-1">Constancia este mes</h3>
+                                <p className="text-xs text-indigo-100 font-light opacity-80">Sigue así, vas muy bien.</p>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="flex items-baseline gap-2">
+                                    <span className="text-5xl font-bold tracking-tighter text-white">{percentage}%</span>
+                                    <span className="text-base text-indigo-100/90 font-medium">completado</span>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <div className="flex justify-between text-[11px] font-semibold text-indigo-100/70 uppercase tracking-widest px-1">
+                                        <span>Sesión {actualCount}</span>
+                                        <span>Total {targetCount}</span>
+                                    </div>
+                                    {/* Progress Bar Custom */}
+                                    <div className="h-2.5 w-full bg-black/20 rounded-full backdrop-blur-sm overflow-hidden border border-white/10">
+                                        <div
+                                            className="h-full bg-white rounded-full shadow-[0_0_12px_rgba(255,255,255,0.6)]"
+                                            style={{ width: `${percentage}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </Card>
 
-            {/* Weight Evolution */}
-            <div>
-                <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4" /> Peso Corporal
-                </h3>
-                <Card className="p-4">
-                    <div className="flex justify-between items-center mb-6">
-                        <div>
-                            <p className="text-sm text-gray-500">Actual</p>
-                            <p className="text-2xl font-bold text-gray-900">{latestWeight} kg</p>
+                {/* 3. Evolución de peso */}
+                <WeightChart
+                    data={chartData}
+                    currentWeight={currentWeight}
+                    startWeight={startWeight}
+                    targetWeight={client.target_weight || null}
+                />
+
+                {/* 4. Metrics Grid 2x2 */}
+                <div className="grid grid-cols-2 gap-3">
+                    {/* Card 1: Fase Actual */}
+                    <Card className="bg-white p-5 rounded-[28px] border-none shadow-sm ring-1 ring-gray-100/70 aspect-[1.1] flex flex-col justify-between relative overflow-hidden group">
+                        <div className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Fase Actual</div>
+                        <div className="text-base font-bold text-gray-900 leading-snug mt-1 capitalize">
+                            {goalLabel}
                         </div>
-                        {weightDiff && (
-                            <div className={`text-right ${Number(weightDiff) < 0 ? 'text-green-600' : 'text-amber-600'}`}>
-                                <p className="text-sm font-medium">Cambio</p>
-                                <p className="text-lg font-bold">{Number(weightDiff) > 0 ? '+' : ''}{weightDiff} kg</p>
+                        <div className="absolute top-4 right-4 opacity-10">
+                            <Dumbbell className="h-6 w-6" />
+                        </div>
+                    </Card>
+
+                    {/* Card 2: Actividad */}
+                    <Card className="bg-white p-5 rounded-[28px] border-none shadow-sm ring-1 ring-gray-100/70 aspect-[1.1] flex flex-col justify-between relative overflow-hidden group">
+                        <div className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Actividad</div>
+                        <div className="text-base font-bold text-gray-900 leading-snug mt-1 capitalize">
+                            {activityLabel}
+                        </div>
+                        <div className="absolute top-4 right-4 opacity-10">
+                            <Flame className="h-6 w-6" />
+                        </div>
+                    </Card>
+
+                    {/* Card 3: Grasa Corporal */}
+                    <Card className="bg-white p-5 rounded-[28px] border-none shadow-sm ring-1 ring-gray-100/70 aspect-[1.1] flex flex-col justify-between relative overflow-hidden group">
+                        <div className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Grasa Corporal</div>
+                        <div className="text-2xl font-bold text-gray-900 leading-none">
+                            {latestCheckin?.body_fat ? `${latestCheckin.body_fat}%` : '20%'}
+                        </div>
+                        <div className="absolute top-4 right-4 opacity-10">
+                            <Target className="h-6 w-6" />
+                        </div>
+                    </Card>
+
+                    {/* Card 4: Último Check-in */}
+                    <Card className="bg-white p-5 rounded-[28px] border border-dashed border-violet-300/60 shadow-sm aspect-[1.1] flex flex-col justify-between relative overflow-hidden">
+                        <div className="text-[10px] uppercase font-bold text-violet-500 tracking-wider">Último Check-in</div>
+                        <div className="flex items-center gap-2 mt-auto">
+                            <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse ring-2 ring-green-100"></span>
+                            <div className="text-base font-bold text-gray-900">
+                                {latestCheckin ? (isToday(parseISO(latestCheckin.date)) ? 'Hoy' : format(parseISO(latestCheckin.date), 'dd MMM', { locale: es })) : 'Pendiente'}
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    </Card>
+                </div>
 
-                    {/* Interactive List Visualization */}
-                    <WeightHistoryList checkins={checkins || []} />
-                </Card>
-            </div>
-
-            {/* Note about Load Evolution */}
-            <div className="bg-gray-50 p-4 rounded-lg border text-center">
-                <p className="text-xs text-gray-500">
-                    La evolución de cargas se actualizará automáticamente a medida que completes tus rutinas.
-                </p>
+                {/* 5. Historial Reciente */}
+                <RecentHistoryList checkins={checkins || []} />
             </div>
         </div>
     )

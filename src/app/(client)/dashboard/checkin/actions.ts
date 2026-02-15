@@ -155,7 +155,9 @@ export async function markNoteAsSeenAction(checkinId: string) {
 
     if (!user) return { error: 'No autorizado' }
 
-    const { error } = await supabase
+    const adminClient = createAdminClient()
+
+    const { error } = await adminClient
         .from('checkins')
         .update({
             coach_note_seen_at: new Date().toISOString()
