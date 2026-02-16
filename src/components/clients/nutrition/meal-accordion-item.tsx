@@ -118,7 +118,7 @@ export function MealAccordionItem({ meal, log, clientId }: MealAccordionItemProp
 
     const cardTitle = meal.items && meal.items.length > 0
         ? meal.items.map((i: any) => i.custom_name || i.recipe?.name).filter(Boolean).join(" + ")
-        : meal.name
+        : "Receta no asignada"
 
     return (
         <div className="space-y-3">
@@ -138,7 +138,7 @@ export function MealAccordionItem({ meal, log, clientId }: MealAccordionItemProp
             />
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <div className="w-full bg-white rounded-[18px] shadow-sm p-4 flex items-center justify-between gap-4 transition-all hover:shadow-md">
+                <div className="w-full bg-white rounded-[18px] border border-gray-200 shadow-none p-4 flex items-center justify-between gap-4 transition-all">
                     {/* Expandable Click Area */}
                     <DialogTrigger asChild>
                         <div className="flex-1 cursor-pointer">
@@ -259,7 +259,7 @@ export function MealAccordionItem({ meal, log, clientId }: MealAccordionItemProp
 function MacroChip({ label, value, unit, textColor }: { label: string; value?: number; unit: string; textColor: string }) {
     if (value === undefined) return null;
     return (
-        <div className="flex flex-col items-center justify-center py-4 rounded-2xl border border-gray-100 bg-white shadow-sm">
+        <div className="flex flex-col items-center justify-center py-4 rounded-2xl border border-gray-200 bg-white shadow-none">
             <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">{label}</span>
             <span className={cn("text-xl font-black", textColor)}>
                 {value}<span className="text-[13px] font-bold text-gray-400 ml-0.5">{unit}</span>

@@ -30,12 +30,20 @@ export default async function CheckinPage() {
     if (client && client.next_checkin_date) {
         const nextDate = new Date(client.next_checkin_date + 'T00:00:00')
         const today = new Date()
-        if (today < nextDate) {
+
+        // Simulation Override
+        const isSimulationUser = user.email === 'lautarologgia@gmail.com'
+
+        if (today < nextDate && !isSimulationUser) {
             redirect('/dashboard')
         }
     } else if (hasCheckins) {
         // If has baseline/checkins but no next date set, block it (coach must define it)
-        redirect('/dashboard')
+        // Also allow simulation user here if needed, but usually they have a date.
+        const isSimulationUser = user.email === 'lautarologgia@gmail.com'
+        if (!isSimulationUser) {
+            redirect('/dashboard')
+        }
     }
 
     return (

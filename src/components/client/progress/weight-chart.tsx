@@ -30,12 +30,9 @@ export function WeightChart({ data, currentWeight, startWeight, targetWeight }: 
         <div className="space-y-4">
             <div className="flex justify-between items-center">
                 <h3 className="text-lg font-bold text-gray-900">Evolución de peso</h3>
-                <span className="text-sm font-medium text-violet-600 cursor-pointer hover:text-violet-700 transition-colors">
-                    Editar objetivo
-                </span>
             </div>
 
-            <Card className="bg-white p-6 rounded-[24px] shadow-sm border-none ring-1 ring-gray-100">
+            <Card className="bg-white p-6 rounded-[24px] shadow-none border border-gray-200">
                 {/* Header Stats */}
                 <div className="flex justify-between items-start mb-8">
                     <div className="space-y-1">
