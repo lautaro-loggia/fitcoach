@@ -19,7 +19,7 @@ export function DailyProgressCard({ currentCalories, targetCalories, macros }: D
     // const progress = Math.min(100, Math.max(0, (currentCalories / targetCalories) * 100))
 
     return (
-        <Card className="rounded-[24px] border-none shadow-[0_2px_20px_-10px_rgba(0,0,0,0.05)] bg-white p-6">
+        <Card className="rounded-[24px] border border-gray-200 shadow-none bg-white p-6">
             <div className="flex justify-between items-start mb-4">
                 <div>
                     <h3 className="text-[17px] font-bold text-black">Progreso</h3>

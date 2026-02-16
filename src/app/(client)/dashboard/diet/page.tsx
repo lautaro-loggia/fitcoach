@@ -55,7 +55,7 @@ export default async function DietPage() {
     const viewMealPlan = todayPlan ? { meals: todayPlan.meals } : null
 
     return (
-        <div className="p-4 space-y-6 pb-6">
+        <div className="p-6 space-y-6">
             {/* Header */}
             <div className="flex items-center gap-2 mb-2">
                 <Link href="/dashboard">

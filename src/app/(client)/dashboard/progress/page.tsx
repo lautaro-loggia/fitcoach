@@ -38,8 +38,22 @@ export default async function ProgressPage({
         .eq('client_id', client.id)
         .gte('date', startDate)
 
-    // TODO: Fetch from client settings if available, else default to 12
-    const targetCount = 12
+    // Obtener entrenamientos para calcular meta real
+    const { data: workouts } = await adminClient
+        .from('assigned_workouts')
+        .select('scheduled_days')
+        .eq('client_id', client.id)
+
+    let sessionsPerWeek = 0
+    workouts?.forEach(w => {
+        if (w.scheduled_days) {
+            sessionsPerWeek += w.scheduled_days.length
+        }
+    })
+
+    // Meta mensual = sesiones por semana * 4 semanas
+    // Fallback a 12 solo si no tiene nada asignado
+    const targetCount = sessionsPerWeek > 0 ? sessionsPerWeek * 4 : 12
     const actualCount = completedCount || 0
     const percentage = Math.min(100, Math.round((actualCount / targetCount) * 100))
 
@@ -88,23 +102,19 @@ export default async function ProgressPage({
     const activityLabel = client.activity_level ? (ACTIVITY_MAP[client.activity_level] || client.activity_level) : 'Moderado'
 
     return (
-        <div className="min-h-screen bg-gray-50/30 pb-24 font-sans">
-            <div className="px-5 pt-8 pb-6 space-y-8 max-w-md mx-auto">
+        <div className="min-h-screen bg-gray-50/30 font-sans">
+            <div className="p-6 space-y-8 max-w-md mx-auto">
                 {/* 1. Header */}
                 <header className="flex justify-between items-start">
                     <div className="space-y-1">
                         <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider">Seguimiento de tu evolución</p>
                         <h1 className="text-[28px] font-bold text-gray-900 leading-tight">Tu Progreso</h1>
                     </div>
-                    <div className="h-9 w-9 flex items-center justify-center rounded-full bg-gray-50 hover:bg-gray-100 transition-colors relative mt-1 ring-1 ring-gray-200/50 shadow-sm">
-                        <Bell className="h-4 w-4 text-gray-600" />
-                        <span className="absolute top-2 right-2.5 h-1.5 w-1.5 bg-red-500 rounded-full ring-2 ring-white hidden"></span>
-                    </div>
                 </header>
 
                 {/* 2. Constancia Card */}
                 {/* Custom gradient card to match "violet -> blue" */}
-                <div className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-[#7F56D9] to-[#3B82F6] p-0 shadow-lg shadow-indigo-200/50">
+                <div className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-[#7F56D9] to-[#3B82F6] p-0 shadow-none border border-gray-200/20">
                     <div className="relative h-full w-full bg-gradient-to-r from-violet-500 to-blue-500 p-7 text-white/90 overflow-hidden">
 
                         {/* Background stylistic flame icon */}
@@ -153,7 +163,7 @@ export default async function ProgressPage({
                 {/* 4. Metrics Grid 2x2 */}
                 <div className="grid grid-cols-2 gap-3">
                     {/* Card 1: Fase Actual */}
-                    <Card className="bg-white p-5 rounded-[28px] border-none shadow-sm ring-1 ring-gray-100/70 aspect-[1.1] flex flex-col justify-between relative overflow-hidden group">
+                    <Card className="bg-white p-5 rounded-[28px] border border-gray-200 shadow-none ring-0 aspect-[1.1] flex flex-col justify-between relative overflow-hidden group">
                         <div className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Fase Actual</div>
                         <div className="text-base font-bold text-gray-900 leading-snug mt-1 capitalize">
                             {goalLabel}
@@ -164,7 +174,7 @@ export default async function ProgressPage({
                     </Card>
 
                     {/* Card 2: Actividad */}
-                    <Card className="bg-white p-5 rounded-[28px] border-none shadow-sm ring-1 ring-gray-100/70 aspect-[1.1] flex flex-col justify-between relative overflow-hidden group">
+                    <Card className="bg-white p-5 rounded-[28px] border border-gray-200 shadow-none ring-0 aspect-[1.1] flex flex-col justify-between relative overflow-hidden group">
                         <div className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Actividad</div>
                         <div className="text-base font-bold text-gray-900 leading-snug mt-1 capitalize">
                             {activityLabel}
@@ -175,7 +185,7 @@ export default async function ProgressPage({
                     </Card>
 
                     {/* Card 3: Grasa Corporal */}
-                    <Card className="bg-white p-5 rounded-[28px] border-none shadow-sm ring-1 ring-gray-100/70 aspect-[1.1] flex flex-col justify-between relative overflow-hidden group">
+                    <Card className="bg-white p-5 rounded-[28px] border border-gray-200 shadow-none ring-0 aspect-[1.1] flex flex-col justify-between relative overflow-hidden group">
                         <div className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Grasa Corporal</div>
                         <div className="text-2xl font-bold text-gray-900 leading-none">
                             {latestCheckin?.body_fat ? `${latestCheckin.body_fat}%` : '20%'}
@@ -186,7 +196,7 @@ export default async function ProgressPage({
                     </Card>
 
                     {/* Card 4: Último Check-in */}
-                    <Card className="bg-white p-5 rounded-[28px] border border-dashed border-violet-300/60 shadow-sm aspect-[1.1] flex flex-col justify-between relative overflow-hidden">
+                    <Card className="bg-white p-5 rounded-[28px] border border-gray-200 shadow-none aspect-[1.1] flex flex-col justify-between relative overflow-hidden">
                         <div className="text-[10px] uppercase font-bold text-violet-500 tracking-wider">Último Check-in</div>
                         <div className="flex items-center gap-2 mt-auto">
                             <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse ring-2 ring-green-100"></span>

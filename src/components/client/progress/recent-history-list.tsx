@@ -22,7 +22,7 @@ export function RecentHistoryList({ checkins }: RecentHistoryListProps) {
     return (
         <div className="space-y-4">
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest pl-1">Historial Reciente</h3>
-            <div className="bg-white rounded-[24px] px-6 py-2 shadow-sm border border-gray-50/50">
+            <div className="bg-white rounded-[24px] px-6 py-2 shadow-none border border-gray-200">
                 {recent.map((checkin, idx) => {
                     // Calculate change from previous checkin in the full list (which is next index)
                     const prevCheckin = checkins[idx + 1]
@@ -71,9 +71,7 @@ export function RecentHistoryList({ checkins }: RecentHistoryListProps) {
                 })}
             </div>
 
-            <button className="w-full py-4 text-center text-sm font-semibold text-gray-600 bg-gray-50 rounded-[20px] hover:bg-gray-100 transition-colors">
-                Ver historial completo →
-            </button>
+
         </div>
     )
 }

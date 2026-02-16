@@ -67,7 +67,7 @@ export default async function WorkoutPage() {
     }
 
     return (
-        <div className="p-4 space-y-6 flex-1">
+        <div className="p-6 space-y-6 flex-1">
             <div className="flex items-center gap-2">
                 <Link href="/dashboard">
                     <Button variant="ghost" size="icon" className="-ml-2 h-8 w-8">
@@ -85,7 +85,7 @@ export default async function WorkoutPage() {
                         workoutName={todayWorkout.name}
                         exercisesCount={todayWorkout.structure?.length || 0}
                     >
-                        <Card className="p-5 bg-blue-600 text-white shadow-lg shadow-blue-200 cursor-pointer transition-transform active:scale-[0.98]">
+                        <Card className="p-5 bg-blue-600 text-white shadow-none cursor-pointer transition-transform active:scale-[0.98]">
                             <div className="flex justify-between items-center">
                                 <div>
                                     <h3 className="font-bold text-lg">{todayWorkout.name}</h3>
@@ -110,7 +110,7 @@ export default async function WorkoutPage() {
                         exercisesCount={workout.structure?.length || 0}
                         estimatedTime={`${(workout.structure?.length || 0) * 4} min aprox.`}
                     >
-                        <Card className="p-4 flex flex-row items-center justify-between hover:bg-gray-50 rounded-2xl border-gray-200 shadow-sm transition-all cursor-pointer">
+                        <Card className="p-4 flex flex-row items-center justify-between hover:bg-gray-50 rounded-2xl border border-gray-200 shadow-none transition-all cursor-pointer">
                             <div className="flex items-center gap-3">
                                 <div className="h-10 w-10 bg-gray-100 rounded-full flex items-center justify-center">
                                     <Dumbbell className="h-5 w-5 text-gray-500" />

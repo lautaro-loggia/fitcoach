@@ -153,7 +153,7 @@ export default async function ClientDashboard() {
     // Let's light up N bars based on weeklyLogsCount.
 
     return (
-        <div className="min-h-screen bg-gray-50/30 p-6 flex flex-col gap-4 font-sans pb-24">
+        <div className="min-h-screen bg-gray-50/30 p-6 flex flex-col gap-4 font-sans">
 
             {/* 1. Header Strict Layout */}
             <header className="flex items-center justify-between mt-2">
@@ -193,11 +193,52 @@ export default async function ClientDashboard() {
                     </span>
                 </div>
 
+                {/* Check-in Card Logic */}
+                {(() => {
+                    const todayDate = new Date()
+                    let isCheckInDay = false
+
+                    if (client.next_checkin_date) {
+                        const nextDate = new Date(client.next_checkin_date + 'T00:00:00')
+                        if (todayDate >= nextDate) {
+                            isCheckInDay = true
+                        }
+                    }
+
+                    // Simulation Override
+                    if (user.email === 'lautarologgia@gmail.com') {
+                        isCheckInDay = true
+                    }
+
+                    if (!isCheckInDay) return null
+
+                    return (
+                        <Link href="/dashboard/checkin" className="block w-full">
+                            <Card className="bg-[#4338ca] border-none shadow-[0_4px_20px_rgb(67,56,202,0.3)] rounded-[2rem] p-6 flex flex-row items-center justify-between text-white relative overflow-hidden group transition-all hover:scale-[1.02] active:scale-[0.98]">
+                                <div className="z-10 relative flex flex-col gap-2 flex-1">
+                                    <h3 className="text-2xl font-medium tracking-tight leading-none text-white text-left">
+                                        Realizar Check-in
+                                    </h3>
+                                    <p className="text-indigo-100/90 font-medium text-[13px] leading-snug max-w-[240px] text-left">
+                                        Es hora de realizar el check-in de tu estado fisico.
+                                    </p>
+                                </div>
+                                <div className="h-12 w-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md shrink-0 group-hover:bg-white/30 transition-colors">
+                                    <ArrowRight className="h-6 w-6 text-white" />
+                                </div>
+                                {/* Decorative elements */}
+                                <div className="absolute -top-12 -right-12 h-40 w-40 bg-white/10 rounded-full blur-2xl"></div>
+                                <div className="absolute -bottom-8 -left-8 h-32 w-32 bg-indigo-500/20 rounded-full blur-xl"></div>
+                            </Card>
+                        </Link>
+                    )
+                })()}
+
                 {todayWorkout && !isCompleted ? (
-                    <Card className="border-none shadow-[0_2px_10px_rgb(0,0,0,0.03)] rounded-[2rem] p-8 bg-white overflow-visible relative transition-transform">
+                    <Card className="border border-gray-200 shadow-none rounded-[2rem] p-8 bg-white overflow-visible relative transition-transform">
                         <div className="flex flex-col gap-8 relative z-10">
                             <div>
-                                <h3 className="text-3xl font-black text-gray-900 leading-[1.1] mb-4 tracking-tight">
+                                <h3 className="text-3xl font-medium text-gray-900 leading-[1.1] mb-4 tracking-tight">
                                     {todayWorkout.name}
                                 </h3>
                                 <div className="flex items-center gap-4 text-gray-500 text-sm font-semibold">
@@ -228,7 +269,11 @@ export default async function ClientDashboard() {
                     </Card>
                 ) : (
                     // REST DAY OR COMPLETED
-                    <Card className="border-none shadow-[0_2px_10px_rgb(0,0,0,0.03)] rounded-[2rem] p-10 bg-white flex flex-col items-center justify-center text-center gap-6 min-h-[260px] relative overflow-hidden">
+                    /* If it is checkin day, we might already have the checkin card. 
+                       If they also have a workout, they see both. 
+                       If rest day, they see checkin + rest day card.
+                    */
+                    <Card className="border border-gray-200 shadow-none rounded-[2rem] p-10 bg-white flex flex-col items-center justify-center text-center gap-6 min-h-[260px] relative overflow-hidden">
                         <div className={`h-20 w-20 rounded-full flex items-center justify-center mb-2 ${isCompleted ? 'bg-green-50 text-green-600' : 'bg-gray-50 text-gray-300'}`}>
                             {isCompleted ? (
                                 <CheckCircle2 className="h-10 w-10" />
@@ -237,7 +282,7 @@ export default async function ClientDashboard() {
                             )}
                         </div>
                         <div className="space-y-2 z-10 relative">
-                            <h3 className="text-2xl font-black text-gray-900 tracking-tight">
+                            <h3 className="text-2xl font-medium text-gray-900 tracking-tight">
                                 {isCompleted ? "¡Bien hecho!" : "Día de descanso"}
                             </h3>
                             <p className="text-gray-400 font-medium text-sm leading-relaxed max-w-[200px] mx-auto">
@@ -255,7 +300,7 @@ export default async function ClientDashboard() {
             <section className="grid grid-cols-2 gap-4">
 
                 {/* 1. Weekly Progress */}
-                <Card className="p-6 border-none shadow-[0_2px_10px_rgb(0,0,0,0.03)] rounded-[1.5rem] bg-white flex flex-col justify-between h-44 hover:shadow-md transition-shadow">
+                <Card className="p-6 border border-gray-200 shadow-none rounded-[1.5rem] bg-white flex flex-col justify-between h-44 transition-colors">
                     <div className="flex justify-between items-start w-full">
                         <div className="leading-tight">
                             <p className="text-[13px] text-gray-400 font-medium whitespace-pre-line leading-snug">
@@ -285,7 +330,7 @@ export default async function ClientDashboard() {
                 </Card>
 
                 {/* 2. Next Milestone */}
-                <Card className="p-6 border-none shadow-[0_2px_10px_rgb(0,0,0,0.03)] rounded-[1.5rem] bg-white flex flex-col justify-between h-44 hover:shadow-md transition-shadow">
+                <Card className="p-6 border border-gray-200 shadow-none rounded-[1.5rem] bg-white flex flex-col justify-between h-44 transition-colors">
                     <div className="space-y-4">
                         <div className="flex justify-between items-start">
                             <p className="text-[13px] text-gray-400 font-medium leading-tight">
@@ -294,7 +339,7 @@ export default async function ClientDashboard() {
                         </div>
                         <div>
                             <div className="flex items-baseline gap-1">
-                                <span className="text-[26px] font-black text-gray-900 tracking-tighter leading-none">
+                                <span className="text-[26px] font-medium text-gray-900 tracking-tighter leading-none">
                                     {currentWeight > 0 ? currentWeight : '--'}
                                 </span>
                                 <span className="text-xs text-gray-400 font-bold mb-1">kg</span>
@@ -315,27 +360,27 @@ export default async function ClientDashboard() {
                 </Card>
 
                 {/* 3. Current Goal */}
-                <Card className="p-6 border-none shadow-[0_2px_10px_rgb(0,0,0,0.03)] rounded-[1.5rem] bg-white flex flex-col justify-center items-center text-center gap-4 h-44 hover:shadow-md transition-shadow">
+                <Card className="p-6 border border-gray-200 shadow-none rounded-[1.5rem] bg-white flex flex-col justify-center items-center text-center gap-4 h-44 transition-colors">
                     <div className="h-12 w-12 bg-amber-50 rounded-full flex items-center justify-center text-amber-500 ring-4 ring-amber-50/30">
                         <Trophy className="h-5 w-5 fill-current opacity-80" />
                     </div>
                     <div className="space-y-1">
                         <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wide">Objetivo actual</p>
-                        <p className="text-[15px] font-black text-gray-900 leading-tight">
+                        <p className="text-[17px] font-medium text-gray-900 leading-tight">
                             {client.main_goal ? (goalLabels[client.main_goal] || client.main_goal) : "Hipertrofia"}
                         </p>
                     </div>
                 </Card>
 
                 {/* 4. Daily Steps */}
-                <Card className="p-6 border-none shadow-[0_2px_10px_rgb(0,0,0,0.03)] rounded-[1.5rem] bg-white flex flex-col justify-between h-44 hover:shadow-md transition-shadow">
+                <Card className="p-6 border border-gray-200 shadow-none rounded-[1.5rem] bg-white flex flex-col justify-between h-44 transition-colors">
                     <div className="flex justify-between items-start w-full">
                         <p className="text-[13px] text-gray-400 font-medium">Pasos diarios</p>
                         <Footprints className="h-4 w-4 text-gray-300" />
                     </div>
 
                     <div>
-                        <p className="text-[28px] font-black text-gray-900 tracking-tighter leading-none">
+                        <p className="text-[28px] font-medium text-gray-900 tracking-tighter leading-none">
                             {client.daily_steps_goal ? client.daily_steps_goal.toLocaleString('es-AR') : "10.000"}
                         </p>
                     </div>
