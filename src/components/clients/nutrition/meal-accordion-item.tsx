@@ -1,26 +1,25 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ChevronDown, ChevronUp, Camera, Image as ImageIcon, Loader2, Edit2, CheckCircle2, Check, Sun, Utensils, Apple, Moon } from 'lucide-react'
+import { Camera, Check, ChevronRight, X, Loader2, Sun, Utensils, Apple, Moon } from 'lucide-react'
 import { toast } from 'sonner'
 import Image from 'next/image'
 import { registerMealLog } from '@/app/(dashboard)/clients/[id]/meal-plan-actions'
 import { compressImage } from '@/lib/image-utils'
 import { cn } from '@/lib/utils'
+import { Dialog, DialogContent, DialogTrigger, DialogClose, DialogTitle } from '@/components/ui/dialog'
 
 interface MealAccordionItemProps {
     meal: any
     log?: any
-    isOpen: boolean
-    onToggle: () => void
     clientId: string
 }
 
-export function MealAccordionItem({ meal, log, isOpen, onToggle, clientId }: MealAccordionItemProps) {
+export function MealAccordionItem({ meal, log, clientId }: MealAccordionItemProps) {
     const fileInputRef = useRef<HTMLInputElement>(null)
     const [isUploading, setIsUploading] = useState(false)
+    const [isDialogOpen, setIsDialogOpen] = useState(false)
 
     // Calculate macros from meal items
     const calculateMacros = () => {
@@ -94,6 +93,7 @@ export function MealAccordionItem({ meal, log, isOpen, onToggle, clientId }: Mea
                 toast.error(result.error)
             } else {
                 toast.success('¡Comida registrada!')
+                setIsDialogOpen(false) // Close dialog if open
             }
         } catch (error) {
             console.error('Upload error:', error)
@@ -129,182 +129,140 @@ export function MealAccordionItem({ meal, log, isOpen, onToggle, clientId }: Mea
                 </span>
             </div>
 
-            <div className={cn(
-                "w-full bg-white rounded-[24px] shadow-sm transition-all duration-300 overflow-hidden border border-transparent mx-auto",
-                isOpen ? "pb-6 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.08)]" : ""
-            )}>
-                {/* Card Header (Clickable) */}
-                <div
-                    onClick={onToggle}
-                    className="w-full p-5 cursor-pointer flex justify-between items-center gap-4"
-                >
-                    <div className="flex-1 min-w-0 flex flex-col justify-center">
-                        <h3 className="text-[16px] font-semibold text-black leading-tight line-clamp-2">{cardTitle}</h3>
-                        <p className="text-[13px] text-gray-400 font-medium mt-1">{stats.kcal} kcal</p>
-                    </div>
-                    <div className="flex-shrink-0 flex items-center justify-center w-8 h-8">
-                        <span className={cn("text-gray-400 transition-transform duration-300", isOpen && "rotate-180")}>
-                            <ChevronDown size={22} />
-                        </span>
+            <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept="image/*"
+                onChange={handleFileSelect}
+            />
+
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <div className="w-full bg-white rounded-[18px] shadow-sm p-4 flex items-center justify-between gap-4 transition-all hover:shadow-md">
+                    {/* Expandable Click Area */}
+                    <DialogTrigger asChild>
+                        <div className="flex-1 cursor-pointer">
+                            <h3 className="text-[17px] font-bold text-gray-900 leading-tight mb-1">{cardTitle}</h3>
+                            <p className="text-[14px] text-gray-500 font-medium">{stats.kcal} kcal</p>
+                        </div>
+                    </DialogTrigger>
+
+                    {/* Quick Action Button */}
+                    <div className="shrink-0">
+                        {isComplete ? (
+                            <button
+                                onClick={() => setIsDialogOpen(true)} // If complete, opening the dialog allows them to see/change.
+                                className="h-14 w-14 bg-[#3FB824] hover:bg-[#35a01e] text-white rounded-[12px] flex items-center justify-center transition-all shadow-sm"
+                            >
+                                <Check className="w-6 h-6 stroke-[3px]" />
+                            </button>
+                        ) : (
+                            <button
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={isUploading}
+                                className="h-14 w-14 bg-black hover:bg-gray-800 text-white rounded-[12px] flex items-center justify-center transition-all shadow-sm disabled:opacity-50"
+                            >
+                                {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Camera className="w-6 h-6" />}
+                            </button>
+                        )}
                     </div>
                 </div>
 
-                {/* Expanded Content */}
-                {isOpen && (
-                    <div className="px-5 pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                        {/* Image */}
-                        <div className="relative w-full aspect-[4/2.5] rounded-2xl overflow-hidden mb-5 bg-gray-100">
-                            {/* Show Log Image if exists, else Recipe Image, else Placeholder */}
-                            {log?.signedUrl ? (
-                                <Image
-                                    src={log.signedUrl}
-                                    alt="Comida registrada"
-                                    fill
-                                    className="object-cover"
-                                />
-                            ) : meal.items?.[0]?.recipe?.image_url ? (
-                                <Image
-                                    src={meal.items[0].recipe.image_url}
-                                    alt={meal.name}
-                                    fill
-                                    className="object-cover"
-                                />
-                            ) : (
-                                <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 text-gray-300">
-                                    <ImageIcon className="w-10 h-10 mb-2" />
-                                    <span className="text-xs font-medium">Sin imagen</span>
-                                </div>
-                            )}
-
-                            {/* Change Photo Button Overlay (only if logged) */}
-                            {log?.signedUrl && (
-                                <div className="absolute inset-0 bg-black/0 hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
-                                    <Button
-                                        variant="secondary"
-                                        size="sm"
-                                        className="gap-2 shadow-sm pointer-events-auto cursor-pointer"
-                                        onClick={(e) => {
-                                            e.stopPropagation()
-                                            fileInputRef.current?.click()
-                                        }}
-                                        disabled={isUploading}
-                                    >
-                                        <Edit2 className="h-3.5 w-3.5" />
-                                        Cambiar foto
-                                    </Button>
-                                </div>
-                            )}
+                <DialogContent className="max-w-md w-[95vw] rounded-[32px] p-0 border-none bg-white shadow-2xl overflow-hidden" showCloseButton={false}>
+                    <div className="p-6 space-y-6">
+                        {/* Header with Title and Close */}
+                        <div className="flex justify-between items-start gap-4">
+                            <div>
+                                <DialogTitle className="text-2xl font-bold text-gray-900 leading-tight">
+                                    {cardTitle}
+                                </DialogTitle>
+                                <p className="text-gray-500 font-medium mt-1">{stats.kcal} kcal</p>
+                            </div>
+                            <DialogClose className="p-2 bg-gray-100/50 hover:bg-gray-100 rounded-full transition-colors">
+                                <X className="w-5 h-5 text-gray-400" />
+                            </DialogClose>
                         </div>
 
-                        {/* Ingredients */}
-                        <div className="mb-6">
-                            <h4 className="text-[11px] font-bold text-gray-400 tracking-wider uppercase mb-3">INGREDIENTES</h4>
+                        {/* Image Section */}
+                        {(log?.signedUrl || meal.items?.[0]?.recipe?.image_url) && (
+                            <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden bg-gray-100 shadow-inner">
+                                <Image
+                                    src={log?.signedUrl || meal.items[0].recipe.image_url}
+                                    alt={cardTitle}
+                                    fill
+                                    className="object-cover"
+                                />
+                            </div>
+                        )}
+
+                        {/* Ingredients List */}
+                        <div className="space-y-3">
+                            <h4 className="text-[11px] font-bold text-gray-400 tracking-wider uppercase">INGREDIENTES</h4>
                             <div className="space-y-2">
                                 {meal.items?.map((item: any, idx: number) => {
                                     const recipe = item.recipe
                                     const portions = item.portions || 1
-                                    // Normalize ingredients data
                                     let ingredientsList = recipe?.ingredients || recipe?.ingredients_data || []
                                     if (typeof ingredientsList === 'string') {
                                         try { ingredientsList = JSON.parse(ingredientsList) } catch (e) { ingredientsList = [] }
                                     }
                                     const hasIngredients = Array.isArray(ingredientsList) && ingredientsList.length > 0
 
-                                    // If has explicit ingredients, list them
                                     if (hasIngredients) {
-                                        return ingredientsList.map((ing: any, i: number) => {
-                                            const displayAmount = ing.quantity ? Number((ing.quantity * portions).toFixed(2)) : null
-                                            const displayUnit = ing.unit
-
-                                            // Determine what to show: User friendly unit OR grams fallback
-                                            const quantityText = (displayAmount && displayUnit && displayUnit.toLowerCase() !== 'g')
-                                                ? `${displayAmount} ${displayUnit}`
-                                                : `${Math.round((ing.grams || 0) * portions)}g`
-
-                                            return (
-                                                <div key={`${idx}-${i}`} className="flex justify-between items-center text-[13px]">
-                                                    <span className="font-semibold text-black capitalize">{ing.ingredient_name || ing.name}</span>
-                                                    <span className="text-gray-400 font-medium">
-                                                        {quantityText}
-                                                    </span>
-                                                </div>
-                                            )
-                                        })
+                                        return ingredientsList.map((ing: any, i: number) => (
+                                            <div key={`${idx}-${i}`} className="flex justify-between items-center text-[14px]">
+                                                <span className="font-semibold text-gray-900 capitalize">{ing.ingredient_name || ing.name}</span>
+                                                <span className="text-gray-500 font-medium">
+                                                    {ing.quantity && ing.unit && ing.unit.toLowerCase() !== 'g'
+                                                        ? `${ing.quantity} ${ing.unit}`
+                                                        : `${Math.round((ing.grams || 0) * portions)}g`
+                                                    }
+                                                </span>
+                                            </div>
+                                        ))
                                     }
-
-                                    // Fallback if no ingredients (just recipe name)
                                     return (
-                                        <div key={idx} className="flex justify-between items-center text-[13px]">
-                                            <span className="font-semibold text-black">{item.custom_name || recipe?.name || "Item"}</span>
-                                            <span className="text-gray-400 font-medium">{portions > 1 ? `${portions} porciones` : '1 porción'}</span>
+                                        <div key={idx} className="flex justify-between items-center text-[14px]">
+                                            <span className="font-semibold text-gray-900">{item.custom_name || recipe?.name || "Item"}</span>
+                                            <span className="text-gray-500 font-medium">{portions > 1 ? `${portions} porciones` : '1 porción'}</span>
                                         </div>
                                     )
                                 })}
                             </div>
                         </div>
 
-                        {/* Macros Chips */}
-                        <div className="grid grid-cols-3 gap-3 mb-6">
-                            <MacroChip label="PROT" value={stats.protein} unit="g" color="text-blue-500" />
-                            <MacroChip label="CARB" value={stats.carbs} unit="g" color="text-orange-500" />
-                            <MacroChip label="FAT" value={stats.fats} unit="g" color="text-red-500" />
+                        {/* Macros Row - NEW COLORS */}
+                        <div className="grid grid-cols-3 gap-3">
+                            <MacroChip label="PROTEINA" value={stats.protein} unit="g" textColor="text-[#C50D00]" />
+                            <MacroChip label="CARBOS" value={stats.carbs} unit="g" textColor="text-[#E7A202]" />
+                            <MacroChip label="GRASAS" value={stats.fats} unit="g" textColor="text-[#009B27]" />
                         </div>
 
-                        {/* Action Button */}
-                        <input
-                            type="file"
-                            ref={fileInputRef}
-                            className="hidden"
-                            accept="image/*"
-                            onChange={handleFileSelect}
-                        />
-
-                        {(log || isComplete) ? (
-                            <div className="flex gap-2">
-                                <div className="flex-1 bg-[#3FB824] text-white h-[50px] rounded-full flex items-center justify-center gap-2 font-medium shadow-lg shadow-green-500/20">
-                                    <Check className="w-5 h-5 stroke-[3px]" />
-                                    <span>Foto registrada.</span>
-                                </div>
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    className="h-[50px] w-[50px] rounded-full shrink-0 border-gray-200"
-                                    onClick={(e) => {
-                                        e.stopPropagation()
-                                        fileInputRef.current?.click()
-                                    }}
-                                    disabled={isUploading}
-                                >
-                                    <Edit2 className="w-5 h-5 text-gray-400" />
-                                </Button>
-                            </div>
-                        ) : (
+                        {/* Upload/replace Button */}
+                        <div className="pt-2">
                             <Button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    fileInputRef.current?.click();
-                                }}
+                                onClick={() => fileInputRef.current?.click()}
                                 disabled={isUploading}
-                                className="w-full bg-black hover:bg-black/90 text-white h-[50px] rounded-full text-[15px] font-medium shadow-xl shadow-black/10"
+                                className="w-full bg-black hover:bg-black/90 text-white h-14 rounded-[20px] text-[15px] font-bold shadow-xl shadow-black/5"
                             >
                                 {isUploading ? <Loader2 className="animate-spin mr-2" /> : <Camera className="w-5 h-5 mr-2" />}
-                                {isUploading ? 'Subiendo...' : 'Subir una foto del plato'}
+                                {isUploading ? 'Subiendo...' : (isComplete ? 'Cambiar foto del plato' : 'Subir una foto del plato')}
                             </Button>
-                        )}
+                        </div>
                     </div>
-                )}
-            </div>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }
 
-function MacroChip({ label, value, unit, color }: { label: string; value?: number; unit: string; color: string }) {
+function MacroChip({ label, value, unit, textColor }: { label: string; value?: number; unit: string; textColor: string }) {
     if (value === undefined) return null;
     return (
-        <div className="flex flex-col items-center justify-center py-2.5 rounded-2xl border border-gray-100 bg-white shadow-sm">
-            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">{label}</span>
-            <span className={cn("text-[15px] font-bold", color)}>
-                {value}<span className="text-[11px] font-medium">{unit}</span>
+        <div className="flex flex-col items-center justify-center py-4 rounded-2xl border border-gray-100 bg-white shadow-sm">
+            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">{label}</span>
+            <span className={cn("text-xl font-black", textColor)}>
+                {value}<span className="text-[13px] font-bold text-gray-400 ml-0.5">{unit}</span>
             </span>
         </div>
     )

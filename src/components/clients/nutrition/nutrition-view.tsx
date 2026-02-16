@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useMemo } from 'react'
 import { DailyProgressCard } from './daily-progress-card'
 import { MealAccordionItem } from './meal-accordion-item'
 
@@ -11,7 +11,7 @@ interface NutritionViewProps {
 }
 
 export function NutritionView({ client, mealPlan, dailyLogs }: NutritionViewProps) {
-    const [openStep, setOpenStep] = useState<string | null>(null)
+
 
     // Calculate Consumed Macros based on LOGGED meals
     const meals = mealPlan?.meals || []
@@ -81,8 +81,6 @@ export function NutritionView({ client, mealPlan, dailyLogs }: NutritionViewProp
                                 key={meal.id}
                                 meal={meal}
                                 log={log}
-                                isOpen={openStep === meal.id}
-                                onToggle={() => setOpenStep(openStep === meal.id ? null : meal.id)}
                                 clientId={client.id}
                             />
                         )
