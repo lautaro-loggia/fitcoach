@@ -205,10 +205,6 @@ export default async function ClientDashboard() {
                         }
                     }
 
-                    // Simulation Override
-                    if (user.email === 'lautarologgia@gmail.com') {
-                        isCheckInDay = true
-                    }
 
                     if (!isCheckInDay) return null
 
