@@ -223,6 +223,11 @@ export function AssignWorkoutDialog({
             return
         }
 
+        if (scheduledDays.length === 0) {
+            alert('Debes seleccionar al menos un día para asignar la rutina')
+            return
+        }
+
         setLoading(true)
         const payload = {
             clientId,
@@ -271,31 +276,34 @@ export function AssignWorkoutDialog({
             </DialogTrigger>
 
             <DialogContent className={cn(
-                "max-h-[95vh] overflow-y-auto duration-300 transition-all",
+                "max-h-[95vh] overflow-y-auto",
                 step === 'select' && !existingWorkout ? "sm:max-w-[500px]" : "sm:max-w-[850px]",
                 // Bottom-sheet effect on mobile
                 "max-sm:fixed max-sm:bottom-0 max-sm:top-auto max-sm:left-0 max-sm:translate-x-0 max-sm:translate-y-0 max-sm:w-full max-sm:rounded-b-none max-sm:rounded-t-[24px] max-sm:border-x-0 max-sm:border-b-0"
             )}>
                 <DialogHeader className={step === 'select' && !existingWorkout ? "text-center pb-2" : ""}>
-                    <DialogTitle className={step === 'select' && !existingWorkout ? "text-2xl font-bold" : ""}>
-                        {isEditingExercise
-                            ? (editingExerciseIndex !== null ? 'Editar ejercicio' : 'Agregar Ejercicio')
-                            : (existingWorkout
-                                ? 'Editar Rutina del Cliente'
-                                : (step === 'select' ? 'Elegir plantilla' : 'Nueva Rutina para Cliente')
-                            )
-                        }
-                    </DialogTitle>
+                    <div className={cn("flex items-center gap-2", step === 'select' && !existingWorkout ? "justify-center" : "justify-start")}>
+                        {!existingWorkout && step === 'edit' && !isEditingExercise && (
+                            <Button variant="ghost" size="icon" className="h-9 w-9 -ml-2 shrink-0" onClick={() => setStep('select')}>
+                                <ArrowLeft01Icon className="h-5 w-5" />
+                            </Button>
+                        )}
+                        <DialogTitle className={cn(
+                            step === 'select' && !existingWorkout ? "text-2xl font-bold" : "text-xl font-bold"
+                        )}>
+                            {isEditingExercise
+                                ? (editingExerciseIndex !== null ? 'Editar ejercicio' : 'Agregar Ejercicio')
+                                : (existingWorkout
+                                    ? `Asignar rutina para ${clientName || 'Cliente'}`
+                                    : (step === 'select' ? 'Elegir plantilla' : `Asignar rutina para ${clientName || 'Cliente'}`)
+                                )
+                            }
+                        </DialogTitle>
+                    </div>
                     {step === 'select' && !existingWorkout && !isEditingExercise && (
-                        <p className="text-muted-foreground mt-1">
+                        <p className="text-muted-foreground mt-1 text-center">
                             Partí de una rutina existente o creá una nueva
                         </p>
-                    )}
-                    {clientName && (existingWorkout || step === 'edit') && !isEditingExercise && (
-                        <div className="flex items-center gap-2 px-3 py-2 mt-2 rounded-md bg-blue-50 border border-blue-200 text-blue-700 text-sm">
-                            <InformationCircleIcon className="h-4 w-4 flex-shrink-0" />
-                            <span>Los cambios en esta rutina solo se aplicarán al perfil de <strong>{clientName}</strong>.</span>
-                        </div>
                     )}
                 </DialogHeader>
 
@@ -389,90 +397,30 @@ export function AssignWorkoutDialog({
                             </div>
                         ) : (
                             <div className="space-y-6">
-                                {!existingWorkout && (
-                                    <div className="flex items-center gap-2 mb-4">
-                                        <Button variant="ghost" size="sm" onClick={() => setStep('select')}>
-                                            <ArrowLeft01Icon className="h-4 w-4 mr-1" /> Volver
-                                        </Button>
-                                    </div>
-                                )}
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
+                                <div className="flex flex-col md:flex-row items-end gap-4">
+                                    <div className="flex-1 space-y-2 w-full">
                                         <Label>Nombre de la Rutina</Label>
-                                        <Input value={workoutName} onChange={(e) => setWorkoutName(e.target.value)} />
-                                    </div>
-
-                                    <div className="flex items-center space-x-2 pt-8">
-                                        <Switch
-                                            id="presential-mode"
-                                            checked={isPresential}
-                                            onCheckedChange={setIsPresential}
+                                        <Input
+                                            value={workoutName}
+                                            onChange={(e) => setWorkoutName(e.target.value)}
+                                            placeholder="Ej: Empuje, Piernas, etc."
                                         />
-                                        <Label htmlFor="presential-mode">Entrenamiento Presencial</Label>
                                     </div>
 
-                                    {isPresential && (
-                                        <div className="col-span-1 md:col-span-2 flex gap-4 animate-in slide-in-from-top-2">
-                                            <div className="flex-1 space-y-2">
-                                                <Label>Hora Inicio</Label>
-                                                <Input
-                                                    type="time"
-                                                    value={startTime}
-                                                    onChange={(e) => setStartTime(e.target.value)}
-                                                />
-                                            </div>
-                                            <div className="flex-1 space-y-2">
-                                                <Label>Hora Fin</Label>
-                                                <Input
-                                                    type="time"
-                                                    value={endTime}
-                                                    onChange={(e) => setEndTime(e.target.value)}
-                                                />
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2 flex flex-col">
+                                    <div className="flex-1 space-y-2 w-full">
                                         <div className="flex justify-between items-center">
                                             <Label>Fecha de revisión *</Label>
                                             <div className="flex gap-1">
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="h-6 px-2 text-xs text-muted-foreground hover:text-primary"
-                                                    onClick={() => setValidUntil(addWeeks(new Date(), 4))}
-                                                >
-                                                    4 sem
-                                                </Button>
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="h-6 px-2 text-xs text-muted-foreground hover:text-primary"
-                                                    onClick={() => setValidUntil(addWeeks(new Date(), 8))}
-                                                >
-                                                    8 sem
-                                                </Button>
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="h-6 px-2 text-xs text-muted-foreground hover:text-primary"
-                                                    onClick={() => setValidUntil(addWeeks(new Date(), 12))}
-                                                >
-                                                    12 sem
-                                                </Button>
+                                                <button type="button" onClick={() => setValidUntil(addWeeks(new Date(), 4))} className="text-[10px] text-muted-foreground hover:text-primary">4s</button>
+                                                <button type="button" onClick={() => setValidUntil(addWeeks(new Date(), 8))} className="text-[10px] text-muted-foreground hover:text-primary">8s</button>
+                                                <button type="button" onClick={() => setValidUntil(addWeeks(new Date(), 12))} className="text-[10px] text-muted-foreground hover:text-primary">12s</button>
                                             </div>
                                         </div>
                                         <Popover>
                                             <PopoverTrigger asChild>
                                                 <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !validUntil && "text-muted-foreground")}>
-                                                    <Calendar03Icon className="mr-2 h-4 w-4" />
-                                                    {validUntil ? format(validUntil, "PPP", { locale: es }) : <span>Seleccionar fecha *</span>}
+                                                    <Calendar03Icon className="mr-2 h-4 w-4 shrink-0" />
+                                                    <span className="truncate">{validUntil ? format(validUntil, "d 'de' MMMM", { locale: es }) : "Seleccionar *"}</span>
                                                 </Button>
                                             </PopoverTrigger>
                                             <PopoverContent className="w-auto p-0" align="start">
@@ -480,11 +428,44 @@ export function AssignWorkoutDialog({
                                             </PopoverContent>
                                         </Popover>
                                     </div>
+
+                                    <div className="flex items-center gap-2 pb-2.5 shrink-0">
+                                        <Switch
+                                            id="presential-mode"
+                                            checked={isPresential}
+                                            onCheckedChange={setIsPresential}
+                                        />
+                                        <Label htmlFor="presential-mode" className="text-sm cursor-pointer whitespace-nowrap">Presencial</Label>
+                                    </div>
                                 </div>
+
+                                {isPresential && (
+                                    <div className="flex gap-4 animate-in slide-in-from-top-2">
+                                        <div className="flex-1 space-y-2">
+                                            <Label>Hora Inicio</Label>
+                                            <Input
+                                                type="time"
+                                                value={startTime}
+                                                onChange={(e) => setStartTime(e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="flex-1 space-y-2">
+                                            <Label>Hora Fin</Label>
+                                            <Input
+                                                type="time"
+                                                value={endTime}
+                                                onChange={(e) => setEndTime(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Day Selector */}
                                 <div className="space-y-2">
-                                    <Label>Días asignados</Label>
+                                    <div className="flex items-center gap-2">
+                                        <Label>Días asignados</Label>
+                                        <span className="text-xs text-muted-foreground font-normal">(Selecciona un dia)</span>
+                                    </div>
                                     <div className="flex flex-wrap gap-2">
                                         {DAYS.map(day => (
                                             <Button
@@ -504,7 +485,7 @@ export function AssignWorkoutDialog({
                                 </div>
 
                                 <div className="space-y-4">
-                                    <div className="border rounded-lg overflow-hidden bg-background">
+                                    <div className="border rounded-lg overflow-y-auto bg-background max-h-[350px] custom-scrollbar">
                                         <Table>
                                             <TableHeader>
                                                 <TableRow className="bg-muted/50 hover:bg-muted/50">
@@ -609,8 +590,12 @@ export function AssignWorkoutDialog({
 
                                 <div className="flex justify-end gap-3 pt-4 border-t">
                                     <Button variant="outline" onClick={() => setOpen(false)}>Cerrar</Button>
-                                    <Button onClick={handleSave} disabled={loading || !workoutName || !validUntil} className="bg-primary hover:bg-primary/90 text-white">
-                                        {loading ? 'Guardando...' : (existingWorkout ? 'Guardar rutina' : 'Guardar rutina')}
+                                    <Button
+                                        onClick={handleSave}
+                                        disabled={loading || !workoutName || !validUntil || scheduledDays.length === 0}
+                                        className="bg-primary hover:bg-primary/90 text-white"
+                                    >
+                                        {loading ? 'Asignando...' : 'Asignar rutina'}
                                     </Button>
                                 </div>
                             </div>
@@ -718,7 +703,7 @@ function ExerciseForm({
     return (
         <div className="space-y-6">
             <div className="space-y-2">
-                <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+                <Popover open={openCombobox} onOpenChange={setOpenCombobox} modal={false}>
                     <PopoverTrigger asChild>
                         <Button
                             variant="outline"
@@ -737,7 +722,11 @@ function ExerciseForm({
                             return normalizedValue.includes(normalizedSearch) ? 1 : 0
                         }}>
                             <CommandInput placeholder="Buscar por nombre o grupo muscular..." />
-                            <CommandList style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                            <CommandList
+                                className="max-h-[300px] overflow-y-auto custom-scrollbar"
+                                onWheel={(e) => e.stopPropagation()}
+                                onPointerDown={(e) => e.stopPropagation()}
+                            >
                                 <CommandEmpty className="py-2 px-4 text-sm text-gray-500">
                                     <p>No encontrado.</p>
                                     <Button
@@ -884,9 +873,9 @@ function ExerciseForm({
                 </div>
             ) : (
                 /* Strength Form - Original */
-                <div className="space-y-2">
-                    <Label className="block mb-2">Series</Label>
-                    <div className="border rounded-md overflow-hidden bg-background">
+                <div className="space-y-4">
+                    <Label className="block mb-1">Series y Cargas</Label>
+                    <div className="border rounded-md overflow-y-auto bg-background max-h-[300px] custom-scrollbar">
                         <Table>
                             <TableHeader>
                                 <TableRow className="bg-muted/50 hover:bg-muted/50">
