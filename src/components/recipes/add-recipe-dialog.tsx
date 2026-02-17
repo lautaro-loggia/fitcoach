@@ -21,6 +21,7 @@ import { IngredientSelector } from './ingredient-selector'
 import { createRecipeAction, RecipeIngredient } from '@/app/(dashboard)/recipes/actions'
 import { createClient } from '@/lib/supabase/client'
 import Image from 'next/image'
+import { compressImage } from '@/lib/image-utils'
 
 interface SelectedIngredient {
     id: string
@@ -140,12 +141,15 @@ export function AddRecipeDialog({ open: controlledOpen, onOpenChange, onSuccess,
             const { data: { user } } = await supabase.auth.getUser()
             if (!user) throw new Error('No se encontró sesión de usuario')
 
-            const fileExt = file.name.split('.').pop()
+            // Compress image
+            const compressedFile = await compressImage(file, 0.8, 1600)
+
+            const fileExt = compressedFile.name.split('.').pop()
             const fileName = `recipes/${user.id}/${Date.now()}.${fileExt}`
 
             const { error: uploadError } = await supabase.storage
                 .from('recipe-images')
-                .upload(fileName, file)
+                .upload(fileName, compressedFile)
 
             if (uploadError) throw uploadError
 

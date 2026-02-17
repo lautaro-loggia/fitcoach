@@ -49,6 +49,7 @@ import {
     RecipeIngredient,
 } from '@/app/(dashboard)/recipes/actions'
 import { createClient } from '@/lib/supabase/client'
+import { compressImage } from '@/lib/image-utils'
 
 interface Ingredient {
     id: string
@@ -294,27 +295,37 @@ export function RecipeEditor({ recipe, userId, isAdmin = false }: RecipeEditorPr
         setIsUploading(true)
         const file = e.target.files[0]
 
-        const supabase = createClient()
-        const fileExt = file.name.split('.').pop()
-        const fileName = `recipes/${recipe.id}/${Date.now()}.${fileExt}`
 
-        const { error: uploadError } = await supabase.storage
-            .from('recipe-images')
-            .upload(fileName, file)
+        try {
+            // Compress image
+            const compressedFile = await compressImage(file, 0.8, 1600)
 
-        if (uploadError) {
-            console.error('Upload error:', uploadError)
-            alert(`Error al subir la imagen: ${uploadError.message}`)
+            const supabase = createClient()
+            const fileExt = compressedFile.name.split('.').pop()
+            const fileName = `recipes/${recipe.id}/${Date.now()}.${fileExt}`
+
+            const { error: uploadError } = await supabase.storage
+                .from('recipe-images')
+                .upload(fileName, compressedFile)
+
+            if (uploadError) {
+                console.error('Upload error:', uploadError)
+                alert(`Error al subir la imagen: ${uploadError.message}`)
+                setIsUploading(false)
+                return
+            }
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('recipe-images')
+                .getPublicUrl(fileName)
+
+            setImageUrl(publicUrl)
+        } catch (error) {
+            console.error('Error handling image:', error)
+            alert('Error al procesar la imagen')
+        } finally {
             setIsUploading(false)
-            return
         }
-
-        const { data: { publicUrl } } = supabase.storage
-            .from('recipe-images')
-            .getPublicUrl(fileName)
-
-        setImageUrl(publicUrl)
-        setIsUploading(false)
     }
 
     return (

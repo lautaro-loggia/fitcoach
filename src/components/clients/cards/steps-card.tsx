@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Orbit01Icon, Edit01Icon } from 'hugeicons-react'
 import { Button } from '@/components/ui/button'
@@ -16,6 +16,14 @@ export function StepsCard({ client }: StepsCardProps) {
     const [isEditing, setIsEditing] = useState(false)
     const [steps, setSteps] = useState(client.daily_steps_target || 10000)
     const [tempSteps, setTempSteps] = useState(steps.toString())
+
+    // Keep state in sync with props
+    useEffect(() => {
+        if (client.daily_steps_target !== undefined && client.daily_steps_target !== null) {
+            setSteps(client.daily_steps_target)
+            setTempSteps(client.daily_steps_target.toString())
+        }
+    }, [client.daily_steps_target])
 
     const handleSave = async () => {
         const value = parseInt(tempSteps)
@@ -37,6 +45,7 @@ export function StepsCard({ client }: StepsCardProps) {
                 toast.success('Objetivo de pasos actualizado')
             }
         } catch (err) {
+            console.error('Error updating steps:', err)
             toast.error('Error al actualizar')
         }
     }
@@ -50,34 +59,31 @@ export function StepsCard({ client }: StepsCardProps) {
                             <Orbit01Icon className="h-6 w-6 text-indigo-600" />
                         </div>
                         <div>
-                            <h3 className="font-bold text-gray-900 leading-tight">Objetivo de Pasos</h3>
+                            <h3 className="font-bold text-gray-900 leading-tight">Pasos a realizar</h3>
                             <p className="text-xs text-gray-400">Referencia diaria (NEAT)</p>
                         </div>
                     </div>
                     {isEditing ? (
                         <div className="flex gap-2">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 text-xs px-2"
+                            <button
+                                className="text-xs text-gray-400 hover:text-gray-600 font-medium"
                                 onClick={() => setIsEditing(false)}
                             >
                                 Cancelar
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-8 text-xs px-3 border-indigo-200 text-indigo-600 hover:bg-indigo-50"
+                            </button>
+                            <button
+                                className="text-xs text-indigo-600 hover:text-indigo-700 font-bold"
                                 onClick={handleSave}
                             >
                                 Guardar
-                            </Button>
+                            </button>
                         </div>
                     ) : (
                         <button
                             onClick={() => setIsEditing(true)}
                             className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1 transition-colors"
                         >
+                            <Edit01Icon className="h-3 w-3" />
                             Editar
                         </button>
                     )}
@@ -98,7 +104,7 @@ export function StepsCard({ client }: StepsCardProps) {
                     ) : (
                         <>
                             <span className="text-3xl font-extrabold text-gray-900 tracking-tight">
-                                {steps.toLocaleString('es-ES')}
+                                {steps.toLocaleString('es-AR')}
                             </span>
                             <span className="text-sm text-gray-400 font-medium whitespace-nowrap">pasos / día</span>
                         </>

@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { parseISO } from 'date-fns'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function createClientAction(formData: FormData) {
     const supabase = await createClient()
@@ -169,16 +170,27 @@ export async function createClientAction(formData: FormData) {
 }
 
 export async function updateClientAction(clientId: string, data: any) {
-    const supabase = await createClient()
+    const adminSupabase = createAdminClient()
 
-    // Security check: Handled by RLS (assuming "Trainers can manage own clients")
-    // data should be sanitized/validated ideally.
+    // Filter out undefined values and convert empty strings to null
+    const sanitizedData = Object.keys(data).reduce((acc: any, key) => {
+        const value = data[key]
+        acc[key] = value === '' ? null : value
+        return acc
+    }, {})
 
-    const { error } = await supabase.from('clients').update(data).eq('id', clientId)
+    const { error } = await adminSupabase.from('clients').update(sanitizedData).eq('id', clientId)
 
     if (error) {
         console.error("Error updating client:", error)
-        return { error: "Error al actualizar la información" }
+        return { error: `Error al actualizar: ${error.message}` }
+    }
+
+    // Force schema cache reload in case column was recently added
+    try {
+        await adminSupabase.rpc('reload_schema_cache')
+    } catch (e) {
+        // Fallback
     }
 
     revalidatePath(`/clients/${clientId}`)
@@ -186,7 +198,6 @@ export async function updateClientAction(clientId: string, data: any) {
     return { success: true }
 }
 
-import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function deleteClientAction(clientId: string) {
     const supabase = await createClient()
