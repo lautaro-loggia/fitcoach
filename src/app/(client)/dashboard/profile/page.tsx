@@ -22,7 +22,7 @@ export default async function ProfilePage() {
         .eq('user_id', user.id)
         .single()
 
-    if (!client) return <div>Client not found</div>
+    if (!client) return <div>Cliente no encontrado</div>
 
     return (
         <div className="p-4 space-y-6 pb-24">

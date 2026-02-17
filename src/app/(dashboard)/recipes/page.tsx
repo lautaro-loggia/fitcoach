@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
+import { isAdminUser } from '@/lib/auth'
 import { AddRecipeDialog } from '@/components/recipes/add-recipe-dialog'
 import { RecipeCard } from '@/components/recipes/recipe-card'
 import { Input } from '@/components/ui/input'
@@ -62,13 +63,12 @@ export default function RecipesPage() {
 
     const [isAdmin, setIsAdmin] = useState(false)
 
-
     // Check admin status
     useEffect(() => {
         const checkUser = async () => {
             const supabase = createClient()
             const { data: { user } } = await supabase.auth.getUser()
-            if (user?.email === 'lauloggia@gmail.com') {
+            if (isAdminUser(user?.email)) {
                 setIsAdmin(true)
             }
         }
@@ -123,11 +123,10 @@ export default function RecipesPage() {
             query = query.eq('meal_type', mealTypeFilter)
         }
 
-        // Apply max calories filter (server-side approximation)
-        // Note: For exact per-serving filter, we'd need a computed column or RPC
+        // Filtro de calorías máximas
         if (maxCalories) {
             const max = parseFloat(maxCalories)
-            query = query.lte('macros_calories', max * 4) // Approximate for 4 servings max
+            query = query.lte('macros_calories', max)
         }
 
         // Apply min protein filter

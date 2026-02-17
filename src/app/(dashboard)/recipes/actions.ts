@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { isAdminUser } from '@/lib/auth'
 
 export interface RecipeIngredient {
     ingredient_code: string
@@ -128,8 +129,8 @@ export async function updateRecipeAction(recipeId: string, data: Partial<RecipeD
 
     let query = supabase.from('recipes').update(updateData).eq('id', recipeId)
 
-    // Admin bypass: lauloggia@gmail.com can edit any recipe
-    if (user.email !== 'lauloggia@gmail.com') {
+    // Admin bypass: permite editar cualquier receta
+    if (!isAdminUser(user.email)) {
         query = query.eq('trainer_id', user.id)
     }
 
@@ -183,7 +184,11 @@ export async function duplicateRecipeAction(recipeId: string) {
         instructions: original.instructions,
         ingredients: original.ingredients || original.ingredients_data,
         image_url: original.image_url,
-        is_base_template: false, // Duplicates are never base templates
+        macros_calories: original.macros_calories,
+        macros_protein_g: original.macros_protein_g,
+        macros_carbs_g: original.macros_carbs_g,
+        macros_fat_g: original.macros_fat_g,
+        is_base_template: false, // Duplicados nunca son templates base
     }).select().single()
 
     if (insertError) {

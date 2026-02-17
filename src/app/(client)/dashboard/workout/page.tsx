@@ -23,7 +23,7 @@ export default async function WorkoutPage() {
         .eq('user_id', user.id)
         .single()
 
-    if (!client) return <div>Error loading client</div>
+    if (!client) return <div>Error cargando cliente</div>
 
     // Get all workouts
     const { data: workouts } = await adminClient

@@ -58,52 +58,6 @@ export default async function DashboardPage() {
         getPendingCheckins()
     ])
 
-    const statCards = [
-        {
-            title: "Pagos vencidos",
-            value: stats.pendingPaymentsCount.toString(),
-            description: "Requieren atención inmediata",
-            icon: () => <div className="h-2 w-2 rounded-full bg-red-500" />,
-            alert: stats.pendingPaymentsCount > 0,
-            variant: "destructive",
-            href: "/pagos?filter=overdue",
-            customStyles: {
-                value: "text-red-500",
-                description: "text-red-400"
-            }
-        },
-        {
-            title: "Check-ins pendientes",
-            value: stats.pendingCheckinsCount.toString(),
-            description: "Esperando revisión",
-            icon: () => <div className="h-2 w-2 rounded-full bg-amber-500" />,
-            alert: stats.pendingCheckinsCount > 0,
-            customStyles: {
-                value: "text-amber-500",
-                description: "text-amber-500"
-            }
-        },
-        {
-            title: "Entrenamientos hoy",
-            value: presentialTrainings.length.toString(),
-            description: "Todo en orden",
-            icon: () => <div className="h-2 w-2 rounded-full bg-green-500" />,
-            customStyles: {
-                value: "text-foreground",
-                description: "text-green-500"
-            },
-            extraIcon: true // Hack to show check icon on right? Or we can just adapt StatsCard
-        },
-        // We will adapt StatsCard component similarly or just inline the change here if needed, 
-        // but for now let's pass this structure and update StatsCard if needed or map carefully.
-        // Actually, the previous map loop used specific props. Let's look at StatsCard.
-        // StatsCard expects LucideIcon. 
-    ]
-
-    // The design shows specific styling per card (Red text for red card, etc).
-    // I should probably simplify and just inline the cards implementation here or make StatsCard more flexible.
-    // Given the specific design, I'll inline the cards in the JSX for maximum control to match the image exactly.
-
     const overduePayments = upcomingPayments.filter(p => p.status === 'overdue')
 
     return (
@@ -121,7 +75,7 @@ export default async function DashboardPage() {
                     </div>
                     <div className="flex items-center gap-3">
                         <Link href="/clients?new=true">
-                            <Button variant="outline" className="gap-2 bg-white">
+                            <Button variant="outline" className="gap-2 bg-background">
                                 <UserPlus className="h-4 w-4 text-muted-foreground" />
                                 Nuevo asesorado
                             </Button>

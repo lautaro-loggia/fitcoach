@@ -1,5 +1,6 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
@@ -8,8 +9,10 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Slider } from '@/components/ui/slider'
 import { Upload, Loader2, Camera, User } from 'lucide-react'
 import Cropper from 'react-easy-crop'
-import imageCompression from 'browser-image-compression'
+import { compressImage } from '@/lib/image-utils'
 import { Area } from 'react-easy-crop'
+import { updateClientAvatar } from '@/actions/client-profile'
+import { toast } from 'sonner'
 
 interface ClientAvatarUploadProps {
     clientId: string
@@ -20,6 +23,7 @@ interface ClientAvatarUploadProps {
 }
 
 export function ClientAvatarUpload({ clientId, userId, currentAvatarUrl, clientName, onUploadComplete }: ClientAvatarUploadProps) {
+    const router = useRouter()
     const [uploading, setUploading] = useState(false)
     const [avatarUrl, setAvatarUrl] = useState<string | null>(currentAvatarUrl || null)
 
@@ -108,68 +112,49 @@ export function ClientAvatarUpload({ clientId, userId, currentAvatarUrl, clientN
 
         try {
             setUploading(true)
-            setIsCropDialogOpen(false)
 
             const croppedBlob = await getCroppedImg(imageSrc, croppedAreaPixels)
 
             // Create a File from Blob to satisfy imageCompression
             const fileToCompress = new File([croppedBlob], "avatar.jpg", { type: "image/jpeg" })
 
-            // Compress image
-            const compressedFile = await imageCompression(fileToCompress, {
-                maxSizeMB: 0.5, // 500KB max
-                maxWidthOrHeight: 800, // Reasonable size for avatar
-                useWebWorker: true,
-                fileType: 'image/jpeg'
-            })
+            // Compress image using our utility
+            const compressedFile = await compressImage(fileToCompress, 0.8, 800)
 
-            // Upload to Supabase
+            // Upload to Supabase 'client-avatars' bucket
             const fileName = `${clientId}/avatar_${Date.now()}.jpg`
 
-            // First delete old avatar if we know the path? 
-            // Better to just upload new one. 
-            // Note: If we use a predictable name like "avatar.jpg", browser caching might be an issue unless we use cache busting.
-            // Using timestamp in name or cache busting param in URL is better.
-
-            // For now, let's keep it simple with timestamp.
-
             const { error: uploadError } = await supabase.storage
-                .from('avatars')
+                .from('client-avatars') // Use correct bucket
                 .upload(fileName, compressedFile, { upsert: true })
 
-            if (uploadError) throw uploadError
+            if (uploadError) {
+                console.error('Upload Error:', uploadError)
+                throw new Error('Error al subir la imagen al servidor.')
+            }
 
             const { data } = supabase.storage
-                .from('avatars')
+                .from('client-avatars')
                 .getPublicUrl(fileName)
 
             const publicUrl = data.publicUrl
 
-            // Update client profile in database
-            const { error: updateError } = await supabase
-                .from('clients')
-                .update({ avatar_url: publicUrl })
-                .eq('id', clientId)
-
-            if (updateError) throw updateError
-
-            if (userId) {
-                await supabase
-                    .from('profiles')
-                    .update({ avatar_url: publicUrl })
-                    .eq('id', userId)
-                    .select()
-            }
+            // Update client profile in database via Server Action (bypasses RLS)
+            await updateClientAvatar(clientId, publicUrl)
 
             setAvatarUrl(publicUrl)
             onUploadComplete?.(publicUrl)
 
+            toast.success('Foto de perfil actualizada')
+            setIsCropDialogOpen(false)
+            router.refresh()
+
             // Clean up
             setImageSrc(null)
 
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error uploading avatar:', error)
-            alert('Error al actualizar la foto. Intenta nuevamente.')
+            toast.error(error.message || 'Error al actualizar la foto. Intenta nuevamente.')
         } finally {
             setUploading(false)
         }

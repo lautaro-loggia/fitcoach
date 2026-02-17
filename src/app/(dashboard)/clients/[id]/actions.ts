@@ -81,23 +81,8 @@ export async function getClientActivity(clientId: string): Promise<ActivityEvent
         return parts.length > 0 ? parts.join(' • ') : null
     }
 
-    // Map Workout Logs
-    workoutLogs?.forEach(w => {
-        const feedbackStr = formatFeedback(w.feedback)
-        events.push({
-            id: w.id,
-            title: 'Entrenamiento finalizado',
-            description: feedbackStr || 'El asesorado completó su rutina diaria.',
-            date: new Date(w.completed_at),
-            type: 'workout'
-        })
-    })
-
-    // Map Workout Sessions (If they are not duplicates by ID or similar)
-    // We'll add them and let the date sort or unique ID handle it
+    // Map Workout Sessions (The more detailed system) - Prioritize these
     workoutSessions?.forEach(s => {
-        // Skip if we already have a workout log with this date/time approx (though IDs are different)
-        // Just adding them for now as they represent a more detailed entry
         const workoutName = (s.assigned_workouts as any)?.name || 'Rutina'
         const feedbackStr = formatFeedback(s.feedback)
         events.push({
@@ -107,6 +92,27 @@ export async function getClientActivity(clientId: string): Promise<ActivityEvent
             date: new Date(s.ended_at!),
             type: 'workout'
         })
+    })
+
+    // Map Workout Logs (Legacy or simple logs) - Add only if not already covered by a session
+    workoutLogs?.forEach(w => {
+        const logDate = new Date(w.completed_at)
+        // Check if there's already a workout event within 2 minutes (to explain minor clock differences)
+        const isDuplicate = events.some(e =>
+            e.type === 'workout' &&
+            Math.abs(e.date.getTime() - logDate.getTime()) < 120000 // 2 minutes
+        )
+
+        if (!isDuplicate) {
+            const feedbackStr = formatFeedback(w.feedback)
+            events.push({
+                id: w.id,
+                title: 'Entrenamiento finalizado',
+                description: feedbackStr || 'El asesorado completó su rutina diaria.',
+                date: logDate,
+                type: 'workout'
+            })
+        }
     })
 
     // Map Checkins

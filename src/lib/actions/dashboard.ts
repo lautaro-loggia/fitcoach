@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { getTodayString } from '@/lib/utils'
 
 export interface DashboardStats {
     activeClients: number
@@ -69,7 +70,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     const projectedIncome = pendingClients?.reduce((sum, c) => sum + (c.price_monthly || 0), 0) || 0
 
     // 4. Pending Check-ins Count (Due today or overdue)
-    const todayStr = new Date().toISOString().split('T')[0]
+    const todayStr = getTodayString()
     const { count: pendingCheckins } = await supabase
         .from('clients')
         .select('*', { count: 'exact', head: true })
@@ -220,7 +221,7 @@ export async function getPendingCheckins(): Promise<CheckinDue[]> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Not authenticated')
 
-    const todayStr = new Date().toISOString().split('T')[0]
+    const todayStr = getTodayString()
 
     const { data: clients } = await supabase
         .from('clients')

@@ -187,13 +187,13 @@ export function RecipeCard({ recipe, isAdmin, onSelect, isSelected }: RecipeCard
                         </h3>
                         {/* Meta: Time & Servings */}
                         <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
-                            {recipe.prep_time_min && (
+                            {!!recipe.prep_time_min && (
                                 <div className="flex items-center gap-1.5">
                                     <Clock className="h-4 w-4" />
                                     <span>{recipe.prep_time_min} min</span>
                                 </div>
                             )}
-                            {recipe.servings && (
+                            {!!recipe.servings && (
                                 <div className="flex items-center gap-1.5">
                                     {/* Icon like users or just text */}
                                     {/* Screenshot just says "1 porcion" maybe without icon or simple dot? user icon works */}

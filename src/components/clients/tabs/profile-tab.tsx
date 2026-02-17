@@ -7,12 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { ViewIcon, PlusSignIcon, ArrowDown01Icon, ArrowUp01Icon, Image01Icon, ChartDecreaseIcon, ChartIncreaseIcon, MinusSignIcon } from 'hugeicons-react'
+import { ViewIcon, ArrowDown01Icon, ArrowUp01Icon, Image01Icon, ChartDecreaseIcon, ChartIncreaseIcon, MinusSignIcon } from 'hugeicons-react'
 import { BarChart, Bar, AreaChart, Area, XAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts'
 import { format, subMonths, parseISO, parse } from 'date-fns'
 import { es } from 'date-fns/locale'
 import Image from 'next/image'
-import { AddCheckinDialog } from '../add-checkin-dialog'
+
 import { PhotoComparisonDialog } from '../photo-comparison-dialog'
 import { getWeightProgressColor, progressColorClasses } from '@/lib/utils/progress-colors'
 import { StrengthProgressCard } from '../cards/strength-progress-card'
@@ -472,15 +472,7 @@ export function ProfileTab({ client }: ProfileTabProps) {
                             <div className="flex gap-2 justify-end">
                                 <PhotoComparisonDialog photos={photos} />
 
-                                <AddCheckinDialog
-                                    clientId={client.id}
-                                    // @ts-ignore
-                                    trigger={
-                                        <Button className="flex-1 md:flex-none text-xs bg-black hover:bg-black/90 text-white h-9">
-                                            <PlusSignIcon className="mr-2 h-3 w-3" /> Nuevo Check-in
-                                        </Button>
-                                    }
-                                />
+
                             </div>
                         </div>
                     </CardContent>

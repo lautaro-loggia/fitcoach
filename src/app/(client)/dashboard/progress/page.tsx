@@ -28,7 +28,7 @@ export default async function ProgressPage({
         .eq('user_id', user.id)
         .single()
 
-    if (!client) return <div>Client not found</div>
+    if (!client) return <div>Cliente no encontrado</div>
 
     // 1. Calculate Compliance (Last 30 Days)
     const startDate = subDays(new Date(), 30).toISOString()
@@ -125,7 +125,9 @@ export default async function ProgressPage({
                         <div className="relative z-10 flex flex-col h-full justify-between space-y-10">
                             <div>
                                 <h3 className="text-white font-medium text-base mb-1">Constancia este mes</h3>
-                                <p className="text-xs text-indigo-100 font-light opacity-80">Sigue así, vas muy bien.</p>
+                                <p className="text-xs text-indigo-100 font-light opacity-80">
+                                    {percentage >= 70 ? '¡Excelente constancia!' : percentage >= 30 ? 'Buen ritmo, seguí así.' : '¡Vamos, podés más!'}
+                                </p>
                             </div>
 
                             <div className="space-y-4">
@@ -188,7 +190,7 @@ export default async function ProgressPage({
                     <Card className="bg-white p-5 rounded-[28px] border border-gray-200 shadow-none ring-0 aspect-[1.1] flex flex-col justify-between relative overflow-hidden group">
                         <div className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Grasa Corporal</div>
                         <div className="text-2xl font-bold text-gray-900 leading-none">
-                            {latestCheckin?.body_fat ? `${latestCheckin.body_fat}%` : '20%'}
+                            {latestCheckin?.body_fat ? `${latestCheckin.body_fat}%` : '—'}
                         </div>
                         <div className="absolute top-4 right-4 opacity-10">
                             <Target className="h-6 w-6" />
