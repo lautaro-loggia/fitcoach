@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { isAdminUser } from '@/lib/auth'
 import { RecipeEditor } from '@/components/recipes/recipe-editor'
 
 export default async function RecipeDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -7,7 +8,7 @@ export default async function RecipeDetailPage({ params }: { params: Promise<{ i
     const supabase = await createClient()
 
     const { data: { user } } = await supabase.auth.getUser()
-    const isAdmin = user?.email === 'lauloggia@gmail.com'
+    const isAdmin = isAdminUser(user?.email)
 
     const { data: recipe, error } = await supabase
         .from('recipes')

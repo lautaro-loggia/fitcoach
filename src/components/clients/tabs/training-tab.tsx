@@ -94,13 +94,14 @@ export function TrainingTab({ client }: TrainingTabProps) {
     // Logic for today's workout
     const getTodayWorkout = () => {
         if (!workouts.length) return null
-        const dayOfWeek = format(new Date(), 'EEEE', { locale: es }).toLowerCase()
-        // Simple matching logic assuming scheduled_days is an array of strings
-        // Adjust if it's different in the database
+
+        const normalize = (str: string) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        const dayOfWeek = normalize(format(new Date(), 'EEEE', { locale: es }))
+
         return workouts.find(w =>
             Array.isArray(w.scheduled_days) &&
-            w.scheduled_days.some((d: string) => d.toLowerCase() === dayOfWeek)
-        ) || workouts[0] // Fallback to first if none scheduled for today for demo
+            w.scheduled_days.some((d: string) => normalize(d) === dayOfWeek)
+        )
     }
 
     const todayWorkout = getTodayWorkout()

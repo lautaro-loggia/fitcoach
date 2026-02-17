@@ -22,7 +22,7 @@ export default async function DietPage() {
         .eq('user_id', user.id)
         .single()
 
-    if (!client) return <div>Client not found</div>
+    if (!client) return <div>Cliente no encontrado</div>
 
     // Fetch Active Meal Plan
     const { data: mealPlan } = await adminClient

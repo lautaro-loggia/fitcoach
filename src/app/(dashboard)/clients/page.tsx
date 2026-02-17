@@ -6,10 +6,11 @@ import { AddClientDialog } from '@/components/clients/add-client-dialog'
 import { PresentialCalendarDialog } from '@/components/clients/presential-calendar-dialog'
 
 interface ClientsPageProps {
-    searchParams: { [key: string]: string | string[] | undefined }
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
-export default async function ClientsPage({ searchParams }: ClientsPageProps) {
+export default async function ClientsPage({ searchParams: searchParamsPromise }: ClientsPageProps) {
+    const searchParams = await searchParamsPromise
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 

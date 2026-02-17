@@ -10,7 +10,7 @@ import { redirect } from 'next/navigation'
 async function getAuthenticatedClient() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Unauthorized')
+    if (!user) throw new Error('No autorizado')
 
     // Use Admin Client for DB operations to bypass RLS for updates
     const adminSupabase = createAdminClient()
@@ -21,7 +21,7 @@ async function getAuthenticatedClient() {
         .eq('user_id', user.id)
         .single()
 
-    if (error || !client) throw new Error('Client record not found')
+    if (error || !client) throw new Error('Cliente no encontrado')
 
     return { supabase, adminSupabase, client, user }
 }

@@ -95,11 +95,17 @@ export async function updateAssignedWorkoutAction(data: {
 
 export async function deleteAssignedWorkoutAction(id: string, clientId: string) {
     const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { error: 'No autorizado' }
+    }
 
     const { error } = await supabase
         .from('assigned_workouts')
         .delete()
         .eq('id', id)
+        .eq('trainer_id', user.id)
 
     if (error) {
         return { error: 'Error al eliminar' }

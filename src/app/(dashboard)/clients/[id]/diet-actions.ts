@@ -33,7 +33,7 @@ export async function assignDietAction(data: {
 }) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Unauthorized' }
+    if (!user) return { error: 'No autorizado' }
 
     // Simple macro calculation helper
     const calculateMacros = (ingredients: any[]) => {

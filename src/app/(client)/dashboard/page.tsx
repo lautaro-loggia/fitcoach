@@ -58,21 +58,29 @@ export default async function ClientDashboard() {
         w.scheduled_days?.map((d: string) => d.toLowerCase()).includes(todayName)
     )
 
-    // 2. Check if workout is completed today
+    // 2. Check if workout is completed today (verifica ambas tablas para consistencia)
     let isCompleted = false
     if (todayWorkout) {
-        // Check for logs with specific date OR created_at since start of today (ART)
         const startOfDay = new Date(artNow)
         startOfDay.setHours(0, 0, 0, 0)
 
-        const { count } = await adminClient
-            .from('workout_logs')
-            .select('*', { count: 'exact', head: true })
-            .eq('client_id', client.id)
-            .eq('workout_id', todayWorkout.id)
-            .gte('completed_at', startOfDay.toISOString()) // Correct column name
+        const [logsResult, sessionsResult] = await Promise.all([
+            adminClient
+                .from('workout_logs')
+                .select('*', { count: 'exact', head: true })
+                .eq('client_id', client.id)
+                .eq('workout_id', todayWorkout.id)
+                .gte('completed_at', startOfDay.toISOString()),
+            adminClient
+                .from('workout_sessions')
+                .select('*', { count: 'exact', head: true })
+                .eq('client_id', client.id)
+                .eq('assigned_workout_id', todayWorkout.id)
+                .eq('status', 'completed')
+                .gte('started_at', startOfDay.toISOString())
+        ])
 
-        isCompleted = (count || 0) > 0
+        isCompleted = (logsResult.count || 0) > 0 || (sessionsResult.count || 0) > 0
     }
 
     // 3. Weekly Stats (Real)
@@ -137,16 +145,13 @@ export default async function ClientDashboard() {
     const currentWeight = client.current_weight || 0
     const targetWeight = client.target_weight || 0
 
-    // Progress calculation for weight (simplified visual)
-    // If we have a target weight, we calculate progress. If not, default to 0.
-    // Logic: 100 - (abs(target - current) / target * 100) ? 
-    // This is just for the progress bar visual.
+    // Cálculo real de progreso de peso
+    const initialWeight = client.initial_weight || 0
     let progressPercent = 0
-    if (targetWeight > 0 && currentWeight > 0) {
-        // Simple approach: if target is 80 and you are 90 (loss), progress depends on start logic.
-        // Without start weight, it's hard to be exact. Let's use a placeholder or simplified logic.
-        // Assuming user is "on track".
-        progressPercent = 82 // Matching the design reference number for visual consistency
+    if (targetWeight > 0 && currentWeight > 0 && initialWeight > 0 && initialWeight !== targetWeight) {
+        const totalChange = initialWeight - targetWeight
+        const currentChange = initialWeight - currentWeight
+        progressPercent = Math.max(0, Math.min(100, Math.round((currentChange / totalChange) * 100)))
     }
 
     // Weekly progress chart bars (mock visual based on real count)
@@ -167,7 +172,7 @@ export default async function ClientDashboard() {
                     </Avatar>
                     <div className="flex flex-col gap-1">
                         <h1 className="text-xl font-bold text-gray-900 leading-none tracking-tight">
-                            Hola, {client.full_name.split(' ')[0]}
+                            Hola, {client.full_name?.split(' ')[0] || 'Usuario'}
                         </h1>
                         <div className="flex items-center gap-2">
                             <span className={`h-2 w-2 rounded-full ${client.status === 'active' ? 'bg-green-500' : 'bg-gray-300'}`} />
@@ -239,12 +244,12 @@ export default async function ClientDashboard() {
                                 <div className="flex items-center gap-4 text-gray-500 text-sm font-semibold">
                                     <div className="flex items-center gap-2">
                                         <Clock className="h-4 w-4 text-gray-400" />
-                                        <span>45-60 min</span>
+                                        <span>{(todayWorkout.structure?.length || 0) * 4} min aprox.</span>
                                     </div>
                                     <span className="text-gray-200 text-xs">•</span>
                                     <div className="flex items-center gap-2">
                                         <Dumbbell className="h-4 w-4 text-gray-400" />
-                                        <span>{todayWorkout.structure?.length || 0} series (est)</span>
+                                        <span>{todayWorkout.structure?.length || 0} ejercicios</span>
                                     </div>
                                 </div>
                             </div>
@@ -269,21 +274,30 @@ export default async function ClientDashboard() {
                        If rest day, they see checkin + rest day card.
                     */
                     <Card className="border border-gray-200 shadow-none rounded-[2rem] p-10 bg-white flex flex-col items-center justify-center text-center gap-6 min-h-[260px] relative overflow-hidden">
-                        <div className={`h-20 w-20 rounded-full flex items-center justify-center mb-2 ${isCompleted ? 'bg-green-50 text-green-600' : 'bg-gray-50 text-gray-300'}`}>
+                        <div className={`h-20 w-20 rounded-full flex items-center justify-center mb-2 ${isCompleted ? 'bg-green-50 text-green-600' : (!workouts || workouts.length === 0) ? 'bg-blue-50 text-blue-400' : 'bg-gray-50 text-gray-300'}`}>
                             {isCompleted ? (
                                 <CheckCircle2 className="h-10 w-10" />
+                            ) : (!workouts || workouts.length === 0) ? (
+                                <Dumbbell className="h-10 w-10 stroke-[1.5]" />
                             ) : (
                                 <Coffee className="h-10 w-10 stroke-[1.5]" />
                             )}
                         </div>
                         <div className="space-y-2 z-10 relative">
                             <h3 className="text-2xl font-medium text-gray-900 tracking-tight">
-                                {isCompleted ? "¡Bien hecho!" : "Día de descanso"}
+                                {isCompleted
+                                    ? "¡Bien hecho!"
+                                    : (!workouts || workouts.length === 0)
+                                        ? "Sin rutinas"
+                                        : "Día de descanso"
+                                }
                             </h3>
                             <p className="text-gray-400 font-medium text-sm leading-relaxed max-w-[200px] mx-auto">
                                 {isCompleted
                                     ? "Terminaste la rutina de hoy. Ahora toca descansar."
-                                    : "El descanso es parte del entrenamiento."
+                                    : (!workouts || workouts.length === 0)
+                                        ? "Tu coach está preparando tu plan de entrenamiento."
+                                        : "El descanso es parte del entrenamiento."
                                 }
                             </p>
                         </div>
@@ -362,7 +376,7 @@ export default async function ClientDashboard() {
                     <div className="space-y-1">
                         <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wide">Objetivo actual</p>
                         <p className="text-[17px] font-medium text-gray-900 leading-tight">
-                            {client.main_goal ? (goalLabels[client.main_goal] || client.main_goal) : "Hipertrofia"}
+                            {client.main_goal ? (goalLabels[client.main_goal] || client.main_goal) : "Sin definir"}
                         </p>
                     </div>
                 </Card>
@@ -376,7 +390,7 @@ export default async function ClientDashboard() {
 
                     <div>
                         <p className="text-[28px] font-medium text-gray-900 tracking-tighter leading-none">
-                            {client.daily_steps_target ? client.daily_steps_target.toLocaleString('es-AR') : "10.000"}
+                            {client.daily_steps_target ? client.daily_steps_target.toLocaleString('es-AR') : "—"}
                         </p>
                     </div>
                 </Card>

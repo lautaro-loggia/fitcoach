@@ -102,7 +102,7 @@ export async function uploadCheckinPhoto(formData: FormData) {
         const supabase = await createClient()
         // Use authenticated user to upload
         const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return { error: 'Unauthorized' }
+        if (!user) return { error: 'No autorizado' }
 
         const timestamp = Date.now()
         // Sanitize filename

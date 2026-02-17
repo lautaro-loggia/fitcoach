@@ -3,32 +3,23 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 
-interface ExerciseDBResponse {
-    exerciseId: string
-    name: string
-    bodyParts: string[]
-    targetMuscles: string[]
-    equipments: string[]
-    gifUrl: string
-    instructions: string[]
-    secondaryMuscles: string[]
-}
-
-
-const RAPID_API_KEY = '3c36fcafccmsh1a5cd56792ce5e6p1cad51jsne555597de070'
-const RAPID_API_HOST = 'edb-with-videos-and-images-by-ascendapi.p.rapidapi.com'
-const API_BASE_URL = `https://${RAPID_API_HOST}/api/v1`
-
 export async function searchExercises(query: string = '', limit: number = 50, offset: number = 0) {
     const supabase = await createClient()
 
     try {
-        // Fetch ALL exercises. 
-        // Since we are now using a curated list of ~150 exercises, bringing them all to memory 
-        // is extremely fast and allows for perfect fuzzy search (accents, partial matches) in Node.js
-        const { data, error } = await supabase
+        const normalize = (str: string) => str ? str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : ""
+        const trimmedQuery = query.trim()
+
+        let dbQuery = supabase
             .from('exercises_v2')
             .select('*')
+
+        // Filtro en DB cuando hay query (reduce transferencia)
+        if (trimmedQuery.length > 0) {
+            dbQuery = dbQuery.ilike('name', `%${trimmedQuery}%`)
+        }
+
+        const { data, error } = await dbQuery
 
         if (error) {
             console.error('Error fetching exercises from DB:', error)
@@ -45,20 +36,26 @@ export async function searchExercises(query: string = '', limit: number = 50, of
             instructions: ex.instructions || []
         }))
 
-        // Normalize string helper
-        const normalize = (str: string) => str ? str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : ""
+        // Fallback fuzzy (acentos, grupo muscular) si el filtro DB no dio resultados
+        if (trimmedQuery.length > 0 && exercises.length === 0) {
+            const { data: allData } = await supabase.from('exercises_v2').select('*')
+            const normalizedQuery = normalize(trimmedQuery)
 
-        if (query.trim().length > 0) {
-            const normalizedQuery = normalize(query)
-
-            exercises = exercises.filter(ex =>
+            exercises = (allData || []).map((ex: any) => ({
+                id: ex.id,
+                name: ex.name,
+                main_muscle_group: ex.muscle_group,
+                category: ex.target,
+                equipment: ex.equipment,
+                gif_url: ex.gif_url,
+                instructions: ex.instructions || []
+            })).filter(ex =>
                 normalize(ex.name).includes(normalizedQuery) ||
                 normalize(ex.main_muscle_group).includes(normalizedQuery) ||
                 (ex.category && normalize(ex.category).includes(normalizedQuery))
             )
         }
 
-        // Apply pagination manually
         const paginatedExercises = exercises.slice(offset, offset + limit)
 
         return { exercises: paginatedExercises }

@@ -29,7 +29,7 @@ export default async function OnboardingPage(props: {
             trainer: { full_name: 'Coach Orbit' }
         }
     } else if (error || !client) {
-        return <div>Error loading profile. Please contact support.</div>
+        return <div>Error cargando perfil. Contactá a soporte.</div>
     }
 
     if (client.onboarding_status === 'completed' && !isPreview) {

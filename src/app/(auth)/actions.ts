@@ -47,6 +47,10 @@ export async function signup(formData: FormData) {
         return { error: 'Las contraseñas no coinciden' }
     }
 
+    if (password.length < 6) {
+        return { error: 'La contraseña debe tener al menos 6 caracteres' }
+    }
+
     const { error } = await supabase.auth.signUp({
         email,
         password,

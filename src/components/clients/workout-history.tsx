@@ -4,11 +4,10 @@ import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { ChevronDown, ChevronUp, Dumbbell, Calendar, Clock, MessageSquare } from 'lucide-react'
+import { ChevronDown, ChevronUp, Dumbbell, Calendar, MessageSquare } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { getClientWorkoutHistory, type SessionHistoryItem } from '@/app/(dashboard)/clients/[id]/history-actions'
-import { cn } from '@/lib/utils'
 
 interface WorkoutHistoryProps {
     clientId: string
@@ -32,9 +31,9 @@ export function WorkoutHistory({ clientId }: WorkoutHistoryProps) {
 
     if (loading) {
         return (
-            <Card>
+            <Card className="border-none shadow-none">
                 <CardHeader>
-                    <CardTitle className="text-base">Historial de Entrenamientos</CardTitle>
+                    <CardTitle className="text-sm font-medium text-gray-500">Historial de Entrenamientos</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="flex items-center justify-center py-8">
@@ -47,9 +46,9 @@ export function WorkoutHistory({ clientId }: WorkoutHistoryProps) {
 
     if (sessions.length === 0) {
         return (
-            <Card>
+            <Card className="border-none shadow-none">
                 <CardHeader>
-                    <CardTitle className="text-base">Historial de Entrenamientos</CardTitle>
+                    <CardTitle className="text-sm font-medium text-gray-500">Historial de Entrenamientos</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="text-center py-8 text-muted-foreground">
@@ -63,49 +62,46 @@ export function WorkoutHistory({ clientId }: WorkoutHistoryProps) {
     }
 
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
-                    Historial de Entrenamientos
-                </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
+        <Card className="border-none shadow-none bg-transparent">
+
+            <CardContent className="space-y-4 px-0">
                 {sessions.map((session) => (
                     <Collapsible
                         key={session.id}
                         open={expandedSession === session.id}
                         onOpenChange={(open) => setExpandedSession(open ? session.id : null)}
+                        className="bg-white rounded-2xl overflow-hidden shadow-sm transition-all duration-200 border border-gray-100"
                     >
                         <CollapsibleTrigger asChild>
-                            <div className="border rounded-lg p-3 cursor-pointer hover:bg-muted/50 transition-colors">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <div className={cn(
-                                            "h-10 w-10 rounded-full flex items-center justify-center",
-                                            session.status === 'completed' ? "bg-green-500/20" : "bg-primary/20"
-                                        )}>
-                                            <Dumbbell className={cn(
-                                                "h-5 w-5",
-                                                session.status === 'completed' ? "text-green-600" : "text-primary"
-                                            )} />
+                            <div className="p-4 cursor-pointer hover:bg-gray-50/50 transition-colors bg-white w-full">
+                                <div className="flex items-center justify-between w-full">
+                                    <div className="flex items-center gap-4">
+                                        <div className="h-10 w-10 rounded-full bg-[#4139CF]/10 flex items-center justify-center flex-shrink-0">
+                                            <Dumbbell className="h-5 w-5 text-[#4139CF]" />
                                         </div>
                                         <div>
-                                            <p className="font-medium text-sm">{session.workout_name}</p>
-                                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                            <p className="font-semibold text-sm text-gray-900">{session.workout_name}</p>
+                                            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
                                                 <Calendar className="h-3 w-3" />
-                                                {format(new Date(session.started_at), "d 'de' MMMM, yyyy", { locale: es })}
+                                                <span className="capitalize">
+                                                    {format(new Date(session.started_at), "d 'de' MMMM, yyyy", { locale: es })}
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <Badge variant={session.status === 'completed' ? 'default' : 'secondary'} className="text-xs">
-                                            {session.status === 'completed' ? 'Completada' :
-                                                session.status === 'in_progress' ? 'En progreso' : 'Abandonada'}
-                                        </Badge>
+                                    <div className="flex items-center gap-3">
+                                        {session.status === 'completed' ? (
+                                            <Badge className="bg-black text-white hover:bg-black/90 font-medium border-none px-3 h-6">
+                                                Completada
+                                            </Badge>
+                                        ) : (
+                                            <Badge variant="secondary" className="text-xs h-6">
+                                                {session.status === 'in_progress' ? 'En progreso' : 'Abandonada'}
+                                            </Badge>
+                                        )}
                                         {expandedSession === session.id ?
-                                            <ChevronUp className="h-4 w-4 text-muted-foreground" /> :
-                                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                            <ChevronUp className="h-4 w-4 text-gray-400" /> :
+                                            <ChevronDown className="h-4 w-4 text-gray-400" />
                                         }
                                     </div>
                                 </div>
@@ -113,100 +109,82 @@ export function WorkoutHistory({ clientId }: WorkoutHistoryProps) {
                         </CollapsibleTrigger>
 
                         <CollapsibleContent>
-                            <div className="border-x border-b rounded-b-lg -mt-1 pt-1 pb-3 px-3 space-y-4">
-                                {session.feedback && Object.keys(session.feedback).length > 0 && (
-                                    <div className="bg-gray-50 border rounded-lg p-3 text-sm space-y-3">
-                                        <h4 className="font-semibold text-gray-900 flex items-center gap-2">
-                                            <MessageSquare className="h-4 w-4" /> Feedback de la sesión
-                                        </h4>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div>
-                                                <span className="text-xs text-gray-500 block uppercase">Sensación</span>
-                                                <span className="font-medium text-gray-800">{session.feedback.generalSensation}</span>
-                                            </div>
-                                            <div>
-                                                <span className="text-xs text-gray-500 block uppercase">RPE (Esfuerzo)</span>
-                                                <div className="flex items-center gap-1">
-                                                    <span className="font-bold text-gray-900">{session.feedback.rpe}</span>
-                                                    <span className="text-xs text-gray-400">/ 10</span>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <span className="text-xs text-gray-500 block uppercase">Energía</span>
-                                                <span className="font-medium text-gray-800">{session.feedback.energy}</span>
-                                            </div>
-                                            <div>
-                                                <span className="text-xs text-gray-500 block uppercase">Rendimiento</span>
-                                                <span className="font-medium text-gray-800">{session.feedback.performance}</span>
-                                            </div>
-                                        </div>
+                            <div className="px-6 pb-8 pt-4 animate-in slide-in-from-top-2 duration-200 bg-white">
 
-                                        {session.feedback.pain && (
-                                            <div className="pt-2 border-t border-gray-100">
-                                                <div className="flex items-center gap-2 text-red-600 mb-1">
-                                                    <span className="text-xs font-bold uppercase">Reportó Molestias</span>
-                                                </div>
-                                                <div className="flex flex-wrap gap-2 text-xs">
-                                                    <span className="bg-red-50 text-red-700 px-2 py-0.5 rounded border border-red-100">
-                                                        Intensidad: {session.feedback.painIntensity}
-                                                    </span>
-                                                    {session.feedback.painZones?.map((z: string) => (
-                                                        <span key={z} className="bg-red-50 text-red-700 px-2 py-0.5 rounded border border-red-100">
-                                                            {z}
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
+
+                                {/* Metrics Row */}
+                                {session.feedback && Object.keys(session.feedback).length > 0 ? (
+                                    <div className="flex items-center w-full mb-8">
+                                        <div className="flex-1 pr-4 border-r border-gray-100">
+                                            <span className="text-[10px] uppercase text-gray-400 font-medium block mb-1 tracking-wider">Esfuerzo</span>
+                                            <span className="text-[14px] font-medium text-black">
+                                                {session.feedback.generalSensation}
+                                            </span>
+                                        </div>
+                                        <div className="flex-1 px-4 border-r border-gray-100">
+                                            <span className="text-[10px] uppercase text-gray-400 font-medium block mb-1 tracking-wider">RPE</span>
+                                            <span className="text-[14px] font-bold text-[#4139CF]">
+                                                {session.feedback.rpe}
+                                            </span>
+                                        </div>
+                                        <div className="flex-1 px-4 border-r border-gray-100">
+                                            <span className="text-[10px] uppercase text-gray-400 font-medium block mb-1 tracking-wider">Energía</span>
+                                            <span className="text-[14px] font-medium text-black">
+                                                {session.feedback.energy}
+                                            </span>
+                                        </div>
+                                        <div className="flex-1 pl-4">
+                                            <span className="text-[10px] uppercase text-gray-400 font-medium block mb-1 tracking-wider">Rendimiento</span>
+                                            <span className="text-[14px] font-medium text-black">
+                                                {session.feedback.performance === 'Igual' ? 'Estable' : session.feedback.performance}
+                                            </span>
+                                        </div>
                                     </div>
-                                )}
-
-                                {session.exercises.length === 0 ? (
-                                    <p className="text-sm text-muted-foreground py-2">No hay ejercicios registrados</p>
                                 ) : (
-                                    session.exercises.map((exercise) => (
-                                        <div key={exercise.id} className="border rounded-lg p-3 space-y-2">
-                                            <div className="flex items-center justify-between">
-                                                <h4 className="font-medium text-sm">{exercise.exercise_name}</h4>
-                                                <span className="text-xs text-muted-foreground">
-                                                    {exercise.sets.filter(s => s.is_completed).length} series
-                                                </span>
-                                            </div>
-
-                                            {/* Notes */}
-                                            {exercise.notes && (
-                                                <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/30 rounded p-2">
-                                                    <MessageSquare className="h-3 w-3 mt-0.5 flex-shrink-0" />
-                                                    <span>{exercise.notes}</span>
-                                                </div>
-                                            )}
-
-                                            {/* Sets table */}
-                                            {exercise.sets.length > 0 && (
-                                                <div className="border rounded overflow-hidden">
-                                                    <table className="w-full text-xs">
-                                                        <thead className="bg-muted/50">
-                                                            <tr>
-                                                                <th className="text-left p-2 font-medium">Serie</th>
-                                                                <th className="text-center p-2 font-medium">Peso</th>
-                                                                <th className="text-center p-2 font-medium">Reps</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            {exercise.sets.map((set) => (
-                                                                <tr key={set.set_number} className="border-t">
-                                                                    <td className="p-2">{set.set_number}</td>
-                                                                    <td className="text-center p-2 font-medium">{set.weight}kg</td>
-                                                                    <td className="text-center p-2">{set.reps}</td>
-                                                                </tr>
-                                                            ))}
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))
+                                    <div className="mb-8 text-sm text-gray-400 italic">Sin feedback registrado</div>
                                 )}
+
+                                {/* Exercises List */}
+                                <div className="space-y-8">
+                                    {session.exercises.length === 0 ? (
+                                        <p className="text-sm text-gray-400">No hay ejercicios registrados</p>
+                                    ) : (
+                                        session.exercises.map((exercise) => (
+                                            <div key={exercise.id} className="space-y-3">
+                                                <h4 className="font-bold text-black text-[15px]">{exercise.exercise_name}</h4>
+
+                                                {exercise.notes && (
+                                                    <div className="text-xs text-gray-500 flex items-center gap-2 mt-1 px-1">
+                                                        <MessageSquare className="h-3 w-3 text-[#4139CF]" />
+                                                        <span className="italic font-medium">{exercise.notes}</span>
+                                                    </div>
+                                                )}
+
+                                                {exercise.sets.length > 0 && (
+                                                    <div className="w-full">
+                                                        {/* Table Header */}
+                                                        <div className="grid grid-cols-[60px_1fr_1fr] mb-3 px-2">
+                                                            <div className="text-[11px] text-gray-400 font-medium">Serie</div>
+                                                            <div className="text-[11px] text-gray-400 font-medium text-center">Peso</div>
+                                                            <div className="text-[11px] text-gray-400 font-medium text-center">Reps</div>
+                                                        </div>
+
+                                                        {/* Rows */}
+                                                        <div className="space-y-1">
+                                                            {exercise.sets.map((set) => (
+                                                                <div key={set.set_number} className="grid grid-cols-[60px_1fr_1fr] items-center py-2 px-2 hover:bg-gray-50 rounded-lg transition-colors">
+                                                                    <div className="text-[11px] text-gray-400">{set.set_number}</div>
+                                                                    <div className="text-[13px] font-bold text-black text-center">{set.weight}kg</div>
+                                                                    <div className="text-[13px] font-bold text-black text-center">{set.reps}</div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
                             </div>
                         </CollapsibleContent>
                     </Collapsible>
