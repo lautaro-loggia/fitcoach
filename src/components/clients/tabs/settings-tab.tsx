@@ -49,6 +49,7 @@ export function SettingsTab({ client }: { client: any }) {
         target_protein: client.target_protein || '',
         target_carbs: client.target_carbs || '',
         target_fats: client.target_fats || '',
+        daily_steps_target: client.daily_steps_target || '10000',
     })
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -77,6 +78,7 @@ export function SettingsTab({ client }: { client: any }) {
             target_protein: formData.target_protein ? parseInt(formData.target_protein) : null,
             target_carbs: formData.target_carbs ? parseInt(formData.target_carbs) : null,
             target_fats: formData.target_fats ? parseInt(formData.target_fats) : null,
+            daily_steps_target: formData.daily_steps_target ? parseInt(formData.daily_steps_target) : null,
             macros_is_manual: true,
         }
 
@@ -282,6 +284,10 @@ export function SettingsTab({ client }: { client: any }) {
                             <div className="grid gap-2">
                                 <Label htmlFor="target_fats">Grasas (g)</Label>
                                 <Input id="target_fats" name="target_fats" type="number" value={formData.target_fats} onChange={handleChange} />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="daily_steps_target">Pasos a realizar</Label>
+                                <Input id="daily_steps_target" name="daily_steps_target" type="number" value={formData.daily_steps_target} onChange={handleChange} />
                             </div>
                         </CardContent>
                     </Card>

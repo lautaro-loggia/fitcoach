@@ -6,6 +6,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Upload, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { compressImage } from '@/lib/image-utils'
 
 interface AvatarUploadProps {
     userId: string
@@ -82,7 +83,15 @@ export function AvatarUpload({ userId, currentAvatarUrl, userInitials, onUploadC
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (file) {
-            await uploadAvatar(file)
+            try {
+                // Compress image before upload
+                // Avatar size: max 800px, quality 0.8
+                const compressedFile = await compressImage(file, 0.8, 800)
+                await uploadAvatar(compressedFile)
+            } catch (error) {
+                console.error('Error compressing image:', error)
+                alert('Error al procesar la imagen.')
+            }
         }
     }
 

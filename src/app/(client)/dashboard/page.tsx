@@ -19,6 +19,7 @@ import { es } from 'date-fns/locale'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { getARTDate, getTodayString } from '@/lib/utils'
 import { WorkoutStartDialog } from '@/components/clients/workout-start-dialog'
+import { AdvisedDashboardMenu } from '@/components/clients/advised-dashboard-menu'
 
 export default async function ClientDashboard() {
     const supabase = await createClient()
@@ -177,9 +178,7 @@ export default async function ClientDashboard() {
                     </div>
                 </div>
 
-                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full text-gray-400 hover:text-gray-900 hover:bg-transparent relative">
-                    <Bell className="h-6 w-6 stroke-[2px]" />
-                </Button>
+                <AdvisedDashboardMenu />
             </header>
 
             {/* 2. Main Section: "Tu día hoy" */}
@@ -371,13 +370,13 @@ export default async function ClientDashboard() {
                 {/* 4. Daily Steps */}
                 <Card className="p-6 border border-gray-200 shadow-none rounded-[1.5rem] bg-white flex flex-col justify-between h-44 transition-colors">
                     <div className="flex justify-between items-start w-full">
-                        <p className="text-[13px] text-gray-400 font-medium">Pasos diarios</p>
+                        <p className="text-[13px] text-gray-400 font-medium">Pasos a realizar</p>
                         <Footprints className="h-4 w-4 text-gray-300" />
                     </div>
 
                     <div>
                         <p className="text-[28px] font-medium text-gray-900 tracking-tighter leading-none">
-                            {client.daily_steps_goal ? client.daily_steps_goal.toLocaleString('es-AR') : "10.000"}
+                            {client.daily_steps_target ? client.daily_steps_target.toLocaleString('es-AR') : "10.000"}
                         </p>
                     </div>
                 </Card>

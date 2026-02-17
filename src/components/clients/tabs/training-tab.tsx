@@ -29,6 +29,7 @@ export function TrainingTab({ client }: TrainingTabProps) {
     const [viewMode, setViewMode] = useState<'cards' | 'calendar'>('cards')
     const [editingWorkout, setEditingWorkout] = useState<any>(null)
     const [viewingWorkout, setViewingWorkout] = useState<any>(null)
+    const [todaySessions, setTodaySessions] = useState<any[]>([])
     const [mounted, setMounted] = useState(false)
 
     useEffect(() => {
@@ -42,13 +43,29 @@ export function TrainingTab({ client }: TrainingTabProps) {
 
     const fetchAssignedWorkouts = async () => {
         const supabase = createClient()
-        const { data } = await supabase
+
+        // Fetch assigned workouts
+        const { data: workoutsData } = await supabase
             .from('assigned_workouts')
             .select('*')
             .eq('client_id', client.id)
             .order('created_at', { ascending: false })
 
-        if (data) setWorkouts(data)
+        if (workoutsData) setWorkouts(workoutsData)
+
+        // Fetch today's completed logs
+        const startOfToday = new Date()
+        startOfToday.setHours(0, 0, 0, 0)
+
+        const { data: logsData } = await supabase
+            .from('workout_logs')
+            .select('workout_id')
+            .eq('client_id', client.id)
+            .gte('completed_at', startOfToday.toISOString())
+
+        if (logsData) {
+            setTodaySessions(logsData.map(l => ({ assigned_workout_id: l.workout_id })))
+        }
     }
 
     const handleDelete = async (id: string) => {
@@ -102,9 +119,15 @@ export function TrainingTab({ client }: TrainingTabProps) {
                                 <div className="space-y-4">
                                     <div className="flex items-center gap-3">
                                         <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-[0.15em]">HOY</span>
-                                        <Badge variant="secondary" className="bg-orange-50 text-orange-600 border-none px-2.5 py-0.5 h-6 text-[10px] font-bold rounded-full">
-                                            Pendiente
-                                        </Badge>
+                                        {todayWorkout && todaySessions.some(s => s.assigned_workout_id === todayWorkout.id) ? (
+                                            <Badge variant="secondary" className="bg-green-50 text-green-600 border-none px-2.5 py-0.5 h-6 text-[10px] font-bold rounded-full">
+                                                Completado
+                                            </Badge>
+                                        ) : (
+                                            <Badge variant="secondary" className="bg-orange-50 text-orange-600 border-none px-2.5 py-0.5 h-6 text-[10px] font-bold rounded-full">
+                                                Pendiente
+                                            </Badge>
+                                        )}
                                     </div>
                                     <div className="space-y-1">
                                         <h4 className="text-3xl font-extrabold text-gray-900 tracking-tight capitalize">
