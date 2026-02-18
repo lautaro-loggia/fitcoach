@@ -47,9 +47,8 @@ export async function inviteClient(prevState: any, formData: FormData) {
             // Client exists with THIS coach -> Allow Re-invite logic (update name? currently just invite)
         }
 
-        // 3. Send Supabase Auth Invite (Magic Link)
+        // 3. Send Supabase Auth Invite
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://orbit-fit.vercel.app'
-        // Remove query params to avoid encoding issues commonly seen with Magic Links
         const redirectUrl = `${baseUrl}/auth/callback`
 
         // Get coach name from profiles or user metadata
@@ -57,7 +56,7 @@ export async function inviteClient(prevState: any, formData: FormData) {
 
         console.log('Sending invite with redirect URL:', redirectUrl)
 
-        const { data: inviteData, error: inviteError } = await adminSupabase.auth.admin.inviteUserByEmail(email, {
+        const inviteOptions = {
             redirectTo: redirectUrl,
             data: {
                 full_name: fullName,
@@ -65,35 +64,47 @@ export async function inviteClient(prevState: any, formData: FormData) {
                 role: 'client',
                 needs_password: true
             }
-        })
+        }
+
+        let { data: inviteData, error: inviteError } = await adminSupabase.auth.admin.inviteUserByEmail(email, inviteOptions)
 
         let userId: string | null = null
 
         if (inviteError) {
-            // Handle "Already Registered" case
             if (inviteError.message.includes('already been registered')) {
-                console.log('User already exists, sending magic link instead.')
+                // El usuario ya existe en auth (ej: fue eliminado como cliente pero su auth user quedó).
+                // Lo eliminamos de auth y reenviamos la invitación normal.
+                console.log('User already exists in auth, deleting and re-inviting...')
 
-                // Trigger Magic Link for existing user
-                // Note: We use the standard client (not admin) to behave like a normal login request
-                const { error: otpError } = await supabase.auth.signInWithOtp({
-                    email,
-                    options: { emailRedirectTo: redirectUrl }
-                })
+                // Buscar el usuario existente por email
+                const { data: existingUsers } = await adminSupabase.auth.admin.listUsers()
+                const existingAuthUser = existingUsers?.users?.find(u => u.email === email)
 
-                if (otpError) {
-                    console.error('Error sending magic link to existing user:', otpError)
-                    return { error: `Error enviando enlace de acceso: ${otpError.message}`, success: false }
+                if (existingAuthUser) {
+                    const { error: deleteError } = await adminSupabase.auth.admin.deleteUser(existingAuthUser.id)
+                    if (deleteError) {
+                        console.error('Error deleting existing auth user:', deleteError)
+                        return { error: `Error preparando re-invitación: ${deleteError.message}`, success: false }
+                    }
+                    console.log('Existing auth user deleted, re-sending invite...')
                 }
-                // User ID is unknown right now (without listing all users), 
-                // but will be automatically linked by 'auth/callback' on login.
-                userId = null
+
+                // Reintentar la invitación ahora que el usuario fue eliminado
+                const retryResult = await adminSupabase.auth.admin.inviteUserByEmail(email, inviteOptions)
+
+                if (retryResult.error) {
+                    console.error('Retry invite error:', retryResult.error)
+                    return { error: `Error enviando invitación: ${retryResult.error.message}`, success: false }
+                }
+
+                inviteData = retryResult.data
+                userId = retryResult.data.user.id
             } else {
                 console.error('Invite error:', inviteError)
                 return { error: `Error enviando invitación: ${inviteError.message}`, success: false }
             }
         } else {
-            userId = inviteData.user.id
+            userId = inviteData?.user?.id ?? null
         }
 
         // 4. Create or Update Client Record in DB
