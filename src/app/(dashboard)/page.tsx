@@ -8,6 +8,7 @@ import { PresentialTrainings } from '@/components/dashboard/presential-trainings
 import { UrgentActions } from '@/components/dashboard/urgent-actions'
 import { redirect } from 'next/navigation'
 import { FloatingActionButton } from '@/components/ui/fab'
+import { CoachOnboardingWrapper } from '@/components/onboarding/coach-onboarding-wrapper'
 
 
 
@@ -82,6 +83,9 @@ export default async function DashboardPage() {
                         </Link>
                     </div>
                 </div>
+
+                {/* Onboarding Coach */}
+                <CoachOnboardingWrapper />
 
                 {/* Status Cards Row */}
                 <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
