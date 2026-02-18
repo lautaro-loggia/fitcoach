@@ -112,11 +112,21 @@ export function usePushNotifications() {
 
             const registration = await navigator.serviceWorker.ready
 
-            // Subscribe
-            const sub = await registration.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY)
-            })
+            // Check if already subscribed
+            let sub = await registration.pushManager.getSubscription()
+
+            if (!sub) {
+                // Subscribe fresh
+                const applicationServerKey = urlBase64ToUint8Array(PUBLIC_VAPID_KEY)
+                sub = await registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey
+                })
+            } else {
+                // If subscribed, verify key matches (optional, but good practice). 
+                // For now we just sync existing one.
+                console.log('Using existing subscription')
+            }
 
             setSubscription(sub)
             await syncSubscriptionToDb(sub)
@@ -124,6 +134,44 @@ export function usePushNotifications() {
             return sub
         } catch (error) {
             console.error('Error subscribing:', error)
+
+            // Retry logic: Unsubscribe and try again (fixes some AbortError cases)
+            try {
+                console.log('Retrying subscription with cleanup...')
+                const registration = await navigator.serviceWorker.ready
+
+                // 1. Unsubscribe existing if any
+                const existingSub = await registration.pushManager.getSubscription()
+                if (existingSub) {
+                    await existingSub.unsubscribe()
+                }
+
+                // 2. Unregister SW to clear any bad state
+                await registration.unregister()
+
+                // 3. Re-register SW
+                const newRegistration = await navigator.serviceWorker.register('/sw.js', {
+                    scope: '/',
+                    updateViaCache: 'none',
+                })
+                await navigator.serviceWorker.ready
+
+                // 4. Try subscribing again
+                const applicationServerKey = urlBase64ToUint8Array(PUBLIC_VAPID_KEY)
+                const newSub = await newRegistration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey
+                })
+
+                setSubscription(newSub)
+                await syncSubscriptionToDb(newSub)
+                return newSub
+
+            } catch (retryError) {
+                console.error('Retry failed:', retryError)
+                throw error
+            }
+
             throw error
         } finally {
             setIsLoading(false)

@@ -37,12 +37,12 @@ export function PushNotificationPrompt() {
                 initial={{ opacity: 0, y: 50 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 50 }}
-                className="fixed bottom-4 right-4 z-50 max-w-sm w-full md:w-auto"
+                className="fixed z-50 left-4 right-4 top-4 md:left-auto md:right-4 md:top-auto md:bottom-4 md:w-auto md:max-w-sm"
             >
-                <div className="bg-background-secondary border border-border rounded-xl p-4 shadow-xl flex flex-col gap-3">
+                <div className="bg-background border border-border rounded-xl p-4 shadow-xl flex flex-col gap-3">
                     <div className="flex items-start justify-between gap-4">
-                        <div className="flex gap-3">
-                            <div className="p-2 bg-primary/10 rounded-full text-primary">
+                        <div className="flex items-start gap-3">
+                            <div className="p-2 bg-primary/10 rounded-full text-primary shrink-0">
                                 <Bell className="w-5 h-5" />
                             </div>
                             <div className="space-y-1">

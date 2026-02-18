@@ -52,6 +52,28 @@ export async function logMeal(formData: FormData) {
         return { error: 'Error al guardar el registro' }
     }
 
+    // 3. Notify Trainer
+    try {
+        const { data: client } = await adminClient
+            .from('clients')
+            .select('full_name, trainer_id')
+            .eq('id', clientId)
+            .single()
+
+        if (client?.trainer_id) {
+            await adminClient.from('notifications').insert({
+                user_id: client.trainer_id,
+                type: 'meal_log',
+                title: 'Nueva comida registrada',
+                body: `${client.full_name} ha subido una foto de su comida`,
+                data: { url: `/clients/${clientId}` }
+            })
+        }
+    } catch (notifError) {
+        console.error('Error sending notification:', notifError)
+        // Don't fail the action if notification fails
+    }
+
     revalidatePath('/dashboard/diet')
     return { success: true }
 }
