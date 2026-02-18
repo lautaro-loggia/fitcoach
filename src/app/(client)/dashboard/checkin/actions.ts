@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { addDays, format } from 'date-fns'
 import { getTodayString, getARTDate } from '@/lib/utils'
+import { createNotification } from '@/lib/notifications'
 
 export async function createCheckin(data: {
     weight: number
@@ -89,6 +90,18 @@ export async function createCheckin(data: {
         .from('clients')
         .update(updateData)
         .eq('id', client.id)
+
+    // Notify Coach
+    await createNotification({
+        userId: client.trainer_id,
+        type: 'checkin_completed',
+        title: 'Nuevo Check-in completado',
+        body: `${client.full_name} ha completado su check-in semanal.`,
+        data: {
+            clientId: client.id,
+            url: `/clients/${client.id}?tab=checkin`
+        }
+    })
 
     revalidatePath('/dashboard', 'layout')
     return { success: true }

@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { createNotification } from '@/lib/notifications'
 
 export async function assignWorkoutAction(data: {
     clientId: string
@@ -45,6 +46,17 @@ export async function assignWorkoutAction(data: {
     // Update client planning status to 'planned'
     await supabase.from('clients').update({ planning_status: 'planned' }).eq('id', data.clientId)
 
+    // Notify Client
+    await createNotification({
+        userId: data.clientId,
+        type: 'workout_assigned',
+        title: 'Nueva rutina asignada',
+        body: `Tu coach te ha asignado la rutina "${data.name}".`,
+        data: {
+            url: '/dashboard?tab=training'
+        }
+    })
+
     revalidatePath(`/clients/${data.clientId}`)
     revalidatePath('/dashboard', 'layout')
     return { success: true }
@@ -87,6 +99,17 @@ export async function updateAssignedWorkoutAction(data: {
         console.error('Error updating workout:', error)
         return { error: 'Error al actualizar el entrenamiento' }
     }
+
+    // Notify Client
+    await createNotification({
+        userId: data.clientId,
+        type: 'workout_assigned', // Keep generic type or add specific 'workout_updated'
+        title: 'Rutina actualizada',
+        body: `Tu coach ha actualizado la rutina "${data.name}".`,
+        data: {
+            url: '/dashboard?tab=training'
+        }
+    })
 
     revalidatePath(`/clients/${data.clientId}`)
     revalidatePath('/dashboard', 'layout')

@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
+import { createNotification } from '@/lib/notifications'
 
 // Types
 export interface WorkoutSession {
@@ -439,6 +440,23 @@ export async function completeSession(sessionId: string, feedback?: any) {
         console.error('Error completing session:', error)
         return { error: 'Error al completar sesión' }
     }
+
+    // Notify Coach
+    // Need trainer_id and client name. Session has client_id and trainer_id.
+    // We fetch client name for the body.
+    const { data: clientNameRes } = await adminSupabase.from('clients').select('full_name').eq('id', session.client_id).single()
+    const clientName = clientNameRes?.full_name || 'Asesorado'
+
+    await createNotification({
+        userId: session.trainer_id,
+        type: 'workout_completed',
+        title: 'Entrenamiento completado',
+        body: `${clientName} completó su rutina de hoy.`,
+        data: {
+            clientId: session.client_id,
+            url: `/clients/${session.client_id}?tab=training`
+        }
+    })
 
     // Use layout to update everything
     revalidatePath('/dashboard', 'layout')

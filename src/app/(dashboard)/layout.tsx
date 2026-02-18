@@ -2,6 +2,7 @@ import { Sidebar } from '@/components/layout/sidebar'
 import { SidebarProvider } from '@/components/layout/sidebar-context'
 import { BottomNav } from '@/components/layout/bottom-nav'
 import { createClient } from '@/lib/supabase/server'
+import { PushNotificationPrompt } from '@/components/notifications/push-notification-prompt'
 
 export default async function DashboardLayout({
     children,
@@ -19,6 +20,7 @@ export default async function DashboardLayout({
 
     return (
         <SidebarProvider>
+            <PushNotificationPrompt />
             <div className="fixed inset-0 flex overflow-hidden bg-background">
                 <Sidebar />
                 <div className="flex flex-col flex-1 min-w-0 h-full overflow-hidden">

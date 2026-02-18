@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { MobileNav } from '@/components/mobile-nav'
 import { ClientMainShell } from '@/components/client-main-shell'
+import { PushNotificationPrompt } from '@/components/notifications/push-notification-prompt'
 
 export default async function ClientLayout({
     children,
@@ -20,6 +21,7 @@ export default async function ClientLayout({
 
     return (
         <div className="min-h-screen bg-background text-slate-900 font-sans flex flex-col">
+            <PushNotificationPrompt />
             <ClientMainShell>
                 {children}
             </ClientMainShell>

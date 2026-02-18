@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { createNotification } from '@/lib/notifications'
 
 export async function createCheckinAction(data: {
     clientId: string
@@ -110,6 +111,18 @@ export async function updateCheckinNoteAction(checkinId: string, clientId: strin
         console.error('Error updating checkin note:', error)
         return { error: error.message || 'Error al actualizar la nota' }
     }
+
+    // Notify Client
+    await createNotification({
+        userId: clientId,
+        type: 'coach_feedback',
+        title: 'Feedback recibido',
+        body: 'Tu coach ha respondido a tu check-in.',
+        data: {
+            checkinId,
+            url: `/dashboard/checkin?id=${checkinId}` // Or similar client URL
+        }
+    })
 
     revalidatePath(`/clients/${clientId}`)
     return { success: true }

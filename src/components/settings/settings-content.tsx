@@ -15,9 +15,10 @@ import { Card, CardContent } from '@/components/ui/card'
 interface SettingsContentProps {
     user: any
     profile: any
+    preferences: any
 }
 
-export function SettingsContent({ user, profile }: SettingsContentProps) {
+export function SettingsContent({ user, profile, preferences }: SettingsContentProps) {
     const [activeTab, setActiveTab] = useState('account')
     const router = useRouter()
     const supabase = createClient()
@@ -46,7 +47,11 @@ export function SettingsContent({ user, profile }: SettingsContentProps) {
                     </TabsContent>
 
                     <TabsContent value="notifications" className="space-y-4">
-                        <NotificationsForm userId={user.id} initialEnabled={profile?.notifications_enabled ?? false} />
+                        <NotificationsForm
+                            userId={user.id}
+                            initialEnabled={profile?.notifications_enabled ?? false}
+                            initialPreferences={preferences}
+                        />
                         <WhatsAppSettingsForm
                             userId={user.id}
                             initialTemplate={profile?.whatsapp_message_template || 'Hola {nombre}, recuerda que tenemos entrenamiento {hora}'}
