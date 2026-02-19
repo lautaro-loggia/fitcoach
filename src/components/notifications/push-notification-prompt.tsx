@@ -7,25 +7,46 @@ import { Bell, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
 
+const PROMPT_DISMISS_KEY = 'orbit:push_prompt_dismissed_at'
+const PROMPT_SNOOZE_MS = 24 * 60 * 60 * 1000
+
 export function PushNotificationPrompt() {
     const { isSupported, permission, subscription, subscribe, isLoading } = usePushNotifications()
     const [isVisible, setIsVisible] = useState(false)
 
     useEffect(() => {
-        // Show prompt if: supported, permission is 'default' (not prompted yet), and not loading
-        if (!isLoading && isSupported && permission === 'default') {
+        const dismissedAt = Number(window.localStorage.getItem(PROMPT_DISMISS_KEY) || '0')
+        const isSnoozed = Number.isFinite(dismissedAt) && Date.now() - dismissedAt < PROMPT_SNOOZE_MS
+
+        // Show prompt if: supported, no active subscription, permission is default, not loading, and not snoozed
+        if (!isLoading && isSupported && !subscription && permission === 'default' && !isSnoozed) {
             const timer = setTimeout(() => setIsVisible(true), 3000) // Delay 3s
             return () => clearTimeout(timer)
         }
-    }, [isLoading, isSupported, permission])
+
+        setIsVisible(false)
+    }, [isLoading, isSupported, permission, subscription])
+
+    const dismissPrompt = () => {
+        window.localStorage.setItem(PROMPT_DISMISS_KEY, String(Date.now()))
+        setIsVisible(false)
+    }
 
     const handleEnable = async () => {
         try {
-            await subscribe()
+            const sub = await subscribe()
+            if (!sub) {
+                throw new Error('No se pudo crear la suscripción push.')
+            }
+
+            window.localStorage.removeItem(PROMPT_DISMISS_KEY)
             toast.success('Notificaciones activadas correctamente')
             setIsVisible(false)
         } catch (error) {
-            toast.error('No se pudieron activar las notificaciones')
+            const message =
+                error instanceof Error ? error.message : 'No se pudieron activar las notificaciones'
+
+            toast.error(message)
         }
     }
 
@@ -53,7 +74,7 @@ export function PushNotificationPrompt() {
                             </div>
                         </div>
                         <button
-                            onClick={() => setIsVisible(false)}
+                            onClick={dismissPrompt}
                             className="text-muted-foreground hover:text-foreground"
                         >
                             <X className="w-4 h-4" />
@@ -63,7 +84,7 @@ export function PushNotificationPrompt() {
                         <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => setIsVisible(false)}
+                            onClick={dismissPrompt}
                             className="text-xs h-8"
                         >
                             Ahora no

@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { getTodayString } from '@/lib/utils'
+import { createNotification } from '@/lib/notifications'
 
 export type MealConfig = {
     name: string
@@ -253,6 +254,31 @@ export async function registerMealLog(clientId: string, mealType: string, formDa
         return { error: `Error al guardar registro: ${dbError.message}` }
     }
 
+    // 3. Notify coach
+    try {
+        const { data: clientInfo } = await adminSupabase
+            .from('clients')
+            .select('full_name, trainer_id')
+            .eq('id', clientId)
+            .single()
+
+        if (clientInfo?.trainer_id) {
+            await createNotification({
+                userId: clientInfo.trainer_id,
+                type: 'meal_photo_reminder',
+                title: 'Nueva comida registrada',
+                body: `${clientInfo.full_name} subió una foto de su comida (${mealType}).`,
+                data: {
+                    clientId,
+                    url: `/clients/${clientId}?tab=diet`
+                }
+            })
+        }
+    } catch (notificationError) {
+        console.error('registerMealLog: Notification error:', notificationError)
+        // Notification failure should not block meal log creation
+    }
+
     console.log('registerMealLog: Success')
     revalidatePath(`/dashboard/diet`)
     revalidatePath(`/clients/${clientId}`)
@@ -337,4 +363,3 @@ export async function deleteMealLog(logId: string, imagePath: string) {
     revalidatePath('/dashboard/diet')
     return { success: true }
 }
-

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 // This key should be in env vars
@@ -14,62 +14,9 @@ export function usePushNotifications() {
     const [isSupported, setIsSupported] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
 
-    const supabase = createClient()
+    const supabase = useMemo(() => createClient(), [])
 
-    useEffect(() => {
-        // Check support
-        if (
-            typeof window !== 'undefined' &&
-            'serviceWorker' in navigator &&
-            'PushManager' in window
-        ) {
-            setIsSupported(true)
-            setPermission(Notification.permission)
-            registerServiceWorker()
-        } else {
-            setIsSupported(false)
-            setIsLoading(false)
-        }
-    }, [])
-
-    const registerServiceWorker = async () => {
-        try {
-            const registration = await navigator.serviceWorker.register('/sw.js', {
-                scope: '/',
-                updateViaCache: 'none',
-            })
-
-            // Check if already subscribed
-            const sub = await registration.pushManager.getSubscription()
-            setSubscription(sub)
-
-            if (sub && Notification.permission === 'granted') {
-                // Background sync subscription to DB to ensure it exists
-                await syncSubscriptionToDb(sub)
-            }
-        } catch (error) {
-            console.error('Error registering SW:', error)
-        } finally {
-            setIsLoading(false)
-        }
-    }
-
-    const urlBase64ToUint8Array = (base64String: string) => {
-        const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
-        const base64 = (base64String + padding)
-            .replace(/\-/g, '+')
-            .replace(/_/g, '/')
-
-        const rawData = window.atob(base64)
-        const outputArray = new Uint8Array(rawData.length)
-
-        for (let i = 0; i < rawData.length; ++i) {
-            outputArray[i] = rawData.charCodeAt(i)
-        }
-        return outputArray
-    }
-
-    const syncSubscriptionToDb = async (sub: PushSubscription) => {
+    const syncSubscriptionToDb = useCallback(async (sub: PushSubscription) => {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return
 
@@ -90,24 +37,91 @@ export function usePushNotifications() {
         if (error) {
             console.error('Error syncing subscription to DB:', error)
         }
+    }, [supabase])
+
+    useEffect(() => {
+        const registerServiceWorker = async () => {
+            try {
+                const registration = await navigator.serviceWorker.register('/sw.js', {
+                    scope: '/',
+                    updateViaCache: 'none',
+                })
+
+                // Check if already subscribed
+                const sub = await registration.pushManager.getSubscription()
+                setSubscription(sub)
+
+                if (sub && Notification.permission === 'granted') {
+                    // Background sync subscription to DB to ensure it exists
+                    await syncSubscriptionToDb(sub)
+                }
+            } catch (error) {
+                console.error('Error registering SW:', error)
+            } finally {
+                setIsLoading(false)
+            }
+        }
+
+        // Check support (requires secure context + Notification API + SW + PushManager)
+        const canUsePushApi =
+            typeof window !== 'undefined' &&
+            window.isSecureContext &&
+            'Notification' in window &&
+            'serviceWorker' in navigator &&
+            'PushManager' in window
+
+        if (canUsePushApi) {
+            setIsSupported(true)
+            setPermission(Notification.permission)
+            registerServiceWorker()
+        } else {
+            setIsSupported(false)
+            setIsLoading(false)
+        }
+    }, [syncSubscriptionToDb])
+
+    const urlBase64ToUint8Array = (base64String: string) => {
+        const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
+        const base64 = (base64String + padding)
+            .replace(/\-/g, '+')
+            .replace(/_/g, '/')
+
+        const rawData = window.atob(base64)
+        const outputArray = new Uint8Array(rawData.length)
+
+        for (let i = 0; i < rawData.length; ++i) {
+            outputArray[i] = rawData.charCodeAt(i)
+        }
+        return outputArray
     }
 
     const subscribe = async () => {
-        if (!isSupported) return
+        if (!isSupported) {
+            throw new Error('Este navegador o contexto no soporta notificaciones push.')
+        }
         if (!PUBLIC_VAPID_KEY) {
-            console.error('Missing NEXT_PUBLIC_VAPID_PUBLIC_KEY')
-            return
+            throw new Error('Falta NEXT_PUBLIC_VAPID_PUBLIC_KEY en la configuración.')
         }
 
         try {
             setIsLoading(true)
 
-            // Request permission
-            const permissionResult = await Notification.requestPermission()
+            let permissionResult = Notification.permission
+
+            if (permissionResult === 'denied') {
+                setPermission('denied')
+                throw new Error('Las notificaciones están bloqueadas en el navegador.')
+            }
+
+            // Request permission only when browser has not been prompted yet
+            if (permissionResult === 'default') {
+                permissionResult = await Notification.requestPermission()
+            }
+
             setPermission(permissionResult)
 
             if (permissionResult !== 'granted') {
-                throw new Error('Permission denied')
+                throw new Error('No se otorgó permiso para notificaciones.')
             }
 
             const registration = await navigator.serviceWorker.ready
@@ -134,6 +148,14 @@ export function usePushNotifications() {
             return sub
         } catch (error) {
             console.error('Error subscribing:', error)
+
+            const isRetryableError =
+                error instanceof DOMException &&
+                (error.name === 'AbortError' || error.name === 'InvalidStateError')
+
+            if (!isRetryableError) {
+                throw error
+            }
 
             // Retry logic: Unsubscribe and try again (fixes some AbortError cases)
             try {
@@ -169,10 +191,8 @@ export function usePushNotifications() {
 
             } catch (retryError) {
                 console.error('Retry failed:', retryError)
-                throw error
+                throw retryError
             }
-
-            throw error
         } finally {
             setIsLoading(false)
         }
@@ -193,7 +213,8 @@ export function usePushNotifications() {
                 .eq('endpoint', serializedSub.endpoint)
 
             setSubscription(null)
-            setPermission('default') // Logic reset, though browser permission remains
+            // Keep UI aligned with the real browser permission state.
+            setPermission(Notification.permission)
         } catch (error) {
             console.error('Error unsubscribing:', error)
         } finally {
