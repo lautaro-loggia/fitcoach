@@ -3,8 +3,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
-// This key should be in env vars
-const PUBLIC_VAPID_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+// This key should be in env vars. If missing in client bundle, we fetch a runtime fallback from API.
+const BUILD_TIME_VAPID_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? ''
 
 export type PushSubscriptionState = 'unsupported' | 'denied' | 'prompt' | 'granted'
 
@@ -13,6 +13,7 @@ export function usePushNotifications() {
     const [subscription, setSubscription] = useState<PushSubscription | null>(null)
     const [isSupported, setIsSupported] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
+    const [publicVapidKey, setPublicVapidKey] = useState(BUILD_TIME_VAPID_KEY)
 
     const supabase = useMemo(() => createClient(), [])
 
@@ -80,6 +81,34 @@ export function usePushNotifications() {
         }
     }, [syncSubscriptionToDb])
 
+    useEffect(() => {
+        if (publicVapidKey) return
+
+        let cancelled = false
+
+        const fetchRuntimeVapidKey = async () => {
+            try {
+                const response = await fetch('/api/push/vapid-public-key', { cache: 'no-store' })
+                if (!response.ok) return
+
+                const payload = (await response.json()) as { key?: string }
+                const key = typeof payload.key === 'string' ? payload.key.trim() : ''
+
+                if (!cancelled && key) {
+                    setPublicVapidKey(key)
+                }
+            } catch (error) {
+                console.error('Error loading runtime VAPID key:', error)
+            }
+        }
+
+        void fetchRuntimeVapidKey()
+
+        return () => {
+            cancelled = true
+        }
+    }, [publicVapidKey])
+
     const urlBase64ToUint8Array = (base64String: string) => {
         const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
         const base64 = (base64String + padding)
@@ -99,7 +128,7 @@ export function usePushNotifications() {
         if (!isSupported) {
             throw new Error('Este navegador o contexto no soporta notificaciones push.')
         }
-        if (!PUBLIC_VAPID_KEY) {
+        if (!publicVapidKey) {
             throw new Error('Falta NEXT_PUBLIC_VAPID_PUBLIC_KEY en la configuración.')
         }
 
@@ -131,7 +160,7 @@ export function usePushNotifications() {
 
             if (!sub) {
                 // Subscribe fresh
-                const applicationServerKey = urlBase64ToUint8Array(PUBLIC_VAPID_KEY)
+                const applicationServerKey = urlBase64ToUint8Array(publicVapidKey.trim())
                 sub = await registration.pushManager.subscribe({
                     userVisibleOnly: true,
                     applicationServerKey
@@ -179,7 +208,7 @@ export function usePushNotifications() {
                 await navigator.serviceWorker.ready
 
                 // 4. Try subscribing again
-                const applicationServerKey = urlBase64ToUint8Array(PUBLIC_VAPID_KEY)
+                const applicationServerKey = urlBase64ToUint8Array(publicVapidKey.trim())
                 const newSub = await newRegistration.pushManager.subscribe({
                     userVisibleOnly: true,
                     applicationServerKey
