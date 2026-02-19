@@ -2,18 +2,13 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Card } from '@/components/ui/card'
-import { Bell, Flame, Dumbbell, Target } from 'lucide-react'
-import Link from 'next/link'
+import { Flame, Dumbbell, Target } from 'lucide-react'
 import { format, subDays, isToday, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { WeightChart } from '@/components/client/progress/weight-chart'
 import { RecentHistoryList } from '@/components/client/progress/recent-history-list'
 
-export default async function ProgressPage({
-    searchParams
-}: {
-    searchParams: Promise<{ checkinId: string }>
-}) {
+export default async function ProgressPage() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -24,17 +19,17 @@ export default async function ProgressPage({
     // Fetch Client Data including detailed stats
     const { data: client } = await adminClient
         .from('clients')
-        .select('*')
+        .select('id, current_weight, initial_weight, target_weight, main_goal, activity_level')
         .eq('user_id', user.id)
         .single()
 
     if (!client) return <div>Cliente no encontrado</div>
 
     // 1. Calculate Compliance (Last 30 Days)
-    const startDate = subDays(new Date(), 30).toISOString()
+    const startDate = subDays(new Date(), 30).toISOString().split('T')[0]
     const { count: completedCount } = await adminClient
         .from('workout_logs')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('client_id', client.id)
         .gte('date', startDate)
 
@@ -60,7 +55,7 @@ export default async function ProgressPage({
     // 2. Fetch Checkins History
     const { data: checkins } = await adminClient
         .from('checkins')
-        .select('*')
+        .select('id, date, weight, body_fat, created_at')
         .eq('client_id', client.id)
         .order('date', { ascending: false })
         .limit(10)

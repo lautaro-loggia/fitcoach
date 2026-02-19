@@ -4,7 +4,6 @@ import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import {
-    Bell,
     CheckCircle2,
     Clock,
     Dumbbell,
@@ -17,7 +16,7 @@ import Link from 'next/link'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { getARTDate, getTodayString } from '@/lib/utils'
+import { getARTDate } from '@/lib/utils'
 import { WorkoutStartDialog } from '@/components/clients/workout-start-dialog'
 import { AdvisedDashboardMenu } from '@/components/clients/advised-dashboard-menu'
 
@@ -31,7 +30,19 @@ export default async function ClientDashboard() {
 
     const { data: client, error } = await adminClient
         .from('clients')
-        .select('*, trainer:profiles(full_name)')
+        .select(`
+            id,
+            onboarding_status,
+            current_weight,
+            target_weight,
+            initial_weight,
+            avatar_url,
+            full_name,
+            status,
+            next_checkin_date,
+            main_goal,
+            daily_steps_target
+        `)
         .eq('user_id', user.id)
         .single()
 
@@ -46,12 +57,11 @@ export default async function ClientDashboard() {
     // 1. Get Today's Workout (ART Time)
     const artNow = getARTDate()
     const todayName = format(artNow, 'EEEE', { locale: es }).toLowerCase()
-    const todayStr = getTodayString()
 
     // Fetch all workouts to find today's
     const { data: workouts } = await adminClient
         .from('assigned_workouts')
-        .select('*')
+        .select('id, name, structure, scheduled_days')
         .eq('client_id', client.id)
 
     const todayWorkout = workouts?.find(w =>
@@ -67,13 +77,13 @@ export default async function ClientDashboard() {
         const [logsResult, sessionsResult] = await Promise.all([
             adminClient
                 .from('workout_logs')
-                .select('*', { count: 'exact', head: true })
+                .select('id', { count: 'exact', head: true })
                 .eq('client_id', client.id)
                 .eq('workout_id', todayWorkout.id)
                 .gte('completed_at', startOfDay.toISOString()),
             adminClient
                 .from('workout_sessions')
-                .select('*', { count: 'exact', head: true })
+                .select('id', { count: 'exact', head: true })
                 .eq('client_id', client.id)
                 .eq('assigned_workout_id', todayWorkout.id)
                 .eq('status', 'completed')
@@ -199,7 +209,7 @@ export default async function ClientDashboard() {
 
                 {/* Check-in Card Logic */}
                 {(() => {
-                    const todayDate = new Date()
+                    const todayDate = new Date(artNow)
                     let isCheckInDay = false
 
                     if (client.next_checkin_date) {

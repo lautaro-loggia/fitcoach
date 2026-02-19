@@ -6,14 +6,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { createCheckin, uploadCheckinPhoto } from '../actions'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Loader2, ArrowLeft, UploadCloud, Info, X, Image as ImageIcon } from 'lucide-react'
-import Link from 'next/link'
+import { Loader2, UploadCloud, Info, X } from 'lucide-react'
+import Image from 'next/image'
 import { compressImage } from '@/lib/image-utils'
-import { getTodayString } from '@/lib/utils'
 
 interface CheckinFormProps {
     initialWeight?: number
@@ -26,6 +24,13 @@ interface PhotoItem {
     path?: string // For private storage ref
     type: 'front' | 'back' | 'profile' | 'other'
 }
+
+const PHOTO_SLOTS: Array<{ type: PhotoItem['type']; label: string }> = [
+    { type: 'front', label: 'Frente' },
+    { type: 'profile', label: 'Perfil' },
+    { type: 'back', label: 'Espalda' },
+    { type: 'other', label: 'Extra' },
+]
 
 function calculateNavyBodyFat(gender: string, heightCm: number, neckCm: number, waistCm: number, hipCm?: number) {
     if (!heightCm || !neckCm || !waistCm) return ''
@@ -46,7 +51,7 @@ function calculateNavyBodyFat(gender: string, heightCm: number, neckCm: number, 
         }
 
         return result.toFixed(1)
-    } catch (e) {
+    } catch {
         return ''
     }
 }
@@ -123,9 +128,6 @@ export function CheckinForm({ initialWeight, gender = 'male', height }: CheckinF
         }
     }, [formData.body_fat])
 
-    // Helper for date defaults
-    const todayStr = getTodayString()
-
     const handleSlotUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: PhotoItem['type']) => {
         if (!e.target.files?.length) return
 
@@ -171,14 +173,6 @@ export function CheckinForm({ initialWeight, gender = 'male', height }: CheckinF
         }))
     }
 
-    const updatePhotoType = (index: number, type: PhotoItem['type']) => {
-        setFormData(prev => {
-            const newPhotos = [...prev.photos]
-            newPhotos[index].type = type
-            return { ...prev, photos: newPhotos }
-        })
-    }
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!formData.weight) {
@@ -220,7 +214,7 @@ export function CheckinForm({ initialWeight, gender = 'male', height }: CheckinF
                 toast.success('Check-in guardado exitosamente')
                 router.push('/dashboard')
             }
-        } catch (error) {
+        } catch {
             toast.error('Error inesperado')
         } finally {
             setLoading(false)
@@ -387,12 +381,7 @@ export function CheckinForm({ initialWeight, gender = 'male', height }: CheckinF
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                    {[
-                        { type: 'front', label: 'Frente' },
-                        { type: 'profile', label: 'Perfil' },
-                        { type: 'back', label: 'Espalda' },
-                        { type: 'other', label: 'Extra' }
-                    ].map((slot) => {
+                    {PHOTO_SLOTS.map((slot) => {
                         const photo = formData.photos.find(p => p.type === slot.type)
                         const photoIndex = formData.photos.findIndex(p => p.type === slot.type)
                         const inputId = `upload-${slot.type}`
@@ -403,7 +392,13 @@ export function CheckinForm({ initialWeight, gender = 'male', height }: CheckinF
 
                                 {photo ? (
                                     <div className="relative group rounded-xl overflow-hidden border bg-gray-100 aspect-[3/4] shadow-sm">
-                                        <img src={photo.url} alt={slot.label} className="w-full h-full object-cover" />
+                                        <Image
+                                            src={photo.url}
+                                            alt={slot.label}
+                                            fill
+                                            sizes="(max-width: 768px) 50vw, 33vw"
+                                            className="object-cover"
+                                        />
                                         <button
                                             type="button"
                                             onClick={() => removePhoto(photoIndex)}
@@ -419,7 +414,7 @@ export function CheckinForm({ initialWeight, gender = 'male', height }: CheckinF
                                             id={inputId}
                                             accept="image/jpeg,image/png,image/heic,image/webp"
                                             className="hidden"
-                                            onChange={(e) => handleSlotUpload(e, slot.type as any)}
+                                            onChange={(e) => handleSlotUpload(e, slot.type)}
                                             disabled={uploading}
                                         />
                                         <Label

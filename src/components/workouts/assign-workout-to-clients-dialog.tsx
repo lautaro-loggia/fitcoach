@@ -6,19 +6,32 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
-import { Loading03Icon, Calendar03Icon, ArrowLeft01Icon } from "hugeicons-react"
+import { Loading03Icon, Calendar03Icon } from "hugeicons-react"
 import { assignWorkoutToClientsAction } from "@/app/(dashboard)/workouts/actions"
 import { ClientAvatar } from "@/components/clients/client-avatar"
 import { cn } from "@/lib/utils"
 
+interface WorkoutSummary {
+    id: string
+    name: string
+    structure: unknown[] | null
+}
+
+interface ClientOption {
+    id: string
+    full_name: string | null
+    email: string | null
+    status: string | null
+}
+
 interface AssignWorkoutToClientsDialogProps {
     open: boolean
     onOpenChange: (open: boolean) => void
-    workout: any
+    workout: WorkoutSummary | null
 }
 
 export function AssignWorkoutToClientsDialog({ open, onOpenChange, workout }: AssignWorkoutToClientsDialogProps) {
-    const [clients, setClients] = useState<any[]>([])
+    const [clients, setClients] = useState<ClientOption[]>([])
     const [selectedClients, setSelectedClients] = useState<string[]>([])
     const [loading, setLoading] = useState(false)
     const [assigning, setAssigning] = useState(false)
@@ -26,6 +39,28 @@ export function AssignWorkoutToClientsDialog({ open, onOpenChange, workout }: As
     const [schedules, setSchedules] = useState<Record<string, string[]>>({})
 
     const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+
+    async function fetchClients() {
+        setLoading(true)
+        try {
+            const supabase = createClient()
+            const { data, error } = await supabase
+                .from('clients')
+                .select('id, full_name, email, status')
+                .eq('status', 'active')
+                .order('full_name')
+
+            if (error) {
+                console.error('Error fetching clients:', error)
+                setClients([])
+                return
+            }
+
+            setClients(data || [])
+        } finally {
+            setLoading(false)
+        }
+    }
 
     useEffect(() => {
         if (open) {
@@ -35,20 +70,6 @@ export function AssignWorkoutToClientsDialog({ open, onOpenChange, workout }: As
             setStep('clients')
         }
     }, [open])
-
-    const fetchClients = async () => {
-        setLoading(true)
-        const supabase = createClient()
-        const { data } = await supabase
-            .from('clients')
-            .select('id, full_name, email, status')
-            .eq('status', 'active') // Only active clients usually? Or all? Let's show all but maybe sort active first.
-            .order('status', { ascending: true }) // active vs inactive
-            .order('full_name')
-
-        if (data) setClients(data)
-        setLoading(false)
-    }
 
     const toggleClient = (id: string) => {
         setSelectedClients(prev =>
@@ -86,14 +107,14 @@ export function AssignWorkoutToClientsDialog({ open, onOpenChange, workout }: As
     }
 
     const handleAssign = async () => {
-        if (selectedClients.length === 0) return
+        if (!workout || selectedClients.length === 0) return
         setAssigning(true)
 
         const res = await assignWorkoutToClientsAction(
             workout.id,
             selectedClients,
             workout.name,
-            workout.structure,
+            workout.structure ?? [],
             schedules
         )
 
@@ -200,7 +221,7 @@ export function AssignWorkoutToClientsDialog({ open, onOpenChange, workout }: As
                                 {clients.filter(c => selectedClients.includes(c.id)).map(client => (
                                     <div key={client.id} className="space-y-2 pb-2 border-b last:border-0">
                                         <div className="flex items-center gap-2">
-                                            <ClientAvatar name={client.full_name} size="xs" />
+                                            <ClientAvatar name={client.full_name || 'Cliente'} size="xs" />
                                             <span className="text-sm font-medium">{client.full_name}</span>
                                         </div>
                                         <div className="flex flex-wrap gap-1.5 pl-2">

@@ -40,52 +40,51 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Not authenticated')
 
-    // 1. Active Clients
-    const { count: activeClients } = await supabase
-        .from('clients')
-        .select('*', { count: 'exact', head: true })
-        .eq('trainer_id', user.id)
-        .eq('status', 'active')
-
-    // 2. Monthly Income (Paid this month)
     const now = new Date()
-    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
-
-    const { data: payments } = await supabase
-        .from('payments')
-        .select('amount')
-        .eq('trainer_id', user.id)
-        .gte('paid_at', firstDayOfMonth)
-
-    const monthlyIncome = payments?.reduce((sum, p) => sum + p.amount, 0) || 0
-
-    // 3. Pending Payments Count & Projected Income
-    const { data: pendingClients } = await supabase
-        .from('clients')
-        .select('price_monthly, payment_status')
-        .eq('trainer_id', user.id)
-        .in('payment_status', ['pending', 'overdue'])
-
-    const pendingPaymentsCount = pendingClients?.length || 0
-    const projectedIncome = pendingClients?.reduce((sum, c) => sum + (c.price_monthly || 0), 0) || 0
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
 
     // 4. Pending Check-ins Count (Due today or overdue)
     const todayStr = getTodayString()
-    const { count: pendingCheckins } = await supabase
-        .from('clients')
-        .select('*', { count: 'exact', head: true })
-        .eq('trainer_id', user.id)
-        .eq('status', 'active')
-        .lte('next_checkin_date', todayStr)
 
+    const [
+        { count: activeClients },
+        { data: payments },
+        { data: pendingClients },
+        { count: pendingCheckins },
+        { count: newClients },
+    ] = await Promise.all([
+        supabase
+            .from('clients')
+            .select('id', { count: 'exact', head: true })
+            .eq('trainer_id', user.id)
+            .eq('status', 'active'),
+        supabase
+            .from('payments')
+            .select('amount')
+            .eq('trainer_id', user.id)
+            .gte('paid_at', firstDayOfMonth),
+        supabase
+            .from('clients')
+            .select('price_monthly')
+            .eq('trainer_id', user.id)
+            .in('payment_status', ['pending', 'overdue']),
+        supabase
+            .from('clients')
+            .select('id', { count: 'exact', head: true })
+            .eq('trainer_id', user.id)
+            .eq('status', 'active')
+            .lte('next_checkin_date', todayStr),
+        supabase
+            .from('clients')
+            .select('id', { count: 'exact', head: true })
+            .eq('trainer_id', user.id)
+            .gte('created_at', firstDayOfMonth),
+    ])
+
+    const monthlyIncome = payments?.reduce((sum, payment) => sum + payment.amount, 0) || 0
+    const pendingPaymentsCount = pendingClients?.length || 0
+    const projectedIncome = pendingClients?.reduce((sum, client) => sum + (client.price_monthly || 0), 0) || 0
     const pendingCheckinsCount = pendingCheckins || 0
-
-    // 5. New Clients This Month
-    const { count: newClients } = await supabase
-        .from('clients')
-        .select('*', { count: 'exact', head: true })
-        .eq('trainer_id', user.id)
-        .gte('created_at', firstDayOfMonth)
 
     return {
         activeClients: activeClients || 0,
@@ -104,7 +103,7 @@ export async function getIncomeHistory(rangeStart?: Date, rangeEnd?: Date): Prom
 
     // Default to last 6 months if not provided
     let startDate = rangeStart
-    let endDate = rangeEnd || new Date()
+    const endDate = rangeEnd || new Date()
 
     if (!startDate) {
         startDate = new Date()
@@ -116,8 +115,8 @@ export async function getIncomeHistory(rangeStart?: Date, rangeEnd?: Date): Prom
         .from('payments')
         .select('amount, paid_at')
         .eq('trainer_id', user.id)
-        .gte('paid_at', startDate.toISOString())
-        .lte('paid_at', endDate.toISOString())
+        .gte('paid_at', startDate.toISOString().split('T')[0])
+        .lte('paid_at', endDate.toISOString().split('T')[0])
         .order('paid_at', { ascending: true })
 
     if (!payments) return []
@@ -176,9 +175,9 @@ export async function getUpcomingPayments(): Promise<ClientDue[]> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Not authenticated')
 
-    const today = new Date()
     const sevenDaysLater = new Date()
-    sevenDaysLater.setDate(today.getDate() + 7)
+    sevenDaysLater.setDate(sevenDaysLater.getDate() + 7)
+    const sevenDaysLaterStr = sevenDaysLater.toISOString().split('T')[0]
 
     const { data: clients } = await supabase
         .from('clients')
@@ -193,7 +192,7 @@ export async function getUpcomingPayments(): Promise<ClientDue[]> {
         `)
         .eq('trainer_id', user.id)
         .in('payment_status', ['pending', 'overdue'])
-        .lte('next_due_date', sevenDaysLater.toISOString()) // Due in next 7 days or overdue
+        .lte('next_due_date', sevenDaysLaterStr) // Due in next 7 days or overdue
         .order('next_due_date', { ascending: true })
         .limit(10)
 
@@ -279,7 +278,18 @@ export async function getTodayPresentialTrainings(): Promise<PresentialTraining[
     // Helper to get day name in 'Lunes', 'Martes' format
     const dayName = today.toLocaleDateString('es-ES', { weekday: 'long', timeZone: 'America/Argentina/Buenos_Aires' })
     const capitalizedDay = dayName.charAt(0).toUpperCase() + dayName.slice(1)
-    const todayStr = today.toISOString().split('T')[0]
+    const todayStr = getTodayString()
+
+    interface PresentialWorkoutRow {
+        id: string
+        name: string | null
+        start_time: string | null
+        client: {
+            full_name: string | null
+            avatar_url: string | null
+            phone: string | null
+        }[] | null
+    }
 
     const { data } = await supabase
         .from('assigned_workouts')
@@ -305,13 +315,19 @@ export async function getTodayPresentialTrainings(): Promise<PresentialTraining[
 
     const messageTemplate = trainerProfile?.whatsapp_message_template || 'Hola {nombre}, recuerda que tenemos entrenamiento {hora}'
 
-    return data.map((item: any) => ({
+    const rows = data as PresentialWorkoutRow[]
+
+    return rows.map((item) => {
+        const client = Array.isArray(item.client) ? item.client[0] : null
+
+        return {
         id: item.id,
-        clientName: item.client?.full_name || 'Cliente',
-        clientAvatar: item.client?.avatar_url || null,
-        workoutName: item.name,
-        clientPhone: item.client?.phone || null,
+        clientName: client?.full_name || 'Cliente',
+        clientAvatar: client?.avatar_url || null,
+        workoutName: item.name || 'Entrenamiento',
+        clientPhone: client?.phone || null,
         startTime: item.start_time || null,
         messageTemplate
-    }))
+        }
+    })
 }

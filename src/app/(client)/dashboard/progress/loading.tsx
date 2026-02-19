@@ -1,5 +1,7 @@
 import { Skeleton } from "@/components/ui/skeleton"
 
+const CHART_BAR_HEIGHTS = ['28%', '46%', '62%', '40%', '74%', '55%', '36%']
+
 export default function ProgressLoading() {
     return (
         <div className="flex-1 flex flex-col p-4 space-y-6 pb-[calc(110px+env(safe-area-inset-bottom))] min-h-[calc(100dvh-68px)]">
@@ -21,8 +23,8 @@ export default function ProgressLoading() {
                     <Skeleton className="h-8 w-24 rounded-full" />
                 </div>
                 <div className="h-48 w-full flex items-end gap-2 px-2">
-                    {[1, 2, 3, 4, 5, 6, 7].map((i) => (
-                        <Skeleton key={i} className="flex-1 rounded-t-lg" style={{ height: `${Math.random() * 80 + 20}%` }} />
+                    {CHART_BAR_HEIGHTS.map((height, index) => (
+                        <Skeleton key={index} className="flex-1 rounded-t-lg" style={{ height }} />
                     ))}
                 </div>
             </div>

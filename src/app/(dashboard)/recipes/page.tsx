@@ -8,14 +8,7 @@ import { AddRecipeDialog } from '@/components/recipes/add-recipe-dialog'
 import { RecipeCard } from '@/components/recipes/recipe-card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select'
-import { Search, Filter, X, Utensils, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, Utensils, ChevronLeft, ChevronRight } from 'lucide-react'
 import { FilterHorizontalIcon, Search01Icon, Cancel01Icon, Tick01Icon } from 'hugeicons-react'
 
 import { DashboardTopBar } from '@/components/layout/dashboard-top-bar'
@@ -32,6 +25,17 @@ import {
 } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 
+interface RecipeIngredient {
+    ingredient_code: string
+    ingredient_name: string
+    grams: number
+    kcal_100g?: number
+    protein_100g?: number
+    carbs_100g?: number
+    fat_100g?: number
+    fiber_100g?: number
+}
+
 interface Recipe {
     id: string
     name: string
@@ -39,7 +43,7 @@ interface Recipe {
     servings: number | null
     prep_time_min: number | null
     image_url: string | null
-    ingredients: any
+    ingredients: RecipeIngredient[] | null
     macros_calories: number | null
     macros_protein_g: number | null
     macros_carbs_g: number | null
@@ -47,6 +51,7 @@ interface Recipe {
 }
 
 const RECIPES_PER_PAGE = 20
+const RECIPE_SELECT_FIELDS = 'id,name,meal_type,servings,prep_time_min,image_url,ingredients,macros_calories,macros_protein_g,macros_carbs_g,macros_fat_g'
 
 export default function RecipesPage() {
     const [recipes, setRecipes] = useState<Recipe[]>([])
@@ -86,10 +91,25 @@ export default function RecipesPage() {
         return () => clearTimeout(timer)
     }, [searchQuery])
 
-    // Reset to page 1 when filters change
-    useEffect(() => {
+    const handleMealTypeFilterChange = (value: string) => {
+        setMealTypeFilter(value)
         setCurrentPage(1)
-    }, [mealTypeFilter, sortBy, maxCalories, minProtein])
+    }
+
+    const handleSortByChange = (value: string) => {
+        setSortBy(value)
+        setCurrentPage(1)
+    }
+
+    const handleMaxCaloriesChange = (value: string) => {
+        setMaxCalories(value)
+        setCurrentPage(1)
+    }
+
+    const handleMinProteinChange = (value: string) => {
+        setMinProtein(value)
+        setCurrentPage(1)
+    }
 
     // Load recipes with pagination
     const loadRecipes = useCallback(async () => {
@@ -110,7 +130,7 @@ export default function RecipesPage() {
         // Build query
         let query = supabase
             .from('recipes')
-            .select('*', { count: 'exact' })
+            .select(RECIPE_SELECT_FIELDS, { count: 'exact' })
             .eq('trainer_id', user.id)
 
         // Apply search filter
@@ -164,7 +184,11 @@ export default function RecipesPage() {
     }, [currentPage, debouncedSearch, mealTypeFilter, sortBy, maxCalories, minProtein])
 
     useEffect(() => {
-        loadRecipes()
+        const timer = setTimeout(() => {
+            void loadRecipes()
+        }, 0)
+
+        return () => clearTimeout(timer)
     }, [loadRecipes])
 
     const totalPages = Math.ceil(totalCount / RECIPES_PER_PAGE)
@@ -176,9 +200,11 @@ export default function RecipesPage() {
         setMinProtein('')
         setSortBy('recent')
         setSearchQuery('')
+        setDebouncedSearch('')
+        setCurrentPage(1)
     }
 
-    const FilterContent = () => (
+    const filterContent = (
         <div className="space-y-6 py-4">
             <div className="space-y-3">
                 <Label className="text-sm font-bold text-gray-900">Tipo de Comida</Label>
@@ -193,7 +219,7 @@ export default function RecipesPage() {
                     ].map((opt) => (
                         <button
                             key={opt.id}
-                            onClick={() => setMealTypeFilter(opt.id)}
+                            onClick={() => handleMealTypeFilterChange(opt.id)}
                             className={cn(
                                 "flex items-center justify-between px-5 py-4 border-2 rounded-xl text-left transition-all hover:bg-muted/50 text-sm",
                                 mealTypeFilter === opt.id ? "border-primary bg-primary/5 font-semibold" : "border-transparent bg-muted/30"
@@ -216,7 +242,7 @@ export default function RecipesPage() {
                             type="number"
                             placeholder="Ej: 500"
                             value={maxCalories}
-                            onChange={(e) => setMaxCalories(e.target.value)}
+                            onChange={(e) => handleMaxCaloriesChange(e.target.value)}
                             className="rounded-xl h-11 px-5 border-transparent bg-muted/30 focus:border-primary transition-all"
                         />
                     </div>
@@ -227,7 +253,7 @@ export default function RecipesPage() {
                             type="number"
                             placeholder="Ej: 20"
                             value={minProtein}
-                            onChange={(e) => setMinProtein(e.target.value)}
+                            onChange={(e) => handleMinProteinChange(e.target.value)}
                             className="rounded-xl h-11 px-5 border-transparent bg-muted/30 focus:border-primary transition-all"
                         />
                     </div>
@@ -246,7 +272,7 @@ export default function RecipesPage() {
                     ].map((opt) => (
                         <button
                             key={opt.id}
-                            onClick={() => setSortBy(opt.id)}
+                            onClick={() => handleSortByChange(opt.id)}
                             className={cn(
                                 "flex items-center justify-between px-5 py-4 border-2 rounded-xl text-left transition-all hover:bg-muted/50 text-sm",
                                 sortBy === opt.id ? "border-primary bg-primary/5 font-semibold" : "border-transparent bg-muted/30"
@@ -331,7 +357,7 @@ export default function RecipesPage() {
                                 <p className="text-sm text-muted-foreground">Buscá la receta perfecta para el plan</p>
                             </SheetHeader>
 
-                            <FilterContent />
+                            {filterContent}
 
                             <SheetFooter className="mt-8 flex-col gap-2 pt-6 border-t sm:flex-col">
                                 <SheetClose asChild>
