@@ -37,6 +37,7 @@ export function usePushNotifications() {
 
         if (error) {
             console.error('Error syncing subscription to DB:', error)
+            throw new Error('No se pudo guardar la suscripción push en la base de datos.')
         }
     }, [supabase])
 
