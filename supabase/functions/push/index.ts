@@ -1,9 +1,12 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 
-const supabase = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-)
+const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
+const serviceRoleKey =
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ||
+    Deno.env.get('PRIVATE_SERVICE_ROLE_KEY') ||
+    ''
+const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY') || ''
+const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY') || ''
 
 interface NotificationRecord {
     id: string
@@ -11,7 +14,7 @@ interface NotificationRecord {
     title: string
     body: string
     type: string
-    data: Record<string, any>
+    data: Record<string, unknown>
 }
 
 interface WebhookPayload {
@@ -22,8 +25,43 @@ interface WebhookPayload {
 }
 
 Deno.serve(async (req) => {
+    if (!supabaseUrl || !serviceRoleKey) {
+        return new Response(
+            JSON.stringify({
+                error: 'Missing Supabase credentials in Edge Function secrets',
+                missing: {
+                    SUPABASE_URL: !supabaseUrl,
+                    SUPABASE_SERVICE_ROLE_KEY_or_PRIVATE_SERVICE_ROLE_KEY: !serviceRoleKey,
+                },
+            }),
+            { status: 500, headers: { 'Content-Type': 'application/json' } }
+        )
+    }
+
+    if (!vapidPublicKey || !vapidPrivateKey) {
+        return new Response(
+            JSON.stringify({
+                error: 'Missing VAPID keys in Edge Function secrets',
+                missing: {
+                    VAPID_PUBLIC_KEY: !vapidPublicKey,
+                    VAPID_PRIVATE_KEY: !vapidPrivateKey,
+                },
+            }),
+            { status: 500, headers: { 'Content-Type': 'application/json' } }
+        )
+    }
+
+    const supabase = createClient(supabaseUrl, serviceRoleKey)
+
     const payload: WebhookPayload = await req.json()
     const { record } = payload
+
+    if (!record?.user_id) {
+        return new Response(JSON.stringify({ error: 'Invalid webhook payload' }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' },
+        })
+    }
 
     // 1. Get subscriptions for this user
     const { data: subscriptions } = await supabase
@@ -49,6 +87,9 @@ Deno.serve(async (req) => {
     })
 
     // 3. Send to all endpoints
+    const webPush = await import('npm:web-push')
+    webPush.setVapidDetails('mailto:soporte@orbit.app', vapidPublicKey, vapidPrivateKey)
+
     const results = await Promise.all(
         subscriptions.map(async (sub) => {
             try {
@@ -60,24 +101,15 @@ Deno.serve(async (req) => {
                     }
                 }
 
-                // We use web-push library logic manually or import a deno-compatible one.
-                // Since Deno standard library for web-push is tricky, calling the endpoint directly is often easier 
-                // IF we implement the crypto. BUT doing VAPID crypto manually is hard.
-                // It's better to use 'web-push' via npm specifier in Deno if supported (it is in recent versions).
-
-                // Using npm:web-push in Deno
-                const webPush = await import('npm:web-push')
-
-                webPush.setVapidDetails(
-                    'mailto:soporte@orbit.app', // Update this
-                    Deno.env.get('VAPID_PUBLIC_KEY')!,
-                    Deno.env.get('VAPID_PRIVATE_KEY')!
-                )
-
                 await webPush.sendNotification(pushSubscription, notificationPayload)
                 return { success: true, id: sub.id }
             } catch (error) {
-                if (error.statusCode === 410 || error.statusCode === 404) {
+                const statusCode =
+                    typeof error === 'object' && error !== null && 'statusCode' in error
+                        ? Number((error as { statusCode: number }).statusCode)
+                        : null
+
+                if (statusCode === 410 || statusCode === 404) {
                     // Subscription gone, remove it
                     await supabase.from('push_subscriptions').delete().eq('id', sub.id)
                     return { success: false, id: sub.id, error: 'Gone' }
