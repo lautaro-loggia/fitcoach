@@ -9,7 +9,22 @@ import { registerMealLog } from '@/app/(dashboard)/clients/[id]/meal-plan-action
 import { compressImage } from '@/lib/image-utils'
 import { cn } from '@/lib/utils'
 import { Dialog, DialogContent, DialogTrigger, DialogClose, DialogTitle } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
 import { OutOfPlanDialog } from './out-of-plan-dialog'
+import { analyzeMealWithAI } from '@/app/(dashboard)/clients/[id]/ai-meal-actions'
+
+const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => {
+            const result = reader.result as string;
+            const base64 = result.split(',')[1];
+            resolve(base64);
+        };
+        reader.onerror = error => reject(error);
+    });
+};
 
 interface MealAccordionItemProps {
     meal: any
@@ -22,6 +37,12 @@ export function MealAccordionItem({ meal, log, outOfPlanLog, clientId }: MealAcc
     const fileInputRef = useRef<HTMLInputElement>(null)
     const [isUploading, setIsUploading] = useState(false)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
+
+    // AI Flow State
+    const [aiState, setAiState] = useState<'idle' | 'analyzing' | 'review'>('idle')
+    const [photo, setPhoto] = useState<File | null>(null)
+    const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+    const [aiData, setAiData] = useState<{ title: string, macros: { kcal: number, protein: number, carbs: number, fats: number }, ingredients: Array<{ name: string, grams: number }> } | null>(null)
 
     // Calculate macros from meal items
     const calculateMacros = () => {
@@ -83,26 +104,91 @@ export function MealAccordionItem({ meal, log, outOfPlanLog, clientId }: MealAcc
         const file = e.target.files?.[0]
         if (!file) return
 
-        setIsUploading(true)
-        const formData = new FormData()
-
         try {
             const compressedFile = await compressImage(file, 0.8, 1600)
-            formData.append('file', compressedFile)
+            setPhoto(compressedFile)
+            setPhotoPreview(URL.createObjectURL(compressedFile))
+            setAiState('analyzing')
+            setIsDialogOpen(true) // Expand the modal to show AI flow 
 
+            try {
+                const compressedForAI = await compressImage(file, 0.6, 800)
+                const base64 = await fileToBase64(compressedForAI)
+                const result = await analyzeMealWithAI(base64, compressedForAI.type)
+
+                if (result.success && result.data) {
+                    setAiData({
+                        title: result.data.title || meal.name,
+                        macros: {
+                            kcal: result.data.macros?.kcal || 0,
+                            protein: result.data.macros?.protein || 0,
+                            carbs: result.data.macros?.carbs || 0,
+                            fats: result.data.macros?.fats || 0
+                        },
+                        ingredients: result.data.ingredients || []
+                    })
+                } else {
+                    toast.error(result.error || 'No se pudieron estimar los macros.')
+                }
+            } catch (error) {
+                console.error('AI Error:', error)
+                toast.error('Error al analizar la imagen.')
+            } finally {
+                setAiState('review')
+            }
+        } catch (error) {
+            console.error('Upload Error:', error)
+            toast.error('Error al procesar la imagen')
+        } finally {
+            if (fileInputRef.current) fileInputRef.current.value = ''
+        }
+    }
+
+    const handleSaveLog = async () => {
+        if (!photo) return
+        setIsUploading(true)
+        const formData = new FormData()
+        formData.append('file', photo)
+
+        let metadataToSave = null
+        if (aiData) {
+            metadataToSave = {
+                description: aiData.title,
+                macros: aiData.macros,
+                ingredients: aiData.ingredients
+            }
+        }
+        formData.append('metadata', JSON.stringify(metadataToSave || {}))
+
+        try {
             const result = await registerMealLog(clientId, meal.name, formData)
             if (result?.error) {
                 toast.error(result.error)
             } else {
                 toast.success('¡Comida registrada!')
-                setIsDialogOpen(false) // Close dialog if open
+                setIsDialogOpen(false)
+                setTimeout(() => {
+                    setAiState('idle')
+                    setPhoto(null)
+                    setAiData(null)
+                }, 300)
             }
         } catch (error) {
             console.error('Upload error:', error)
-            toast.error('Error al subir la imagen')
+            toast.error('Error al guardar')
         } finally {
             setIsUploading(false)
-            if (fileInputRef.current) fileInputRef.current.value = ''
+        }
+    }
+
+    const handleOpenChange = (open: boolean) => {
+        setIsDialogOpen(open)
+        if (!open) {
+            setTimeout(() => {
+                setAiState('idle')
+                setPhoto(null)
+                setAiData(null)
+            }, 300)
         }
     }
 
@@ -139,7 +225,7 @@ export function MealAccordionItem({ meal, log, outOfPlanLog, clientId }: MealAcc
                 onChange={handleFileSelect}
             />
 
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <Dialog open={isDialogOpen} onOpenChange={handleOpenChange}>
                 <div className="w-full bg-white rounded-[18px] border border-gray-200 shadow-none p-4 flex items-center justify-between gap-4 transition-all">
                     {/* Expandable Click Area */}
                     <DialogTrigger asChild>
@@ -170,88 +256,223 @@ export function MealAccordionItem({ meal, log, outOfPlanLog, clientId }: MealAcc
                     </div>
                 </div>
 
-                <DialogContent className="max-w-md w-[95vw] rounded-[32px] p-0 border-none bg-white shadow-2xl overflow-hidden" showCloseButton={false}>
-                    <div className="p-6 space-y-6">
-                        {/* Header with Title and Close */}
-                        <div className="flex justify-between items-start gap-4">
-                            <div>
-                                <DialogTitle className="text-2xl font-bold text-gray-900 leading-tight">
-                                    {cardTitle}
-                                </DialogTitle>
-                                <p className="text-gray-500 font-medium mt-1">{stats.kcal} kcal</p>
+                <DialogContent className="max-w-md w-[95vw] max-h-[90vh] rounded-[32px] p-0 border-none bg-white shadow-2xl overflow-hidden flex flex-col" showCloseButton={false}>
+                    {aiState !== 'idle' ? (
+                        <div className="p-6 space-y-6 overflow-y-auto custom-scrollbar flex-1">
+                            <div className="flex justify-between items-start gap-4">
+                                <div>
+                                    <DialogTitle className="text-2xl font-bold text-gray-900 leading-tight">
+                                        Analizar con IA
+                                    </DialogTitle>
+                                    <p className="text-gray-500 font-medium mt-1">Revisión de tu plato</p>
+                                </div>
+                                <DialogClose className="p-2 bg-gray-100/50 hover:bg-gray-100 rounded-full transition-colors">
+                                    <X className="w-5 h-5 text-gray-400" />
+                                </DialogClose>
                             </div>
-                            <DialogClose className="p-2 bg-gray-100/50 hover:bg-gray-100 rounded-full transition-colors">
-                                <X className="w-5 h-5 text-gray-400" />
-                            </DialogClose>
-                        </div>
 
-                        {/* Image Section */}
-                        {(log?.signedUrl || meal.items?.[0]?.recipe?.image_url) && (
-                            <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden bg-gray-100 shadow-inner">
-                                <Image
-                                    src={log?.signedUrl || meal.items[0].recipe.image_url}
-                                    alt={cardTitle}
-                                    fill
-                                    className="object-cover"
-                                />
-                            </div>
-                        )}
+                            {photoPreview && (
+                                <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden bg-gray-100 shadow-inner">
+                                    <Image src={photoPreview} alt="Preview" fill className="object-cover" />
+                                </div>
+                            )}
 
-                        {/* Ingredients List */}
-                        <div className="space-y-3">
-                            <h4 className="text-[11px] font-bold text-gray-400 tracking-wider uppercase">INGREDIENTES</h4>
-                            <div className="space-y-2">
-                                {meal.items?.map((item: any, idx: number) => {
-                                    const recipe = item.recipe
-                                    const portions = item.portions || 1
-                                    let ingredientsList = recipe?.ingredients || recipe?.ingredients_data || []
-                                    if (typeof ingredientsList === 'string') {
-                                        try { ingredientsList = JSON.parse(ingredientsList) } catch (e) { ingredientsList = [] }
-                                    }
-                                    const hasIngredients = Array.isArray(ingredientsList) && ingredientsList.length > 0
-
-                                    if (hasIngredients) {
-                                        return ingredientsList.map((ing: any, i: number) => (
-                                            <div key={`${idx}-${i}`} className="flex justify-between items-center text-[14px]">
-                                                <span className="font-semibold text-gray-900 capitalize">{ing.ingredient_name || ing.name}</span>
-                                                <span className="text-gray-500 font-medium">
-                                                    {ing.quantity && ing.unit && ing.unit.toLowerCase() !== 'g'
-                                                        ? `${ing.quantity} ${ing.unit}`
-                                                        : `${Math.round((ing.grams || 0) * portions)}g`
-                                                    }
-                                                </span>
+                            {aiState === 'analyzing' ? (
+                                <div className="flex flex-col items-center justify-center py-8 space-y-4">
+                                    <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                                    <p className="text-sm font-bold text-gray-700 animate-pulse">✨ Analizando la comida con IA...</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-6">
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Detalle del plato</label>
+                                        <Input
+                                            value={aiData?.title || ''}
+                                            onChange={(e) => setAiData(prev => prev ? { ...prev, title: e.target.value } : { title: e.target.value, macros: { kcal: 0, protein: 0, carbs: 0, fats: 0 }, ingredients: [] })}
+                                            className="font-semibold text-lg h-12 rounded-xl bg-gray-50"
+                                            placeholder="Detalle del plato..."
+                                        />
+                                    </div>
+                                    <div className="space-y-3">
+                                        <h4 className="text-[11px] font-bold text-gray-400 tracking-wider uppercase">MACROS ESTIMADOS POR IA</h4>
+                                        <div className="grid grid-cols-4 gap-2 pt-2">
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] text-gray-400 font-bold uppercase mb-1 text-center">Kcal</span>
+                                                <input type="number"
+                                                    className="w-full text-center text-sm font-black text-gray-900 bg-gray-50 border border-gray-200 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500"
+                                                    value={aiData?.macros.kcal === 0 ? '' : aiData?.macros.kcal || ''}
+                                                    onChange={(e) => setAiData(prev => prev ? { ...prev, macros: { ...prev.macros, kcal: Number(e.target.value) } } : null)}
+                                                />
                                             </div>
-                                        ))
-                                    }
-                                    return (
-                                        <div key={idx} className="flex justify-between items-center text-[14px]">
-                                            <span className="font-semibold text-gray-900">{item.custom_name || recipe?.name || "Item"}</span>
-                                            <span className="text-gray-500 font-medium">{portions > 1 ? `${portions} porciones` : '1 porción'}</span>
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] text-gray-400 font-bold uppercase mb-1 text-center">P</span>
+                                                <input type="number"
+                                                    className="w-full text-center text-sm font-black text-[#C50D00] bg-gray-50 border border-gray-200 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500"
+                                                    value={aiData?.macros.protein === 0 ? '' : aiData?.macros.protein || ''}
+                                                    onChange={(e) => setAiData(prev => prev ? { ...prev, macros: { ...prev.macros, protein: Number(e.target.value) } } : null)}
+                                                />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] text-gray-400 font-bold uppercase mb-1 text-center">C</span>
+                                                <input type="number"
+                                                    className="w-full text-center text-sm font-black text-[#E7A202] bg-gray-50 border border-gray-200 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500"
+                                                    value={aiData?.macros.carbs === 0 ? '' : aiData?.macros.carbs || ''}
+                                                    onChange={(e) => setAiData(prev => prev ? { ...prev, macros: { ...prev.macros, carbs: Number(e.target.value) } } : null)}
+                                                />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] text-gray-400 font-bold uppercase mb-1 text-center">G</span>
+                                                <input type="number"
+                                                    className="w-full text-center text-sm font-black text-[#009B27] bg-gray-50 border border-gray-200 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500"
+                                                    value={aiData?.macros.fats === 0 ? '' : aiData?.macros.fats || ''}
+                                                    onChange={(e) => setAiData(prev => prev ? { ...prev, macros: { ...prev.macros, fats: Number(e.target.value) } } : null)}
+                                                />
+                                            </div>
                                         </div>
-                                    )
-                                })}
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <h4 className="text-[11px] font-bold text-gray-400 tracking-wider uppercase">INGREDIENTES ESTIMADOS</h4>
+                                        <div className="space-y-2">
+                                            {aiData?.ingredients?.length ? aiData.ingredients.map((ing, idx) => (
+                                                <div key={idx} className="flex gap-2 items-center">
+                                                    <Input
+                                                        value={ing.name}
+                                                        onChange={(e) => {
+                                                            const newIngs = [...(aiData.ingredients || [])];
+                                                            newIngs[idx] = { ...newIngs[idx], name: e.target.value };
+                                                            setAiData(prev => prev ? { ...prev, ingredients: newIngs } : null);
+                                                        }}
+                                                        className="flex-1 bg-gray-50 border-gray-200 text-sm font-medium"
+                                                        placeholder="Ingrediente..."
+                                                    />
+                                                    <div className="relative w-24">
+                                                        <Input
+                                                            type="number"
+                                                            value={ing.grams || ''}
+                                                            onChange={(e) => {
+                                                                const newIngs = [...(aiData.ingredients || [])];
+                                                                newIngs[idx] = { ...newIngs[idx], grams: Number(e.target.value) };
+                                                                setAiData(prev => prev ? { ...prev, ingredients: newIngs } : null);
+                                                            }}
+                                                            className="w-full bg-gray-50 border-gray-200 text-sm font-semibold pr-6"
+                                                            placeholder="0"
+                                                        />
+                                                        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">g</span>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => {
+                                                            const newIngs = [...(aiData.ingredients || [])];
+                                                            newIngs.splice(idx, 1);
+                                                            setAiData(prev => prev ? { ...prev, ingredients: newIngs } : null);
+                                                        }}
+                                                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            )) : (
+                                                <p className="text-xs text-gray-500 italic text-center py-2 bg-gray-50 rounded-lg">No se detectaron ingredientes específicos</p>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-2">
+                                        <Button
+                                            onClick={handleSaveLog}
+                                            disabled={isUploading}
+                                            className="w-full bg-black hover:bg-black/90 text-white h-14 rounded-[20px] text-[15px] font-bold shadow-xl shadow-black/5"
+                                        >
+                                            {isUploading ? <Loader2 className="animate-spin mr-2" /> : <Check className="w-5 h-5 mr-2" />}
+                                            {isUploading ? 'Guardando...' : 'Confirmar y Guardar'}
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="p-6 space-y-6 overflow-y-auto custom-scrollbar flex-1">
+                            {/* Header with Title and Close */}
+                            <div className="flex justify-between items-start gap-4">
+                                <div>
+                                    <DialogTitle className="text-2xl font-bold text-gray-900 leading-tight">
+                                        {cardTitle}
+                                    </DialogTitle>
+                                    <p className="text-gray-500 font-medium mt-1">{stats.kcal} kcal</p>
+                                </div>
+                                <DialogClose className="p-2 bg-gray-100/50 hover:bg-gray-100 rounded-full transition-colors">
+                                    <X className="w-5 h-5 text-gray-400" />
+                                </DialogClose>
+                            </div>
+
+                            {/* Image Section */}
+                            {(log?.signedUrl || meal.items?.[0]?.recipe?.image_url) && (
+                                <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden bg-gray-100 shadow-inner">
+                                    <Image
+                                        src={log?.signedUrl || meal.items[0].recipe.image_url}
+                                        alt={cardTitle}
+                                        fill
+                                        className="object-cover"
+                                    />
+                                </div>
+                            )}
+
+                            {/* Ingredients List */}
+                            <div className="space-y-3">
+                                <h4 className="text-[11px] font-bold text-gray-400 tracking-wider uppercase">INGREDIENTES</h4>
+                                <div className="space-y-2">
+                                    {meal.items?.map((item: any, idx: number) => {
+                                        const recipe = item.recipe
+                                        const portions = item.portions || 1
+                                        let ingredientsList = recipe?.ingredients || recipe?.ingredients_data || []
+                                        if (typeof ingredientsList === 'string') {
+                                            try { ingredientsList = JSON.parse(ingredientsList) } catch (e) { ingredientsList = [] }
+                                        }
+                                        const hasIngredients = Array.isArray(ingredientsList) && ingredientsList.length > 0
+
+                                        if (hasIngredients) {
+                                            return ingredientsList.map((ing: any, i: number) => (
+                                                <div key={`${idx}-${i}`} className="flex justify-between items-center text-[14px]">
+                                                    <span className="font-semibold text-gray-900 capitalize">{ing.ingredient_name || ing.name}</span>
+                                                    <span className="text-gray-500 font-medium">
+                                                        {ing.quantity && ing.unit && ing.unit.toLowerCase() !== 'g'
+                                                            ? `${ing.quantity} ${ing.unit}`
+                                                            : `${Math.round((ing.grams || 0) * portions)}g`
+                                                        }
+                                                    </span>
+                                                </div>
+                                            ))
+                                        }
+                                        return (
+                                            <div key={idx} className="flex justify-between items-center text-[14px]">
+                                                <span className="font-semibold text-gray-900">{item.custom_name || recipe?.name || "Item"}</span>
+                                                <span className="text-gray-500 font-medium">{portions > 1 ? `${portions} porciones` : '1 porción'}</span>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Macros Row - NEW COLORS */}
+                            <div className="grid grid-cols-3 gap-3">
+                                <MacroChip label="PROTEINA" value={stats.protein} unit="g" textColor="text-[#C50D00]" />
+                                <MacroChip label="CARBOS" value={stats.carbs} unit="g" textColor="text-[#E7A202]" />
+                                <MacroChip label="GRASAS" value={stats.fats} unit="g" textColor="text-[#009B27]" />
+                            </div>
+
+                            {/* Action */}
+                            <div className="pt-2">
+                                <Button
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={isUploading}
+                                    className="w-full bg-black hover:bg-black/90 text-white h-14 rounded-[20px] text-[15px] font-bold shadow-xl shadow-black/5"
+                                >
+                                    {isUploading ? <Loader2 className="animate-spin mr-2" /> : <Camera className="w-5 h-5 mr-2" />}
+                                    {isUploading ? 'Subiendo...' : (isComplete ? 'Cambiar foto del plato' : 'Subir una foto del plato')}
+                                </Button>
                             </div>
                         </div>
-
-                        {/* Macros Row - NEW COLORS */}
-                        <div className="grid grid-cols-3 gap-3">
-                            <MacroChip label="PROTEINA" value={stats.protein} unit="g" textColor="text-[#C50D00]" />
-                            <MacroChip label="CARBOS" value={stats.carbs} unit="g" textColor="text-[#E7A202]" />
-                            <MacroChip label="GRASAS" value={stats.fats} unit="g" textColor="text-[#009B27]" />
-                        </div>
-
-                        {/* Action */}
-                        <div className="pt-2">
-                            <Button
-                                onClick={() => fileInputRef.current?.click()}
-                                disabled={isUploading}
-                                className="w-full bg-black hover:bg-black/90 text-white h-14 rounded-[20px] text-[15px] font-bold shadow-xl shadow-black/5"
-                            >
-                                {isUploading ? <Loader2 className="animate-spin mr-2" /> : <Camera className="w-5 h-5 mr-2" />}
-                                {isUploading ? 'Subiendo...' : (isComplete ? 'Cambiar foto del plato' : 'Subir una foto del plato')}
-                            </Button>
-                        </div>
-                    </div>
+                    )}
                 </DialogContent>
             </Dialog>
 

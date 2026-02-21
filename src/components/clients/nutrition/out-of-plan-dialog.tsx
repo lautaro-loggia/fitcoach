@@ -6,6 +6,7 @@ import { Camera, Loader2, X, Plus, Search, Check } from 'lucide-react'
 import { toast } from 'sonner'
 import { registerMealLog } from '@/app/(dashboard)/clients/[id]/meal-plan-actions'
 import { getIngredientsAction } from '@/app/(dashboard)/recipes/actions'
+import { analyzeMealWithAI } from '@/app/(dashboard)/clients/[id]/ai-meal-actions'
 import { compressImage } from '@/lib/image-utils'
 import { Dialog, DialogContent, DialogTrigger, DialogClose, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -17,6 +18,19 @@ interface OutOfPlanDialogProps {
     mealName: string
 }
 
+const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => {
+            const result = reader.result as string;
+            const base64 = result.split(',')[1];
+            resolve(base64);
+        };
+        reader.onerror = error => reject(error);
+    });
+};
+
 export function OutOfPlanDialog({ clientId, mealName }: OutOfPlanDialogProps) {
     const [isOpen, setIsOpen] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
@@ -27,6 +41,9 @@ export function OutOfPlanDialog({ clientId, mealName }: OutOfPlanDialogProps) {
     const [photoPreview, setPhotoPreview] = useState<string | null>(null)
     const [description, setDescription] = useState('')
     const [estimateMacros, setEstimateMacros] = useState(false)
+    const [isAnalyzing, setIsAnalyzing] = useState(false)
+    const [aiMacros, setAiMacros] = useState<{ kcal: number, protein: number, carbs: number, fats: number } | null>(null)
+    const [aiIngredients, setAiIngredients] = useState<{ name: string, grams: number }[]>([])
 
     // Ingredients search state
     const [allIngredients, setAllIngredients] = useState<any[]>([])
@@ -52,6 +69,37 @@ export function OutOfPlanDialog({ clientId, mealName }: OutOfPlanDialogProps) {
             const compressedFile = await compressImage(file, 0.8, 1600)
             setPhoto(compressedFile)
             setPhotoPreview(URL.createObjectURL(compressedFile))
+
+            // Start AI Analysis
+            setIsAnalyzing(true)
+            try {
+                const compressedForAI = await compressImage(file, 0.6, 800)
+                const base64 = await fileToBase64(compressedForAI)
+                const result = await analyzeMealWithAI(base64, compressedForAI.type)
+
+                if (result.success && result.data) {
+                    if (result.data.title) {
+                        setDescription(result.data.title)
+                    }
+                    if (result.data.macros) {
+                        setEstimateMacros(true)
+                        setAiMacros({
+                            kcal: result.data.macros.kcal || 0,
+                            protein: result.data.macros.protein || 0,
+                            carbs: result.data.macros.carbs || 0,
+                            fats: result.data.macros.fats || 0
+                        })
+                        setAiIngredients(result.data.ingredients || [])
+                    }
+                } else {
+                    toast.error(result?.error || 'No se pudieron estimar los macros con IA.')
+                }
+            } catch (err) {
+                console.error('Error analyzing meal:', err)
+                toast.error('Error al analizar la imagen.')
+            } finally {
+                setIsAnalyzing(false)
+            }
         } catch (error) {
             toast.error('Error procesando imagen')
         }
@@ -75,6 +123,9 @@ export function OutOfPlanDialog({ clientId, mealName }: OutOfPlanDialogProps) {
 
     // Calculos
     const calculateTotals = () => {
+        if (selectedItems.length === 0 && aiMacros) {
+            return aiMacros
+        }
         let kcal = 0, protein = 0, carbs = 0, fats = 0
         selectedItems.forEach(item => {
             const qty = Number(item.quantity) || 0
@@ -110,6 +161,7 @@ export function OutOfPlanDialog({ clientId, mealName }: OutOfPlanDialogProps) {
             is_out_of_plan: true,
             description: description.trim(),
             macros: estimateMacros ? totals : null,
+            ai_ingredients: estimateMacros && aiIngredients.length > 0 ? aiIngredients : [],
             items: estimateMacros ? selectedItems.map(i => ({
                 id: i.id,
                 name: i.name,
@@ -133,6 +185,8 @@ export function OutOfPlanDialog({ clientId, mealName }: OutOfPlanDialogProps) {
                 setDescription('')
                 setEstimateMacros(false)
                 setSelectedItems([])
+                setAiMacros(null)
+                setAiIngredients([])
             }
         } catch (error) {
             toast.error('Error al guardar')
@@ -218,6 +272,13 @@ export function OutOfPlanDialog({ clientId, mealName }: OutOfPlanDialogProps) {
                     {/* Estimador */}
                     {estimateMacros && (
                         <div className="space-y-4 pt-2">
+                            {isAnalyzing ? (
+                                <div className="flex items-center gap-3 p-4 bg-blue-50 text-blue-700 rounded-xl border border-blue-100 mb-2">
+                                    <Loader2 className="h-5 w-5 animate-spin" />
+                                    <p className="text-sm font-medium">✨ Analizando la comida con IA...</p>
+                                </div>
+                            ) : null}
+
                             <div className="relative">
                                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                                 <Input
@@ -243,7 +304,7 @@ export function OutOfPlanDialog({ clientId, mealName }: OutOfPlanDialogProps) {
                             </div>
 
                             {/* Seleccionados */}
-                            {selectedItems.length > 0 && (
+                            {selectedItems.length > 0 ? (
                                 <div className="space-y-3">
                                     <h4 className="text-[11px] font-bold text-gray-400 tracking-wider uppercase">AGREGADOS</h4>
                                     <div className="space-y-2">
@@ -288,7 +349,91 @@ export function OutOfPlanDialog({ clientId, mealName }: OutOfPlanDialogProps) {
                                         </div>
                                     </div>
                                 </div>
-                            )}
+                            ) : aiMacros ? (
+                                <div className="space-y-3">
+                                    <h4 className="text-[11px] font-bold text-gray-400 tracking-wider uppercase">MACROS ESTIMADOS POR IA</h4>
+                                    <div className="grid grid-cols-4 gap-2 pt-2">
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] text-gray-400 font-bold uppercase mb-1 text-center">Kcal</span>
+                                            <input type="number"
+                                                className="w-full text-center text-sm font-black text-gray-900 bg-gray-50 border border-gray-200 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500"
+                                                value={aiMacros.kcal === 0 ? '' : aiMacros.kcal}
+                                                onChange={(e) => setAiMacros({ ...aiMacros, kcal: Number(e.target.value) })}
+                                            />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] text-gray-400 font-bold uppercase mb-1 text-center">P</span>
+                                            <input type="number"
+                                                className="w-full text-center text-sm font-black text-[#C50D00] bg-gray-50 border border-gray-200 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500"
+                                                value={aiMacros.protein === 0 ? '' : aiMacros.protein}
+                                                onChange={(e) => setAiMacros({ ...aiMacros, protein: Number(e.target.value) })}
+                                            />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] text-gray-400 font-bold uppercase mb-1 text-center">C</span>
+                                            <input type="number"
+                                                className="w-full text-center text-sm font-black text-[#E7A202] bg-gray-50 border border-gray-200 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500"
+                                                value={aiMacros.carbs === 0 ? '' : aiMacros.carbs}
+                                                onChange={(e) => setAiMacros({ ...aiMacros, carbs: Number(e.target.value) })}
+                                            />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] text-gray-400 font-bold uppercase mb-1 text-center">G</span>
+                                            <input type="number"
+                                                className="w-full text-center text-sm font-black text-[#009B27] bg-gray-50 border border-gray-200 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500"
+                                                value={aiMacros.fats === 0 ? '' : aiMacros.fats}
+                                                onChange={(e) => setAiMacros({ ...aiMacros, fats: Number(e.target.value) })}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-3 pt-2">
+                                        <h4 className="text-[11px] font-bold text-gray-400 tracking-wider uppercase">INGREDIENTES ESTIMADOS</h4>
+                                        <div className="space-y-2">
+                                            {aiIngredients?.length ? aiIngredients.map((ing, idx) => (
+                                                <div key={idx} className="flex gap-2 items-center">
+                                                    <Input
+                                                        value={ing.name}
+                                                        onChange={(e) => {
+                                                            const newIngs = [...aiIngredients];
+                                                            newIngs[idx] = { ...newIngs[idx], name: e.target.value };
+                                                            setAiIngredients(newIngs);
+                                                        }}
+                                                        className="flex-1 bg-gray-50 border-gray-200 text-sm font-medium"
+                                                        placeholder="Ingrediente..."
+                                                    />
+                                                    <div className="relative w-24">
+                                                        <Input
+                                                            type="number"
+                                                            value={ing.grams || ''}
+                                                            onChange={(e) => {
+                                                                const newIngs = [...aiIngredients];
+                                                                newIngs[idx] = { ...newIngs[idx], grams: Number(e.target.value) };
+                                                                setAiIngredients(newIngs);
+                                                            }}
+                                                            className="w-full bg-gray-50 border-gray-200 text-sm font-semibold pr-6"
+                                                            placeholder="0"
+                                                        />
+                                                        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">g</span>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => {
+                                                            const newIngs = [...aiIngredients];
+                                                            newIngs.splice(idx, 1);
+                                                            setAiIngredients(newIngs);
+                                                        }}
+                                                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            )) : (
+                                                <p className="text-xs text-gray-500 italic text-center py-2 bg-gray-50 rounded-lg">No se detectaron ingredientes específicos</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : null}
                         </div>
                     )}
 
@@ -296,7 +441,7 @@ export function OutOfPlanDialog({ clientId, mealName }: OutOfPlanDialogProps) {
                     <div className="pt-2">
                         <Button
                             onClick={handleSave}
-                            disabled={isUploading || (estimateMacros && selectedItems.length === 0)}
+                            disabled={isUploading || isAnalyzing || (estimateMacros && selectedItems.length === 0 && !aiMacros)}
                             className="w-full bg-black hover:bg-black/90 text-white h-14 rounded-[20px] text-[15px] font-bold shadow-xl shadow-black/5"
                         >
                             {isUploading ? <Loader2 className="animate-spin mr-2" /> : <Check className="w-5 h-5 mr-2" />}

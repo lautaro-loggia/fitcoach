@@ -18,12 +18,18 @@ export async function analyzeMealWithAI(base64Image: string, mimeType: string) {
     "protein": número de proteínas totales estimadas en gramos,
     "carbs": número de carbohidratos totales estimados en gramos,
     "fats": número de grasas totales estimadas en gramos
-  }
+  },
+  "ingredients": [
+    {
+      "name": "Nombre descriptivo del ingrediente",
+      "grams": cantidad estimada en gramos (número)
+    }
+  ]
 }
 No incluyas ningún texto fuera del JSON, sin bloques de markdown (\`\`\`json).`
 
         const response = await ai.models.generateContent({
-            model: 'gemini-1.5-flash',
+            model: 'gemini-2.5-flash',
             contents: [
                 {
                     role: 'user',
