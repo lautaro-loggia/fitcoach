@@ -20,15 +20,24 @@ export async function getWeeklyPlan(clientId: string) {
     }
 
     // Verify ownership
-    const { data: clientCheck } = await supabase
+    let { data: clientCheck, error: clientCheckError } = await supabase
         .from('clients')
-        .select('id')
+        .select('id, trainer_id')
         .eq('id', clientId)
-        .eq('trainer_id', user.id)
         .single()
 
-    if (!clientCheck) {
-        return { plan: null }
+    if (clientCheckError || !clientCheck || clientCheck.trainer_id !== user.id) {
+        console.error('getWeeklyPlan: Auth check failed via regular RLS, fetching with admin...')
+
+        const { data: adminCheck } = await createAdminClient()
+            .from('clients')
+            .select('id, trainer_id')
+            .eq('id', clientId)
+            .single()
+
+        if (!adminCheck || adminCheck.trainer_id !== user.id) {
+            return { plan: null }
+        }
     }
 
     const adminSupabase = createAdminClient()
@@ -79,15 +88,25 @@ export async function createWeeklyPlan(clientId: string, mealConfig: string[]) {
     }
 
     // Auth check: Ensure the coach owns this client
-    const { data: clientCheck } = await supabase
+    let { data: clientCheck, error: clientCheckError } = await supabase
         .from('clients')
-        .select('id')
+        .select('id, trainer_id')
         .eq('id', clientId)
-        .eq('trainer_id', user.id)
         .single()
 
-    if (!clientCheck) {
-        return { error: 'No autorizado para este cliente' }
+    if (clientCheckError || !clientCheck || clientCheck.trainer_id !== user.id) {
+        console.error('Auth check failed via regular RLS, fetching with admin...', { clientCheckError, clientCheck })
+
+        const { data: adminCheck } = await createAdminClient()
+            .from('clients')
+            .select('id, trainer_id')
+            .eq('id', clientId)
+            .single()
+
+        if (!adminCheck || adminCheck.trainer_id !== user.id) {
+            console.error('Auth check failed via admin too. Real Trainer:', adminCheck?.trainer_id, 'Requested:', user.id)
+            return { error: 'No autorizado para este cliente' }
+        }
     }
 
     // Bypass RLS for the inserts due to complex hierarchical policies failing
@@ -155,14 +174,21 @@ export async function updateReviewDate(planId: string, clientId: string, date: s
     if (!user) return
 
     // Auth check
-    const { data: clientCheck } = await supabase
+    let { data: clientCheck, error: clientCheckError } = await supabase
         .from('clients')
-        .select('id')
+        .select('id, trainer_id')
         .eq('id', clientId)
-        .eq('trainer_id', user.id)
         .single()
 
-    if (!clientCheck) return
+    if (clientCheckError || !clientCheck || clientCheck.trainer_id !== user.id) {
+        const { data: adminCheck } = await createAdminClient()
+            .from('clients')
+            .select('id, trainer_id')
+            .eq('id', clientId)
+            .single()
+
+        if (!adminCheck || adminCheck.trainer_id !== user.id) return
+    }
 
     const adminSupabase = createAdminClient()
     await adminSupabase.from('weekly_meal_plans').update({ review_date: date }).eq('id', planId)
@@ -181,14 +207,21 @@ export async function addDishToMeal(mealId: string, clientId: string, data: {
     if (!user) return { error: 'No autorizado' }
 
     // Auth check
-    const { data: clientCheck } = await supabase
+    let { data: clientCheck, error: clientCheckError } = await supabase
         .from('clients')
-        .select('id')
+        .select('id, trainer_id')
         .eq('id', clientId)
-        .eq('trainer_id', user.id)
         .single()
 
-    if (!clientCheck) return { error: 'No autorizado' }
+    if (clientCheckError || !clientCheck || clientCheck.trainer_id !== user.id) {
+        const { data: adminCheck } = await createAdminClient()
+            .from('clients')
+            .select('id, trainer_id')
+            .eq('id', clientId)
+            .single()
+
+        if (!adminCheck || adminCheck.trainer_id !== user.id) return { error: 'No autorizado' }
+    }
 
     const adminSupabase = createAdminClient()
 
@@ -212,14 +245,21 @@ export async function removeDish(itemId: string, clientId: string) {
     if (!user) return
 
     // Auth check
-    const { data: clientCheck } = await supabase
+    let { data: clientCheck, error: clientCheckError } = await supabase
         .from('clients')
-        .select('id')
+        .select('id, trainer_id')
         .eq('id', clientId)
-        .eq('trainer_id', user.id)
         .single()
 
-    if (!clientCheck) return
+    if (clientCheckError || !clientCheck || clientCheck.trainer_id !== user.id) {
+        const { data: adminCheck } = await createAdminClient()
+            .from('clients')
+            .select('id, trainer_id')
+            .eq('id', clientId)
+            .single()
+
+        if (!adminCheck || adminCheck.trainer_id !== user.id) return
+    }
 
     const adminSupabase = createAdminClient()
 
@@ -235,14 +275,21 @@ export async function toggleMealSkip(mealId: string, currentSkip: boolean, clien
     if (!user) return
 
     // Auth check
-    const { data: clientCheck } = await supabase
+    let { data: clientCheck, error: clientCheckError } = await supabase
         .from('clients')
-        .select('id')
+        .select('id, trainer_id')
         .eq('id', clientId)
-        .eq('trainer_id', user.id)
         .single()
 
-    if (!clientCheck) return
+    if (clientCheckError || !clientCheck || clientCheck.trainer_id !== user.id) {
+        const { data: adminCheck } = await createAdminClient()
+            .from('clients')
+            .select('id, trainer_id')
+            .eq('id', clientId)
+            .single()
+
+        if (!adminCheck || adminCheck.trainer_id !== user.id) return
+    }
 
     const adminSupabase = createAdminClient()
 
@@ -258,14 +305,21 @@ export async function copyDay(sourceDayId: string, targetDayId: string, clientId
     if (!user) return { error: 'No autorizado' }
 
     // Auth check
-    const { data: clientCheck } = await supabase
+    let { data: clientCheck, error: clientCheckError } = await supabase
         .from('clients')
-        .select('id')
+        .select('id, trainer_id')
         .eq('id', clientId)
-        .eq('trainer_id', user.id)
         .single()
 
-    if (!clientCheck) return { error: 'No autorizado' }
+    if (clientCheckError || !clientCheck || clientCheck.trainer_id !== user.id) {
+        const { data: adminCheck } = await createAdminClient()
+            .from('clients')
+            .select('id, trainer_id')
+            .eq('id', clientId)
+            .single()
+
+        if (!adminCheck || adminCheck.trainer_id !== user.id) return { error: 'No autorizado' }
+    }
 
     const adminSupabase = createAdminClient()
 
