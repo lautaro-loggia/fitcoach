@@ -18,7 +18,7 @@ interface NotificationsFormProps {
 
 export function NotificationsForm({ userId, initialEnabled, initialPreferences }: NotificationsFormProps) {
     const supabase = createClient()
-    const { isSupported, permission, subscribe, unsubscribe, isLoading } = usePushNotifications()
+    const { isSupported, permission, subscription, subscribe, unsubscribe, isLoading } = usePushNotifications()
     const [preferences, setPreferences] = useState(initialPreferences || {
         checkin_completed: true,
         workout_completed: true,
@@ -26,7 +26,7 @@ export function NotificationsForm({ userId, initialEnabled, initialPreferences }
         new_client: true
     })
 
-    const isPushEnabled = permission === 'granted'
+    const isPushEnabled = permission === 'granted' && !!subscription
 
     const handlePushToggle = async () => {
         if (isPushEnabled) {

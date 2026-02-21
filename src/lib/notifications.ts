@@ -42,8 +42,8 @@ export async function createNotification({ userId, type, title, body, data }: Cr
             }
         }
 
-        // 2. Insert into notifications queue (triggers webhook → Edge Function → push)
-        const { error } = await supabase
+        // 2. Insert into notifications queue (history)
+        const { data: inserted, error } = await supabase
             .from('notifications')
             .insert({
                 user_id: userId,
@@ -53,10 +53,30 @@ export async function createNotification({ userId, type, title, body, data }: Cr
                 data: data || {},
                 read: false
             })
+            .select('id, user_id, type, title, body, data')
+            .single()
 
         if (error) {
             console.error('[createNotification] Error:', error)
             return { error }
+        }
+
+        // 3. Trigger push delivery directly via Edge Function.
+        // This avoids relying exclusively on a DB webhook setup.
+        if (inserted) {
+            const { error: pushError } = await supabase.functions.invoke('push', {
+                body: {
+                    type: 'INSERT',
+                    table: 'notifications',
+                    schema: 'public',
+                    record: inserted
+                }
+            })
+
+            if (pushError) {
+                console.error('[createNotification] Push invoke error:', pushError)
+                return { success: true, pushError }
+            }
         }
 
         return { success: true }

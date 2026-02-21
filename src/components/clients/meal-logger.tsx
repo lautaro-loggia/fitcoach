@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Camera, Image as ImageIcon, Check, Loader2, Plus, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { registerMealLog, deleteMealLog } from '@/app/(dashboard)/clients/[id]/meal-plan-actions'
+import { analyzeMealWithAI } from '@/app/(dashboard)/clients/[id]/ai-meal-actions'
 import { compressImage } from '@/lib/image-utils'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import Image from 'next/image'
@@ -15,20 +16,55 @@ interface MealLoggerProps {
     existingLogs: any[] // From Supabase
 }
 
+const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => {
+            const result = reader.result as string;
+            const base64 = result.split(',')[1];
+            resolve(base64);
+        };
+        reader.onerror = error => reject(error);
+    });
+};
+
 export function MealLogger({ clientId, mealName, existingLogs }: MealLoggerProps) {
     const fileInputRef = useRef<HTMLInputElement>(null)
     const [isUploading, setIsUploading] = useState(false)
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
     const [selectedFile, setSelectedFile] = useState<File | null>(null)
     const [confirmOpen, setConfirmOpen] = useState(false)
+    const [isAnalyzing, setIsAnalyzing] = useState(false)
+    const [aiData, setAiData] = useState<{ title?: string, macros?: { kcal?: number, protein?: number, carbs?: number, fats?: number } } | null>(null)
 
-    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (file) {
             setSelectedFile(file)
             const url = URL.createObjectURL(file)
             setPreviewUrl(url)
             setConfirmOpen(true)
+
+            // Start AI Analysis
+            setIsAnalyzing(true)
+            setAiData(null)
+            try {
+                // Compress for AI to save tokens and speed up
+                const compressedForAI = await compressImage(file, 0.6, 800)
+                const base64 = await fileToBase64(compressedForAI)
+                const result = await analyzeMealWithAI(base64, compressedForAI.type)
+                if (result.success && result.data) {
+                    setAiData(result.data)
+                } else {
+                    toast.error('No se pudieron estimar los macros.')
+                }
+            } catch (err) {
+                console.error('Error analyzing meal:', err)
+                toast.error('Error al analizar la imagen.')
+            } finally {
+                setIsAnalyzing(false)
+            }
         }
         // Reset input
         if (fileInputRef.current) fileInputRef.current.value = ''
@@ -44,6 +80,13 @@ export function MealLogger({ clientId, mealName, existingLogs }: MealLoggerProps
             // Compress client-side
             const compressedFile = await compressImage(selectedFile, 0.8, 1600)
             formData.append('file', compressedFile)
+
+            if (aiData) {
+                formData.append('metadata', JSON.stringify({
+                    description: aiData.title,
+                    macros: aiData.macros
+                }))
+            }
 
             const result = await registerMealLog(clientId, mealName, formData)
             if (result?.error) {
@@ -66,6 +109,8 @@ export function MealLogger({ clientId, mealName, existingLogs }: MealLoggerProps
         setConfirmOpen(false)
         setSelectedFile(null)
         setPreviewUrl(null)
+        setAiData(null)
+        setIsAnalyzing(false)
     }
 
     const triggerFileRead = () => {
@@ -168,19 +213,76 @@ export function MealLogger({ clientId, mealName, existingLogs }: MealLoggerProps
                             <X className="h-5 w-5" />
                         </Button>
                     </div>
-                    <div className="p-4 space-y-4 bg-white">
+                    <div className="p-4 space-y-4 bg-white max-h-[60vh] overflow-y-auto">
                         <div>
                             <DialogTitle className="text-lg font-bold text-gray-900">Confirmar comida</DialogTitle>
                             <DialogDescription className="text-sm text-gray-500">¿Estás registrando tu {mealName}?</DialogDescription>
                         </div>
-                        <div className="flex gap-3">
+
+                        {isAnalyzing ? (
+                            <div className="flex items-center gap-3 p-4 bg-blue-50 text-blue-700 rounded-xl border border-blue-100">
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                                <p className="text-sm font-medium">✨ Analizando la comida con IA...</p>
+                            </div>
+                        ) : aiData ? (
+                            <div className="space-y-3">
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-gray-500 uppercase">Comida detectada</label>
+                                    <input
+                                        type="text"
+                                        className="w-full text-sm font-medium bg-gray-50 border border-gray-200 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                        value={aiData.title || ''}
+                                        onChange={(e) => setAiData({ ...aiData, title: e.target.value })}
+                                    />
+                                </div>
+                                <div className="pt-1">
+                                    <label className="text-xs font-bold text-gray-500 uppercase mb-2 block">Macros Estimados</label>
+                                    <div className="grid grid-cols-4 gap-2">
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] text-gray-400 font-bold uppercase mb-1 text-center">Kcal</span>
+                                            <input type="number"
+                                                className="w-full text-center text-sm font-black text-gray-900 bg-gray-50 border border-gray-200 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500"
+                                                value={aiData.macros?.kcal || ''}
+                                                onChange={(e) => setAiData({ ...aiData, macros: { ...aiData.macros, kcal: Number(e.target.value) } })}
+                                            />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] text-gray-400 font-bold uppercase mb-1 text-center">P</span>
+                                            <input type="number"
+                                                className="w-full text-center text-sm font-black text-[#C50D00] bg-gray-50 border border-gray-200 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500"
+                                                value={aiData.macros?.protein || ''}
+                                                onChange={(e) => setAiData({ ...aiData, macros: { ...aiData.macros, protein: Number(e.target.value) } })}
+                                            />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] text-gray-400 font-bold uppercase mb-1 text-center">C</span>
+                                            <input type="number"
+                                                className="w-full text-center text-sm font-black text-[#E7A202] bg-gray-50 border border-gray-200 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500"
+                                                value={aiData.macros?.carbs || ''}
+                                                onChange={(e) => setAiData({ ...aiData, macros: { ...aiData.macros, carbs: Number(e.target.value) } })}
+                                            />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] text-gray-400 font-bold uppercase mb-1 text-center">G</span>
+                                            <input type="number"
+                                                className="w-full text-center text-sm font-black text-[#009B27] bg-gray-50 border border-gray-200 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500"
+                                                value={aiData.macros?.fats || ''}
+                                                onChange={(e) => setAiData({ ...aiData, macros: { ...aiData.macros, fats: Number(e.target.value) } })}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : null}
+
+                        <div className="flex gap-3 pt-2">
                             <Button variant="outline" className="flex-1" onClick={handleCancel}>
                                 Cancelar
                             </Button>
                             <Button
                                 className="flex-1 bg-zinc-900 text-white hover:bg-zinc-800 rounded-xl"
                                 onClick={handleConfirmUpload}
-                                disabled={isUploading}
+                                disabled={isUploading || isAnalyzing}
                             >
                                 {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 {isUploading ? 'Subiendo...' : 'Confirmar'}

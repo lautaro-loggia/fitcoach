@@ -172,8 +172,8 @@ export function usePushNotifications() {
                 console.log('Using existing subscription')
             }
 
-            setSubscription(sub)
             await syncSubscriptionToDb(sub)
+            setSubscription(sub)
 
             return sub
         } catch (error) {
@@ -215,8 +215,8 @@ export function usePushNotifications() {
                     applicationServerKey
                 })
 
-                setSubscription(newSub)
                 await syncSubscriptionToDb(newSub)
+                setSubscription(newSub)
                 return newSub
 
             } catch (retryError) {

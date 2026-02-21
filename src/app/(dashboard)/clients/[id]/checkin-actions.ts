@@ -120,7 +120,7 @@ export async function updateCheckinNoteAction(checkinId: string, clientId: strin
         body: 'Tu coach ha respondido a tu check-in.',
         data: {
             checkinId,
-            url: `/dashboard/checkin?id=${checkinId}` // Or similar client URL
+            url: '/dashboard/progress'
         }
     })
 

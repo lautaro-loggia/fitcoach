@@ -30,6 +30,7 @@ CREATE TRIGGER on_checkin_note_update
 -- RLS Policies
 
 -- Coaches (Trainers) can update coach_note fields for their clients
+DROP POLICY IF EXISTS "Trainers can update coach notes for their clients" ON public.checkins;
 CREATE POLICY "Trainers can update coach notes for their clients"
 ON public.checkins
 FOR UPDATE
@@ -50,6 +51,7 @@ WITH CHECK (
 );
 
 -- Clients can update seen_at field for their own checkins
+DROP POLICY IF EXISTS "Clients can mark their notes as seen" ON public.checkins;
 CREATE POLICY "Clients can mark their notes as seen"
 ON public.checkins
 FOR UPDATE

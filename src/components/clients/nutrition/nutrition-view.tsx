@@ -20,20 +20,16 @@ export function NutritionView({ client, mealPlan, dailyLogs }: NutritionViewProp
         let k = 0, p = 0, c = 0, f = 0
 
         meals.forEach((meal: any) => {
-            // Check if this meal is logged
-            const isLogged = dailyLogs.some((l: any) => l.meal_type === meal.name)
+            // Check if this meal is logged (regular plan)
+            const regularLog = dailyLogs.find((l: any) => l.meal_type === meal.name && !l.metadata?.is_out_of_plan)
 
-            if (isLogged) {
+            if (regularLog) {
                 // Add its macros
                 meal.items?.forEach((item: any) => {
                     const recipe = item.recipe
                     let portions = item.portions || 1
 
                     if (recipe) {
-                        // Quick calc from recipe macros if available
-                        // Ideally we should use the same exact logic as MealAccordionItem (ingredients based)
-                        // But for the summary card, using the recipe headers is faster and usually consistent enough.
-                        // If ingredients_data exists, we could use that for precision, but let's stick to headers for perf.
                         if (recipe.macros_calories) {
                             const s = recipe.servings || 1
                             k += (recipe.macros_calories / s) * portions
@@ -43,6 +39,15 @@ export function NutritionView({ client, mealPlan, dailyLogs }: NutritionViewProp
                         }
                     }
                 })
+            }
+
+            // Check if an out-of-plan meal was logged for this block
+            const outOfPlanLog = dailyLogs.find((l: any) => l.meal_type === meal.name && l.metadata?.is_out_of_plan)
+            if (outOfPlanLog && outOfPlanLog.metadata?.macros) {
+                k += Number(outOfPlanLog.metadata.macros.kcal || 0)
+                p += Number(outOfPlanLog.metadata.macros.protein || 0)
+                c += Number(outOfPlanLog.metadata.macros.carbs || 0)
+                f += Number(outOfPlanLog.metadata.macros.fats || 0)
             }
         })
         return { k, p, c, f }
@@ -74,13 +79,15 @@ export function NutritionView({ client, mealPlan, dailyLogs }: NutritionViewProp
                 {sortedMeals.length > 0 ? (
                     sortedMeals.map((meal: any) => {
                         // Find log for this meal
-                        const log = dailyLogs.find((l: any) => l.meal_type === meal.name)
+                        const log = dailyLogs.find((l: any) => l.meal_type === meal.name && !l.metadata?.is_out_of_plan)
+                        const outOfPlanLog = dailyLogs.find((l: any) => l.meal_type === meal.name && l.metadata?.is_out_of_plan)
 
                         return (
                             <MealAccordionItem
                                 key={meal.id}
                                 meal={meal}
                                 log={log}
+                                outOfPlanLog={outOfPlanLog}
                                 clientId={client.id}
                             />
                         )

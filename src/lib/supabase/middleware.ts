@@ -7,6 +7,19 @@ export async function updateSession(request: NextRequest) {
         request,
     })
 
+    const redirectWithAuthCookies = (url: URL) => {
+        const response = NextResponse.redirect(url)
+
+        // Preserve auth cookies written during this middleware run (e.g. token refresh).
+        supabaseResponse.headers.forEach((value, key) => {
+            if (key.toLowerCase() === 'set-cookie') {
+                response.headers.append(key, value)
+            }
+        })
+
+        return response
+    }
+
     try {
         const supabase = createServerClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -50,7 +63,7 @@ export async function updateSession(request: NextRequest) {
             request.nextUrl.searchParams.forEach((value, key) => {
                 url.searchParams.set(key, value)
             })
-            return NextResponse.redirect(url)
+            return redirectWithAuthCookies(url)
         }
 
         // Redirect to dashboard if authenticated and trying to access auth pages (except callback/signout)
@@ -62,7 +75,7 @@ export async function updateSession(request: NextRequest) {
             const role = user.user_metadata?.role
             const url = request.nextUrl.clone()
             url.pathname = role === 'client' ? '/dashboard' : '/'
-            return NextResponse.redirect(url)
+            return redirectWithAuthCookies(url)
         }
 
         // Redirect clients from coach routes to client dashboard
@@ -77,7 +90,7 @@ export async function updateSession(request: NextRequest) {
         if (user && user.user_metadata?.role === 'client' && isCoachRoute) {
             const url = request.nextUrl.clone()
             url.pathname = '/dashboard'
-            return NextResponse.redirect(url)
+            return redirectWithAuthCookies(url)
         }
 
         return supabaseResponse

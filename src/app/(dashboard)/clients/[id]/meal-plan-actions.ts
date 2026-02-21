@@ -194,7 +194,7 @@ export async function copyDay(sourceDayId: string, targetDayId: string, clientId
     return { success: true }
 }
 
-// 6. Register Meal Log (Photo)
+// 6. Register Meal Log (Photo or Manual)
 export async function registerMealLog(clientId: string, mealType: string, formData: FormData) {
     console.log('registerMealLog: Start', { clientId, mealType })
 
@@ -206,51 +206,64 @@ export async function registerMealLog(clientId: string, mealType: string, formDa
         return { error: 'No tienes una sesión activa' }
     }
 
-    const file = formData.get('file') as File
-    if (!file) {
-        console.error('registerMealLog: No file in formData')
-        return { error: 'No se encontró archivo en el formulario' }
+    const file = formData.get('file') as File | null
+    const metadataStr = formData.get('metadata') as string | null
+    let metadata = {}
+
+    if (metadataStr) {
+        try {
+            metadata = JSON.parse(metadataStr)
+        } catch (e) {
+            console.error('registerMealLog: Invalid metadata JSON')
+        }
     }
 
     // Use admin client to bypass possible RLS issues for now and ensure it works
     const adminSupabase = createAdminClient()
 
-    // 1. Upload to Storage
-    const dateStr = getTodayString()
-    const timestamp = Date.now()
-    const fileExt = file.name.split('.').pop() || 'webp'
-    const filePath = `${clientId}/${dateStr}/${timestamp}.${fileExt}`
+    let filePath = 'no-image'
 
-    console.log('registerMealLog: Uploading to storage...', filePath)
+    // 1. Upload to Storage if file exists
+    if (file && file.size > 0) {
+        const dateStr = getTodayString()
+        const timestamp = Date.now()
+        const fileExt = file.name.split('.').pop() || 'webp'
+        filePath = `${clientId}/${dateStr}/${timestamp}.${fileExt}`
 
-    const { error: uploadError } = await adminSupabase.storage
-        .from('meal-logs')
-        .upload(filePath, file, {
-            contentType: file.type,
-            cacheControl: '3600',
-            upsert: false
-        })
+        console.log('registerMealLog: Uploading to storage...', filePath)
 
-    if (uploadError) {
-        console.error('registerMealLog: Upload error:', uploadError)
-        return { error: `Error al subir imagen: ${uploadError.message}` }
+        const { error: uploadError } = await adminSupabase.storage
+            .from('meal-logs')
+            .upload(filePath, file, {
+                contentType: file.type,
+                cacheControl: '3600',
+                upsert: false
+            })
+
+        if (uploadError) {
+            console.error('registerMealLog: Upload error:', uploadError)
+            return { error: `Error al subir imagen: ${uploadError.message}` }
+        }
     }
 
     // 2. Insert into DB
-    console.log('registerMealLog: Inserting into DB...')
+    console.log('registerMealLog: Inserting into DB...', { metadata })
     const { error: dbError } = await adminSupabase
         .from('meal_logs')
         .insert({
             client_id: clientId,
             image_path: filePath,
             meal_type: mealType,
-            status: 'pending'
+            status: 'pending',
+            metadata: Object.keys(metadata).length > 0 ? metadata : undefined
         })
 
     if (dbError) {
         console.error('registerMealLog: DB error:', dbError)
         // Try to clean up the uploaded file if DB insert fails
-        await adminSupabase.storage.from('meal-logs').remove([filePath])
+        if (filePath !== 'no-image') {
+            await adminSupabase.storage.from('meal-logs').remove([filePath])
+        }
         return { error: `Error al guardar registro: ${dbError.message}` }
     }
 
@@ -311,6 +324,9 @@ export async function getDailyMealLogs(clientId: string, date: string) {
     // Generate public URLs for images
     // adminSupabase is already defined above
     const logsWithUrls = await Promise.all((logs || []).map(async (log) => {
+        if (!log.image_path || log.image_path === 'no-image') {
+            return log
+        }
         const { data } = await adminSupabase.storage.from('meal-logs').createSignedUrl(log.image_path, 3600 * 24) // 24h url
         return {
             ...log,
@@ -362,4 +378,20 @@ export async function deleteMealLog(logId: string, imagePath: string) {
 
     revalidatePath('/dashboard/diet')
     return { success: true }
+}
+
+// 10. Check pending meal logs for a client
+export async function getPendingMealLogsCount(clientId: string): Promise<{ count: number | null }> {
+    const adminSupabase = createAdminClient()
+    const { count, error } = await adminSupabase
+        .from('meal_logs')
+        .select('*', { count: 'exact', head: true })
+        .eq('client_id', clientId)
+        .eq('status', 'pending')
+
+    if (error) {
+        console.error('Error checking pending logs', error)
+        return { count: 0 }
+    }
+    return { count }
 }

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { History, ChevronLeft, ChevronRight, CheckCircle2, MessageSquare, X, Loader2 } from 'lucide-react'
 import { format, addDays, subDays } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { getDailyMealLogs, reviewMealLog } from '@/app/(dashboard)/clients/[id]/meal-plan-actions'
+import { getDailyMealLogs, reviewMealLog, getPendingMealLogsCount } from '@/app/(dashboard)/clients/[id]/meal-plan-actions'
 import Image from 'next/image'
 import { toast } from 'sonner'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -22,6 +22,11 @@ export function MealHistoryDialog({ clientId }: MealHistoryDialogProps) {
     const [logs, setLogs] = useState<any[]>([])
     const [loading, setLoading] = useState(false)
     const [selectedLog, setSelectedLog] = useState<any>(null)
+    const [pendingCount, setPendingCount] = useState(0)
+
+    useEffect(() => {
+        getPendingMealLogsCount(clientId).then(res => setPendingCount(res.count || 0))
+    }, [clientId, open])
 
     useEffect(() => {
         if (open) {
@@ -37,17 +42,33 @@ export function MealHistoryDialog({ clientId }: MealHistoryDialogProps) {
         setLoading(false)
     }
 
-    const handleReview = async (logId: string, status: 'pending' | 'reviewed', comment?: string) => {
+    const handleReview = async (logId: string, status: 'pending' | 'reviewed', comment?: string, showToast = true) => {
         const result = await reviewMealLog(logId, status, comment)
         if (result?.success) {
-            toast.success('Comida actualizada')
+            if (showToast) toast.success('Comida actualizada')
             // Update local state
             setLogs((prev: any[]) => prev.map(l => l.id === logId ? { ...l, status, coach_comment: comment } : l))
             if (selectedLog?.id === logId) {
                 setSelectedLog((prev: any) => ({ ...prev, status, coach_comment: comment }))
             }
+            // Update pending status check
+            getPendingMealLogsCount(clientId).then(res => setPendingCount(res.count || 0))
         } else {
-            toast.error('Error al actualizar')
+            if (showToast) toast.error('Error al actualizar')
+        }
+    }
+
+    const handleLogClick = (log: any) => {
+        if (log.status === 'pending') {
+            const updatedLog = { ...log, status: 'reviewed' }
+            setSelectedLog(updatedLog)
+            setLogs((prev: any[]) => prev.map(l => l.id === log.id ? updatedLog : l))
+            // Optimistically decrease pending count
+            setPendingCount(prev => Math.max(0, prev - 1))
+            // Auto-review silently
+            handleReview(log.id, 'reviewed', '', false)
+        } else {
+            setSelectedLog(log)
         }
     }
 
@@ -57,9 +78,15 @@ export function MealHistoryDialog({ clientId }: MealHistoryDialogProps) {
                 <Button
                     variant="outline"
                     size="sm"
-                    className="h-10 px-4 rounded-xl border-gray-200 bg-white text-gray-900 font-bold text-xs gap-2 shadow-sm"
+                    className="h-10 px-4 rounded-xl border-gray-200 bg-white text-gray-900 font-bold text-xs gap-2 shadow-sm relative"
                 >
                     <History className="h-4 w-4" /> Historial de comidas
+                    {pendingCount > 0 && (
+                        <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                        </span>
+                    )}
                 </Button>
             </DialogTrigger>
             <DialogContent className="max-w-[1000px] w-[95vw] h-[90vh] flex flex-col p-0 overflow-hidden gap-0" showCloseButton={false}>
@@ -103,7 +130,7 @@ export function MealHistoryDialog({ clientId }: MealHistoryDialogProps) {
                                     <div
                                         key={log.id}
                                         className={`group cursor-pointer rounded-xl overflow-hidden border-2 transition-all relative aspect-square shrink-0 ${selectedLog?.id === log.id ? 'border-zinc-900 ring-2 ring-zinc-900/10' : 'border-transparent hover:border-gray-200'}`}
-                                        onClick={() => setSelectedLog(log)}
+                                        onClick={() => handleLogClick(log)}
                                     >
                                         <Image
                                             src={log.signedUrl || '/placeholder.png'}
@@ -128,7 +155,6 @@ export function MealHistoryDialog({ clientId }: MealHistoryDialogProps) {
                         {selectedLog ? (
                             <MealDetail
                                 log={selectedLog}
-                                onReview={(status, comment) => handleReview(selectedLog.id, status, comment)}
                                 onClose={() => setSelectedLog(null)}
                             />
                         ) : (
@@ -144,36 +170,24 @@ export function MealHistoryDialog({ clientId }: MealHistoryDialogProps) {
     )
 }
 
-function MealDetail({ log, onReview, onClose }: { log: any, onReview: (s: 'pending' | 'reviewed', c?: string) => void, onClose: () => void }) {
-    // Comment state removed as requested
-    const [isReviewed, setIsReviewed] = useState(log.status === 'reviewed')
-
-    // Reset state when log changes
-    useEffect(() => {
-        setIsReviewed(log.status === 'reviewed')
-    }, [log.id])
-
-    const handleSave = () => {
-        onReview(isReviewed ? 'reviewed' : 'pending', "") // Empty comment
-    }
-
+function MealDetail({ log, onClose }: { log: any, onClose: () => void }) {
     return (
-        <div className="flex-1 flex flex-col h-full bg-white">
-            <div className="relative w-full aspect-square bg-zinc-900/5 shrink-0 flex items-center justify-center border-b">
-                <Loader2 className="h-8 w-8 animate-spin text-zinc-300 absolute z-0" />
-                <Image
-                    src={log.signedUrl || '/placeholder.png'}
-                    alt={log.meal_type}
-                    fill
-                    className="object-cover relative z-10"
-                    onLoadingComplete={(img) => {
-                        img.parentElement?.querySelector('.animate-spin')?.classList.add('hidden')
-                    }}
-                />
-            </div>
+        <div className="flex-1 flex flex-col h-full bg-white min-h-0">
+            <ScrollArea className="flex-1">
+                <div className="relative w-full aspect-square sm:aspect-video bg-zinc-900/5 shrink-0 flex items-center justify-center border-b">
+                    <Loader2 className="h-8 w-8 animate-spin text-zinc-300 absolute z-0" />
+                    <Image
+                        src={log.signedUrl || '/placeholder.png'}
+                        alt={log.meal_type}
+                        fill
+                        className="object-cover relative z-10"
+                        onLoadingComplete={(img) => {
+                            img.parentElement?.querySelector('.animate-spin')?.classList.add('hidden')
+                        }}
+                    />
+                </div>
 
-            <ScrollArea className="flex-1 p-6">
-                <div className="space-y-6">
+                <div className="p-6 space-y-6">
                     <div>
                         <h3 className="text-xl font-bold text-gray-900 capitalize mb-1">{log.meal_type}</h3>
                         <p className="text-sm text-gray-500 flex items-center gap-2">
@@ -181,22 +195,34 @@ function MealDetail({ log, onReview, onClose }: { log: any, onReview: (s: 'pendi
                         </p>
                     </div>
 
-                    {/* Comments section removed as requested */}
+                    {log.metadata?.description && (
+                        <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 mt-4">
+                            <p className="text-sm text-gray-700 italic">"{log.metadata.description}"</p>
+                        </div>
+                    )}
+
+                    {log.metadata?.macros && (
+                        <div className="grid grid-cols-4 gap-2 mt-4">
+                            <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-gray-50 border border-gray-100 shadow-sm">
+                                <span className="text-[10px] text-gray-400 font-bold uppercase mb-0.5">Kcal</span>
+                                <span className="font-black text-gray-900 text-sm">{log.metadata.macros.kcal}</span>
+                            </div>
+                            <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-gray-50 border border-gray-100 shadow-sm">
+                                <span className="text-[10px] text-gray-400 font-bold uppercase mb-0.5">P</span>
+                                <span className="font-black text-[#C50D00] text-sm">{log.metadata.macros.protein}g</span>
+                            </div>
+                            <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-gray-50 border border-gray-100 shadow-sm">
+                                <span className="text-[10px] text-gray-400 font-bold uppercase mb-0.5">C</span>
+                                <span className="font-black text-[#E7A202] text-sm">{log.metadata.macros.carbs}g</span>
+                            </div>
+                            <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-gray-50 border border-gray-100 shadow-sm">
+                                <span className="text-[10px] text-gray-400 font-bold uppercase mb-0.5">G</span>
+                                <span className="font-black text-[#009B27] text-sm">{log.metadata.macros.fats}g</span>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </ScrollArea>
-
-            <div className="p-4 border-t bg-gray-50/30 space-y-3">
-                <div className="flex items-center gap-2 cursor-pointer" onClick={() => setIsReviewed(!isReviewed)}>
-                    <div className={`h-5 w-5 rounded-md border flex items-center justify-center transition-colors ${isReviewed ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 bg-white'}`}>
-                        {isReviewed && <CheckCircle2 className="h-3.5 w-3.5" />}
-                    </div>
-                    <span className="text-sm font-medium text-gray-700 select-none">Marcar como revisada</span>
-                </div>
-
-                <Button className="w-full" onClick={handleSave}>
-                    Guardar cambios
-                </Button>
-            </div>
         </div>
     )
 }

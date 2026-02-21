@@ -53,7 +53,7 @@ export async function assignWorkoutAction(data: {
         title: 'Nueva rutina asignada',
         body: `Tu coach te ha asignado la rutina "${data.name}".`,
         data: {
-            url: '/dashboard?tab=training'
+            url: '/dashboard/workout'
         }
     })
 
@@ -107,7 +107,7 @@ export async function updateAssignedWorkoutAction(data: {
         title: 'Rutina actualizada',
         body: `Tu coach ha actualizado la rutina "${data.name}".`,
         data: {
-            url: '/dashboard?tab=training'
+            url: '/dashboard/workout'
         }
     })
 

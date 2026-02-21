@@ -16,18 +16,21 @@ create table if not exists public.workout_logs (
 alter table public.workout_logs enable row level security;
 
 -- RLS Policies
+drop policy if exists "Clients can view own workout logs" on public.workout_logs;
 create policy "Clients can view own workout logs"
     on public.workout_logs for select
     using (auth.uid() in (
         select user_id from public.clients where id = workout_logs.client_id
     ));
 
+drop policy if exists "Clients can insert own workout logs" on public.workout_logs;
 create policy "Clients can insert own workout logs"
     on public.workout_logs for insert
     with check (auth.uid() in (
         select user_id from public.clients where id = workout_logs.client_id
     ));
 
+drop policy if exists "Trainers can view their clients' workout logs" on public.workout_logs;
 create policy "Trainers can view their clients' workout logs"
     on public.workout_logs for select
     using (auth.uid() in (
