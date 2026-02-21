@@ -3,11 +3,12 @@
 import { GoogleGenAI } from '@google/genai'
 
 export async function analyzeMealWithAI(base64Image: string, mimeType: string) {
-    if (!process.env.GEMINI_API_KEY) {
-        return { error: 'Gemini API Key no configurada' }
+    const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY
+    if (!apiKey) {
+        return { error: 'Gemini API Key no configurada en Vercel' }
     }
 
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
+    const ai = new GoogleGenAI({ apiKey })
 
     try {
         const prompt = `Analiza esta imagen de una comida. Estima los macronutrientes totales. Responde estricta y únicamente con un objeto JSON respetando este esquema:
