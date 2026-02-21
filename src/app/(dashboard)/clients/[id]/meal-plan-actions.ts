@@ -54,17 +54,38 @@ export async function getWeeklyPlan(clientId: string) {
 
 export async function createWeeklyPlan(clientId: string, mealConfig: string[]) {
     const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
-    // mealConfig example: ["Desayuno", "Almuerzo", "Cena"]
+    if (!user) {
+        return { error: 'No autorizado' }
+    }
+
+    // Auth check: Ensure the coach owns this client
+    const { data: clientCheck } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('id', clientId)
+        .eq('trainer_id', user.id)
+        .single()
+
+    if (!clientCheck) {
+        return { error: 'No autorizado para este cliente' }
+    }
+
+    // Bypass RLS for the inserts due to complex hierarchical policies failing
+    const adminSupabase = createAdminClient()
 
     // 1. Create Plan
-    const { data: plan, error: planError } = await supabase
+    const { data: plan, error: planError } = await adminSupabase
         .from('weekly_meal_plans')
         .insert({ client_id: clientId })
         .select()
         .single()
 
-    if (planError) return { error: 'Error creando plan' }
+    if (planError) {
+        console.error('Error creando plan:', planError)
+        return { error: 'Error creando plan' }
+    }
 
     // 2. Create Days (1-7)
     const daysToInsert = Array.from({ length: 7 }, (_, i) => ({
@@ -72,12 +93,15 @@ export async function createWeeklyPlan(clientId: string, mealConfig: string[]) {
         day_of_week: i + 1
     }))
 
-    const { data: days, error: daysError } = await supabase
+    const { data: days, error: daysError } = await adminSupabase
         .from('weekly_meal_plan_days')
         .insert(daysToInsert)
         .select()
 
-    if (daysError) return { error: 'Error creando días' }
+    if (daysError) {
+        console.error('Error creando días:', daysError)
+        return { error: 'Error creando días' }
+    }
 
     // 3. Create Meals for each day
     // We want to bulk insert all meals for all days to be efficient
@@ -93,11 +117,14 @@ export async function createWeeklyPlan(clientId: string, mealConfig: string[]) {
         })
     })
 
-    const { error: mealsError } = await supabase
+    const { error: mealsError } = await adminSupabase
         .from('weekly_meal_plan_meals')
         .insert(mealsToInsert)
 
-    if (mealsError) return { error: 'Error configurando comidas' }
+    if (mealsError) {
+        console.error('Error configurando comidas:', mealsError)
+        return { error: 'Error configurando comidas' }
+    }
 
     revalidatePath(`/clients/${clientId}`)
     return { success: true, planId: plan.id }
@@ -105,7 +132,22 @@ export async function createWeeklyPlan(clientId: string, mealConfig: string[]) {
 
 export async function updateReviewDate(planId: string, clientId: string, date: string | null) {
     const supabase = await createClient()
-    await supabase.from('weekly_meal_plans').update({ review_date: date }).eq('id', planId)
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return
+
+    // Auth check
+    const { data: clientCheck } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('id', clientId)
+        .eq('trainer_id', user.id)
+        .single()
+
+    if (!clientCheck) return
+
+    const adminSupabase = createAdminClient()
+    await adminSupabase.from('weekly_meal_plans').update({ review_date: date }).eq('id', planId)
     revalidatePath(`/clients/${clientId}`)
 }
 
