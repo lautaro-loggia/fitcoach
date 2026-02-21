@@ -11,12 +11,30 @@ export type MealConfig = {
     included: boolean
 }
 
-// 1. Get or Create Weekly Plan
 export async function getWeeklyPlan(clientId: string) {
     const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { plan: null }
+    }
+
+    // Verify ownership
+    const { data: clientCheck } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('id', clientId)
+        .eq('trainer_id', user.id)
+        .single()
+
+    if (!clientCheck) {
+        return { plan: null }
+    }
+
+    const adminSupabase = createAdminClient()
 
     // Attempt to fetch existing active plan
-    const { data: plan } = await supabase
+    const { data: plan } = await adminSupabase
         .from('weekly_meal_plans')
         .select(`
             *,
@@ -158,8 +176,23 @@ export async function addDishToMeal(mealId: string, clientId: string, data: {
     portions?: number
 }) {
     const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
-    const { error } = await supabase.from('weekly_meal_plan_items').insert({
+    if (!user) return { error: 'No autorizado' }
+
+    // Auth check
+    const { data: clientCheck } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('id', clientId)
+        .eq('trainer_id', user.id)
+        .single()
+
+    if (!clientCheck) return { error: 'No autorizado' }
+
+    const adminSupabase = createAdminClient()
+
+    const { error } = await adminSupabase.from('weekly_meal_plan_items').insert({
         meal_id: mealId,
         recipe_id: data.recipeId || null,
         custom_name: data.customName || null,
@@ -174,23 +207,70 @@ export async function addDishToMeal(mealId: string, clientId: string, data: {
 // 3. Remove Dish
 export async function removeDish(itemId: string, clientId: string) {
     const supabase = await createClient()
-    await supabase.from('weekly_meal_plan_items').delete().eq('id', itemId)
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return
+
+    // Auth check
+    const { data: clientCheck } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('id', clientId)
+        .eq('trainer_id', user.id)
+        .single()
+
+    if (!clientCheck) return
+
+    const adminSupabase = createAdminClient()
+
+    await adminSupabase.from('weekly_meal_plan_items').delete().eq('id', itemId)
     revalidatePath(`/clients/${clientId}`)
 }
 
 // 4. Toggle Skip Meal
 export async function toggleMealSkip(mealId: string, currentSkip: boolean, clientId: string) {
     const supabase = await createClient()
-    await supabase.from('weekly_meal_plan_meals').update({ is_skipped: !currentSkip }).eq('id', mealId)
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return
+
+    // Auth check
+    const { data: clientCheck } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('id', clientId)
+        .eq('trainer_id', user.id)
+        .single()
+
+    if (!clientCheck) return
+
+    const adminSupabase = createAdminClient()
+
+    await adminSupabase.from('weekly_meal_plan_meals').update({ is_skipped: !currentSkip }).eq('id', mealId)
     revalidatePath(`/clients/${clientId}`)
 }
 
 // 5. Copy Day
 export async function copyDay(sourceDayId: string, targetDayId: string, clientId: string) {
     const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return { error: 'No autorizado' }
+
+    // Auth check
+    const { data: clientCheck } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('id', clientId)
+        .eq('trainer_id', user.id)
+        .single()
+
+    if (!clientCheck) return { error: 'No autorizado' }
+
+    const adminSupabase = createAdminClient()
 
     // Fetch source day structure
-    const { data: sourceDay } = await supabase
+    const { data: sourceDay } = await adminSupabase
         .from('weekly_meal_plan_days')
         .select(`
             meals:weekly_meal_plan_meals(
@@ -207,14 +287,14 @@ export async function copyDay(sourceDayId: string, targetDayId: string, clientId
     // Strategy: Wipe target day meals and recreate them exactly as source day
 
     // 1. Delete existing meals in target day (cascading deletes items)
-    await supabase.from('weekly_meal_plan_meals').delete().eq('day_id', targetDayId)
+    await adminSupabase.from('weekly_meal_plan_meals').delete().eq('day_id', targetDayId)
 
     // 2. Insert new meals and items
     // Since we can't easily deep insert with potentially different IDs in one go without complex logic,
     // we'll loop. It's 4-5 meals, so acceptable.
 
     for (const sourceMeal of sourceDay.meals) {
-        const { data: newMeal } = await supabase.from('weekly_meal_plan_meals').insert({
+        const { data: newMeal } = await adminSupabase.from('weekly_meal_plan_meals').insert({
             day_id: targetDayId,
             name: sourceMeal.name,
             sort_order: sourceMeal.sort_order,
@@ -228,7 +308,7 @@ export async function copyDay(sourceDayId: string, targetDayId: string, clientId
                 custom_name: item.custom_name,
                 portions: item.portions
             }))
-            await supabase.from('weekly_meal_plan_items').insert(itemsToInsert)
+            await adminSupabase.from('weekly_meal_plan_items').insert(itemsToInsert)
         }
     }
 
