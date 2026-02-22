@@ -80,14 +80,11 @@ export function NutritionView({ client, mealPlan, dailyLogs }: NutritionViewProp
                     sortedMeals.map((meal: any) => {
                         // Find log for this meal
                         const log = dailyLogs.find((l: any) => l.meal_type === meal.name && !l.metadata?.is_out_of_plan)
-                        const outOfPlanLog = dailyLogs.find((l: any) => l.meal_type === meal.name && l.metadata?.is_out_of_plan)
-
                         return (
                             <MealAccordionItem
                                 key={meal.id}
                                 meal={meal}
                                 log={log}
-                                outOfPlanLog={outOfPlanLog}
                                 clientId={client.id}
                             />
                         )

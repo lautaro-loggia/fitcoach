@@ -247,15 +247,17 @@ export function MealLogger({ clientId, mealName, existingLogs }: MealLoggerProps
                 )}
                 {hasLogs && <span className="text-xs text-green-600 font-medium flex items-center gap-1"><Check className="h-3 w-3" /> Registrado</span>}
 
-                <Button
-                    size="sm"
-                    onClick={triggerFileRead}
-                    disabled={isUploading}
-                    className="ml-auto gap-2 bg-zinc-900 text-white hover:bg-zinc-800 rounded-xl px-4 transition-all active:scale-95 shadow-sm border-none"
-                >
-                    <Camera className="h-4 w-4" />
-                    {hasLogs ? "Registrar otra" : "Registrar comida"}
-                </Button>
+                {!hasLogs && (
+                    <Button
+                        size="sm"
+                        onClick={triggerFileRead}
+                        disabled={isUploading}
+                        className="ml-auto gap-2 bg-zinc-900 text-white hover:bg-zinc-800 rounded-xl px-4 transition-all active:scale-95 shadow-sm border-none"
+                    >
+                        <Camera className="h-4 w-4" />
+                        Registrar comida
+                    </Button>
+                )}
             </div>
 
             {/* Fullscreen-like Modal for AI Analysis */}

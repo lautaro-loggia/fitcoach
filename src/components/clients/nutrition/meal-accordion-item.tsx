@@ -10,7 +10,6 @@ import { compressImage } from '@/lib/image-utils'
 import { cn } from '@/lib/utils'
 import { Dialog, DialogContent, DialogTrigger, DialogClose, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { OutOfPlanDialog } from './out-of-plan-dialog'
 import { analyzeMealWithAI } from '@/app/(dashboard)/clients/[id]/ai-meal-actions'
 
 const fileToBase64 = (file: File): Promise<string> => {
@@ -29,11 +28,10 @@ const fileToBase64 = (file: File): Promise<string> => {
 interface MealAccordionItemProps {
     meal: any
     log?: any
-    outOfPlanLog?: any
     clientId: string
 }
 
-export function MealAccordionItem({ meal, log, outOfPlanLog, clientId }: MealAccordionItemProps) {
+export function MealAccordionItem({ meal, log, clientId }: MealAccordionItemProps) {
     const fileInputRef = useRef<HTMLInputElement>(null)
     const [isUploading, setIsUploading] = useState(false)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -615,26 +613,6 @@ export function MealAccordionItem({ meal, log, outOfPlanLog, clientId }: MealAcc
                 </DialogContent>
             </Dialog>
 
-            {/* Out of plan log render */}
-            {outOfPlanLog && (
-                <div className="w-full bg-blue-50/50 rounded-[18px] border border-blue-100 shadow-none p-4 flex items-center justify-between gap-4 transition-all mt-2">
-                    <div className="flex-1 cursor-pointer">
-                        <h3 className="text-[15px] font-bold text-blue-900 leading-tight mb-1">Comida registrada</h3>
-                        <p className="text-[13px] text-blue-500 font-medium">
-                            {outOfPlanLog.metadata?.macros?.kcal ? `${outOfPlanLog.metadata.macros.kcal} kcal` : 'Sin estimación'}
-                        </p>
-                        {outOfPlanLog.metadata?.description && (
-                            <p className="text-[12px] text-gray-400 mt-1 truncate">{outOfPlanLog.metadata.description}</p>
-                        )}
-                    </div>
-                    {/* Could add edit / delete button here taking outOfPlanLog.id */}
-                </div>
-            )}
-
-            {/* Out of plan action */}
-            {!outOfPlanLog && (
-                <OutOfPlanDialog clientId={clientId} mealName={meal.name} />
-            )}
         </div>
     )
 }
