@@ -9,6 +9,7 @@ import { analyzeMealWithAI } from '@/app/(dashboard)/clients/[id]/ai-meal-action
 import { compressImage } from '@/lib/image-utils'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import Image from 'next/image'
+import { cn } from '@/lib/utils'
 
 interface MealLoggerProps {
     clientId: string
@@ -290,7 +291,10 @@ export function MealLogger({ clientId, mealName, existingLogs }: MealLoggerProps
                                     src={previewUrl}
                                     alt="Preview"
                                     fill
-                                    className="object-cover"
+                                    className={cn(
+                                        "object-cover transition-transform duration-[1500ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
+                                        (!isAnalyzing && aiData) ? "scale-[1.03]" : "scale-100"
+                                    )}
                                 />
                             )}
 

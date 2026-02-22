@@ -329,7 +329,10 @@ export function MealAccordionItem({ meal, log, clientId }: MealAccordionItemProp
                                             src={photoPreview}
                                             alt="Preview"
                                             fill
-                                            className="object-cover"
+                                            className={cn(
+                                                "object-cover transition-transform duration-[1500ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
+                                                aiState === 'review' ? "scale-[1.03]" : "scale-100"
+                                            )}
                                         />
                                     )}
 
