@@ -294,7 +294,10 @@ export function MealLogger({ clientId, mealName, existingLogs }: MealLoggerProps
 
                             {/* Overlay during loading to make it clean */}
                             {isAnalyzing && (
-                                <div className="absolute inset-0 bg-black/10" />
+                                <>
+                                    <div className="absolute inset-0 bg-black/20" />
+                                    <div className="absolute left-0 right-0 h-1 bg-[#4139CF] shadow-[0_0_20px_4px_#4139CF] animate-scan-laser z-10" />
+                                </>
                             )}
 
                             {/* Results Badge */}
