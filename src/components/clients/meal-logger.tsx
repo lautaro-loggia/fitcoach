@@ -42,6 +42,7 @@ export function MealLogger({ clientId, mealName, existingLogs }: MealLoggerProps
         macros?: { kcal?: number, protein?: number, carbs?: number, fats?: number },
         ingredients?: Array<{ name: string, category: string, grams: number }>
     } | null>(null)
+    const [baseAiData, setBaseAiData] = useState<{ macros: { kcal: number, protein: number, carbs: number, fats: number }, totalGrams: number } | null>(null)
 
     const loadingTexts = [
         "Detectando ingredientes...",
@@ -58,6 +59,24 @@ export function MealLogger({ clientId, mealName, existingLogs }: MealLoggerProps
         }, 1500)
         return () => clearInterval(interval)
     }, [isAnalyzing])
+
+    const handleUpdateIngredients = (newIngredients: any[]) => {
+        if (!baseAiData || !aiData) return;
+        const newTotal = newIngredients.reduce((sum: number, ing: any) => sum + (Number(ing.grams) || 0), 0)
+        let ratio = newTotal / baseAiData.totalGrams
+        if (isNaN(ratio) || !isFinite(ratio) || ratio < 0) ratio = 1
+
+        setAiData({
+            ...aiData,
+            ingredients: newIngredients,
+            macros: {
+                kcal: Math.round(baseAiData.macros.kcal * ratio),
+                protein: Math.round(baseAiData.macros.protein * ratio),
+                carbs: Math.round(baseAiData.macros.carbs * ratio),
+                fats: Math.round(baseAiData.macros.fats * ratio),
+            }
+        })
+    }
 
     const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
@@ -76,7 +95,20 @@ export function MealLogger({ clientId, mealName, existingLogs }: MealLoggerProps
                 const base64 = await fileToBase64(compressedForAI)
                 const result = await analyzeMealWithAI(base64, compressedForAI.type)
                 if (result.success && result.data) {
+                    const macros = {
+                        kcal: result.data.macros?.kcal || 0,
+                        protein: result.data.macros?.protein || 0,
+                        carbs: result.data.macros?.carbs || 0,
+                        fats: result.data.macros?.fats || 0
+                    };
+                    const ingredients = result.data.ingredients || [];
+                    const computedTotalGrams = ingredients.reduce((sum: number, ing: any) => sum + (Number(ing.grams) || 0), 0);
+
                     setAiData(result.data)
+                    setBaseAiData({
+                        macros: { ...macros },
+                        totalGrams: computedTotalGrams > 0 ? computedTotalGrams : 1
+                    })
                 } else {
                     toast.error('No se pudieron estimar los macros.')
                 }
@@ -297,22 +329,22 @@ export function MealLogger({ clientId, mealName, existingLogs }: MealLoggerProps
                             </div>
                         ) : aiData ? (
                             /* --- STATE 2: RESULTS --- */
-                            <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 pt-2">
+                            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pt-2">
 
-                                <div className="space-y-1">
-                                    <h2 className="text-[26px] font-bold tracking-tight leading-tight text-gray-900">
+                                <div className="space-y-0.5">
+                                    <h2 className="text-xl font-bold tracking-tight leading-tight text-gray-900">
                                         Esto es lo que encontramos
                                     </h2>
-                                    <p className="text-[15px] text-gray-500 leading-snug">
+                                    <p className="text-sm text-gray-500 leading-snug">
                                         Puedes ajustar cualquier ingrediente si algo no coincide.
                                     </p>
                                 </div>
 
                                 {/* Macros Card */}
-                                <div className="bg-[#F9FAFB] rounded-[24px] p-6 pb-8 flex flex-col items-center shadow-sm">
+                                <div className="bg-[#F9FAFB] rounded-[24px] p-4 pb-6 flex flex-col items-center shadow-sm">
                                     {/* Main Kcal */}
                                     <div className="flex items-baseline gap-1 mb-1">
-                                        <span className="text-[56px] font-black text-gray-900 tabular-nums leading-none tracking-tighter">
+                                        <span className="text-5xl font-black text-gray-900 tabular-nums leading-none tracking-tighter">
                                             {aiData.macros?.kcal || 0}
                                         </span>
                                         <span className="text-xl font-bold text-[#4139CF]">kcal</span>
@@ -356,7 +388,13 @@ export function MealLogger({ clientId, mealName, existingLogs }: MealLoggerProps
                                             <h3 className="text-lg font-bold text-gray-900">Ingredientes detectados</h3>
                                             <p className="text-[13px] text-gray-500">Toca para editar cantidades o eliminar</p>
                                         </div>
-                                        <button className="text-[#4139CF] text-sm font-semibold hover:opacity-80 transition-opacity">
+                                        <button
+                                            onClick={() => {
+                                                const newIngs = [...(aiData?.ingredients || []), { name: 'Extra', category: 'Añadido', grams: 50 }];
+                                                handleUpdateIngredients(newIngs);
+                                            }}
+                                            className="text-[#4139CF] text-sm font-semibold hover:opacity-80 transition-opacity"
+                                        >
                                             + Añadir
                                         </button>
                                     </div>
@@ -366,12 +404,39 @@ export function MealLogger({ clientId, mealName, existingLogs }: MealLoggerProps
                                             <div key={idx} className="relative cursor-pointer group hover:bg-gray-50/50 transition-colors">
                                                 <div className="flex items-center justify-between py-4">
                                                     <div className="font-medium pr-4">
-                                                        <p className="text-[15px] text-gray-900 leading-snug">{ing.name}</p>
+                                                        <input
+                                                            value={ing.name}
+                                                            onChange={(e) => {
+                                                                const newIngs = [...(aiData.ingredients || [])];
+                                                                newIngs[idx] = { ...newIngs[idx], name: e.target.value };
+                                                                handleUpdateIngredients(newIngs);
+                                                            }}
+                                                            className="text-[15px] font-medium text-gray-900 bg-transparent border-none outline-none focus:ring-1 focus:ring-gray-200 rounded px-1 -ml-1 w-full"
+                                                        />
                                                         <p className="text-[13px] text-gray-500 mt-0.5">{ing.category}</p>
                                                     </div>
-                                                    <div className="flex items-center gap-2 shrink-0">
-                                                        <span className="text-[15px] font-bold text-gray-900">{ing.grams}g</span>
-                                                        <ChevronRight className="w-4 h-4 text-gray-300" />
+                                                    <div className="flex items-center gap-1 shrink-0 bg-gray-50 rounded px-2 focus-within:ring-1 focus-within:ring-gray-200">
+                                                        <input
+                                                            type="number"
+                                                            value={ing.grams || ''}
+                                                            onChange={(e) => {
+                                                                const newIngs = [...(aiData.ingredients || [])];
+                                                                newIngs[idx] = { ...newIngs[idx], grams: Number(e.target.value) };
+                                                                handleUpdateIngredients(newIngs);
+                                                            }}
+                                                            className="w-12 text-right bg-transparent text-[15px] font-bold text-gray-900 outline-none p-0 border-none tabular-nums"
+                                                        />
+                                                        <span className="text-[15px] font-bold text-gray-900">g</span>
+                                                        <button
+                                                            onClick={() => {
+                                                                const newIngs = [...(aiData.ingredients || [])];
+                                                                newIngs.splice(idx, 1);
+                                                                handleUpdateIngredients(newIngs);
+                                                            }}
+                                                            className="ml-2 py-2 opacity-50 hover:opacity-100 hover:text-red-500 transition-colors"
+                                                        >
+                                                            <X className="w-4 h-4" />
+                                                        </button>
                                                     </div>
                                                 </div>
                                                 {/* Divider except last */}
@@ -396,7 +461,7 @@ export function MealLogger({ clientId, mealName, existingLogs }: MealLoggerProps
 
                     {/* Fixed Bottom CTA for Results */}
                     {(!isAnalyzing && aiData) && (
-                        <div className="fixed bottom-0 left-0 right-0 sm:absolute bg-white/95 backdrop-blur-xl border-t border-gray-100 p-6 pt-4 pb-8 sm:pb-6 flex flex-col gap-3">
+                        <div className="fixed bottom-0 left-0 right-0 sm:absolute bg-white/95 backdrop-blur-xl border-t border-gray-100 p-6 pt-4 pb-8 sm:pb-6 flex flex-col gap-3 z-50">
                             <Button
                                 className="w-full h-14 bg-[#111827] hover:bg-[#1F2937] text-white rounded-[16px] text-[16px] font-bold shadow-sm transition-all active:scale-[0.98]"
                                 onClick={handleConfirmUpload}

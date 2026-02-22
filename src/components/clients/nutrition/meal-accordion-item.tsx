@@ -43,6 +43,7 @@ export function MealAccordionItem({ meal, log, outOfPlanLog, clientId }: MealAcc
     const [photo, setPhoto] = useState<File | null>(null)
     const [photoPreview, setPhotoPreview] = useState<string | null>(null)
     const [aiData, setAiData] = useState<{ title: string, macros: { kcal: number, protein: number, carbs: number, fats: number }, ingredients: Array<{ name: string, category: string, grams: number }> } | null>(null)
+    const [baseAiData, setBaseAiData] = useState<{ macros: { kcal: number, protein: number, carbs: number, fats: number }, totalGrams: number } | null>(null)
     const [loadingTextIndex, setLoadingTextIndex] = useState(0)
 
     const loadingTexts = [
@@ -62,6 +63,24 @@ export function MealAccordionItem({ meal, log, outOfPlanLog, clientId }: MealAcc
             setLoadingTextIndex(0) // Reset when not analyzing
         }
     }, [aiState])
+
+    const handleUpdateIngredients = (newIngredients: any[]) => {
+        if (!baseAiData || !aiData) return;
+        const newTotal = newIngredients.reduce((sum: number, ing: any) => sum + (Number(ing.grams) || 0), 0)
+        let ratio = newTotal / baseAiData.totalGrams
+        if (isNaN(ratio) || !isFinite(ratio) || ratio < 0) ratio = 1
+
+        setAiData({
+            ...aiData,
+            ingredients: newIngredients,
+            macros: {
+                kcal: Math.round(baseAiData.macros.kcal * ratio),
+                protein: Math.round(baseAiData.macros.protein * ratio),
+                carbs: Math.round(baseAiData.macros.carbs * ratio),
+                fats: Math.round(baseAiData.macros.fats * ratio),
+            }
+        })
+    }
 
     // Calculate macros from meal items
     const calculateMacros = () => {
@@ -136,15 +155,23 @@ export function MealAccordionItem({ meal, log, outOfPlanLog, clientId }: MealAcc
                 const result = await analyzeMealWithAI(base64, compressedForAI.type)
 
                 if (result.success && result.data) {
+                    const macros = {
+                        kcal: result.data.macros?.kcal || 0,
+                        protein: result.data.macros?.protein || 0,
+                        carbs: result.data.macros?.carbs || 0,
+                        fats: result.data.macros?.fats || 0
+                    };
+                    const ingredients = result.data.ingredients || [];
+                    const computedTotalGrams = ingredients.reduce((sum: number, ing: any) => sum + (Number(ing.grams) || 0), 0);
+
                     setAiData({
                         title: result.data.title || meal.name,
-                        macros: {
-                            kcal: result.data.macros?.kcal || 0,
-                            protein: result.data.macros?.protein || 0,
-                            carbs: result.data.macros?.carbs || 0,
-                            fats: result.data.macros?.fats || 0
-                        },
-                        ingredients: result.data.ingredients || []
+                        macros: { ...macros },
+                        ingredients: [...ingredients]
+                    })
+                    setBaseAiData({
+                        macros: { ...macros },
+                        totalGrams: computedTotalGrams > 0 ? computedTotalGrams : 1
                     })
                 } else {
                     toast.error(result.error || 'No se pudieron estimar los macros.')
@@ -345,22 +372,22 @@ export function MealAccordionItem({ meal, log, outOfPlanLog, clientId }: MealAcc
                                     </div>
                                 ) : (
                                     /* --- STATE 2: RESULTS --- */
-                                    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 pt-2 pb-10">
+                                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pt-2 pb-6">
 
-                                        <div className="space-y-1">
-                                            <h2 className="text-[26px] font-bold tracking-tight leading-tight text-gray-900">
+                                        <div className="space-y-0.5">
+                                            <h2 className="text-xl font-bold tracking-tight leading-tight text-gray-900">
                                                 Esto es lo que encontramos
                                             </h2>
-                                            <p className="text-[15px] text-gray-500 leading-snug">
+                                            <p className="text-sm text-gray-500 leading-snug">
                                                 Puedes ajustar cualquier ingrediente si algo no coincide.
                                             </p>
                                         </div>
 
                                         {/* Macros Card */}
-                                        <div className="bg-[#F9FAFB] rounded-[24px] p-6 pb-8 flex flex-col items-center shadow-sm">
+                                        <div className="bg-[#F9FAFB] rounded-[24px] p-4 pb-6 flex flex-col items-center shadow-sm">
                                             {/* Main Kcal */}
                                             <div className="flex items-baseline gap-1 mb-1">
-                                                <span className="text-[56px] font-black text-gray-900 tabular-nums leading-none tracking-tighter">
+                                                <span className="text-5xl font-black text-gray-900 tabular-nums leading-none tracking-tighter">
                                                     {aiData?.macros?.kcal || 0}
                                                 </span>
                                                 <span className="text-xl font-bold text-[#4139CF]">kcal</span>
@@ -403,7 +430,13 @@ export function MealAccordionItem({ meal, log, outOfPlanLog, clientId }: MealAcc
                                                     <h3 className="text-lg font-bold text-gray-900">Ingredientes detectados</h3>
                                                     <p className="text-[13px] text-gray-500">Toca para editar cantidades o eliminar</p>
                                                 </div>
-                                                <button className="text-[#4139CF] text-sm font-semibold hover:opacity-80 transition-opacity">
+                                                <button
+                                                    onClick={() => {
+                                                        const newIngs = [...(aiData?.ingredients || []), { name: 'Extra', category: 'Añadido', grams: 50 }];
+                                                        handleUpdateIngredients(newIngs);
+                                                    }}
+                                                    className="text-[#4139CF] text-sm font-semibold hover:opacity-80 transition-opacity"
+                                                >
                                                     + Añadir
                                                 </button>
                                             </div>
@@ -418,7 +451,7 @@ export function MealAccordionItem({ meal, log, outOfPlanLog, clientId }: MealAcc
                                                                     onChange={(e) => {
                                                                         const newIngs = [...(aiData.ingredients || [])];
                                                                         newIngs[idx] = { ...newIngs[idx], name: e.target.value };
-                                                                        setAiData(prev => prev ? { ...prev, ingredients: newIngs } : null);
+                                                                        handleUpdateIngredients(newIngs);
                                                                     }}
                                                                     className="text-[15px] font-medium text-gray-900 bg-transparent border-none outline-none focus:ring-1 focus:ring-gray-200 rounded px-1 -ml-1 w-full"
                                                                 />
@@ -431,7 +464,7 @@ export function MealAccordionItem({ meal, log, outOfPlanLog, clientId }: MealAcc
                                                                     onChange={(e) => {
                                                                         const newIngs = [...(aiData.ingredients || [])];
                                                                         newIngs[idx] = { ...newIngs[idx], grams: Number(e.target.value) };
-                                                                        setAiData(prev => prev ? { ...prev, ingredients: newIngs } : null);
+                                                                        handleUpdateIngredients(newIngs);
                                                                     }}
                                                                     className="w-12 text-right bg-transparent text-[15px] font-bold text-gray-900 outline-none p-0 border-none tabular-nums"
                                                                 />
@@ -440,7 +473,7 @@ export function MealAccordionItem({ meal, log, outOfPlanLog, clientId }: MealAcc
                                                                     onClick={() => {
                                                                         const newIngs = [...(aiData.ingredients || [])];
                                                                         newIngs.splice(idx, 1);
-                                                                        setAiData(prev => prev ? { ...prev, ingredients: newIngs } : null);
+                                                                        handleUpdateIngredients(newIngs);
                                                                     }}
                                                                     className="ml-2 py-2 opacity-50 hover:opacity-100 hover:text-red-500 transition-colors"
                                                                 >
@@ -467,7 +500,7 @@ export function MealAccordionItem({ meal, log, outOfPlanLog, clientId }: MealAcc
 
                             {/* Fixed Bottom CTA for Results */}
                             {aiState === 'review' && (
-                                <div className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-gray-100 p-6 pt-4 flex flex-col gap-3">
+                                <div className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-gray-100 p-6 pt-4 flex flex-col gap-3 z-50">
                                     <Button
                                         className="w-full h-14 bg-[#111827] hover:bg-[#1F2937] text-white rounded-[16px] text-[16px] font-bold shadow-sm transition-all active:scale-[0.98]"
                                         onClick={handleSaveLog}
