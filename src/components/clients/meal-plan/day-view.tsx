@@ -3,9 +3,12 @@
 import { MealSlot } from './meal-slot'
 import { Button } from '@/components/ui/button'
 import { Copy } from 'lucide-react'
-import { copyDay } from '@/app/(dashboard)/clients/[id]/meal-plan-actions'
+import { copyDay, addMealToDay } from '@/app/(dashboard)/clients/[id]/meal-plan-actions'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useState } from 'react'
+import { AddMealDialog } from './add-meal-dialog'
+import { Plus } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface DayViewProps {
     day: any
@@ -32,6 +35,7 @@ const WEEKDAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado
 
 export function DayView({ day, allDays, clientId, clientAllergens, clientPreference, onUpdate, dailyStats }: DayViewProps) {
     const [loading, setLoading] = useState(false)
+    const [addMealOpen, setAddMealOpen] = useState(false)
 
     if (!day) return null
 
@@ -43,9 +47,28 @@ export function DayView({ day, allDays, clientId, clientAllergens, clientPrefere
         try {
             await copyDay(day.id, targetDayId, clientId)
             onUpdate()
+            toast.success('Día copiado')
         } catch (error) {
             console.error(error)
-            alert('Error al copiar')
+            toast.error('Error al copiar')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleAddMeal = async (name: string) => {
+        setLoading(true)
+        try {
+            const res = await addMealToDay(day.id, name, clientId)
+            if (res?.error) {
+                toast.error(res.error)
+            } else {
+                toast.success('Comida agregada')
+                onUpdate()
+                setAddMealOpen(false)
+            }
+        } catch (error) {
+            toast.error('Error inesperado')
         } finally {
             setLoading(false)
         }
@@ -127,7 +150,27 @@ export function DayView({ day, allDays, clientId, clientAllergens, clientPrefere
                         No hay comidas configuradas.
                     </div>
                 )}
+
+                {/* Empty dashed slot for adding new meal */}
+                <button
+                    onClick={() => setAddMealOpen(true)}
+                    className="flex flex-col items-center justify-center h-[320px] transition-all overflow-hidden border-2 border-dashed border-border/60 hover:border-primary/50 hover:bg-muted/30 rounded-xl group"
+                >
+                    <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center group-hover:bg-primary/10 transition-colors mb-3">
+                        <Plus className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </div>
+                    <span className="text-sm font-medium text-muted-foreground group-hover:text-primary transition-colors">
+                        Agregar comida
+                    </span>
+                </button>
             </div>
+
+            <AddMealDialog
+                open={addMealOpen}
+                onOpenChange={setAddMealOpen}
+                dayName={dayLabel}
+                onConfirm={handleAddMeal}
+            />
         </div>
     )
 }

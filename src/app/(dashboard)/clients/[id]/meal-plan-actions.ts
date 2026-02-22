@@ -379,6 +379,90 @@ export async function copyDay(sourceDayId: string, targetDayId: string, clientId
     return { success: true }
 }
 
+// 5a. Add Meal to Day
+export async function addMealToDay(dayId: string, name: string, clientId: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return { error: 'No autorizado' }
+
+    // Auth check
+    let { data: clientCheck, error: clientCheckError } = await supabase
+        .from('clients')
+        .select('id, trainer_id')
+        .eq('id', clientId)
+        .single()
+
+    if (clientCheckError || !clientCheck || clientCheck.trainer_id !== user.id) {
+        const { data: adminCheck } = await createAdminClient()
+            .from('clients')
+            .select('id, trainer_id')
+            .eq('id', clientId)
+            .single()
+
+        if (!adminCheck || adminCheck.trainer_id !== user.id) return { error: 'No autorizado' }
+    }
+
+    const adminSupabase = createAdminClient()
+
+    // Determine max sort_order
+    const { data: existingMeals } = await adminSupabase
+        .from('weekly_meal_plan_meals')
+        .select('sort_order')
+        .eq('day_id', dayId)
+        .order('sort_order', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+    const newSortOrder = existingMeals ? (existingMeals.sort_order + 1) : 0
+
+    const { error } = await adminSupabase.from('weekly_meal_plan_meals').insert({
+        day_id: dayId,
+        name: name,
+        sort_order: newSortOrder
+    })
+
+    if (error) return { error: 'Error agregando comida' }
+    revalidatePath(`/clients/${clientId}`)
+    return { success: true }
+}
+
+// 5b. Delete Meal From Day
+export async function deleteMealFromDay(mealId: string, clientId: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return { error: 'No autorizado' }
+
+    // Auth check
+    let { data: clientCheck, error: clientCheckError } = await supabase
+        .from('clients')
+        .select('id, trainer_id')
+        .eq('id', clientId)
+        .single()
+
+    if (clientCheckError || !clientCheck || clientCheck.trainer_id !== user.id) {
+        const { data: adminCheck } = await createAdminClient()
+            .from('clients')
+            .select('id, trainer_id')
+            .eq('id', clientId)
+            .single()
+
+        if (!adminCheck || adminCheck.trainer_id !== user.id) return { error: 'No autorizado' }
+    }
+
+    const adminSupabase = createAdminClient()
+
+    const { error } = await adminSupabase
+        .from('weekly_meal_plan_meals')
+        .delete()
+        .eq('id', mealId)
+
+    if (error) return { error: 'Error eliminando comida' }
+    revalidatePath(`/clients/${clientId}`)
+    return { success: true }
+}
+
 // 6. Register Meal Log (Photo or Manual)
 export async function registerMealLog(clientId: string, mealType: string, formData: FormData) {
     console.log('registerMealLog: Start', { clientId, mealType })

@@ -6,7 +6,7 @@ import { MoreHorizontal, Plus, Eye, EyeOff } from 'lucide-react'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { AddDishDialog } from './add-dish-dialog'
 import { DishCard } from './dish-card'
-import { addDishToMeal, removeDish, toggleMealSkip } from '@/app/(dashboard)/clients/[id]/meal-plan-actions'
+import { addDishToMeal, removeDish, toggleMealSkip, deleteMealFromDay } from '@/app/(dashboard)/clients/[id]/meal-plan-actions'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { useState } from 'react'
@@ -48,6 +48,18 @@ export function MealSlot({ meal, dayName, clientId, clientAllergens, clientPrefe
         onUpdate()
     }
 
+    const handleDeleteMeal = async () => {
+        if (confirm(`¿Estás seguro que deseas eliminar toda la comida "${meal.name}"?`)) {
+            const result = await deleteMealFromDay(meal.id, clientId)
+            if (result?.error) {
+                toast.error('Error al eliminar comida')
+            } else {
+                toast.success('Comida eliminada')
+                onUpdate()
+            }
+        }
+    }
+
     return (
         <Card className={cn(
             "flex flex-col h-[320px] transition-all overflow-hidden border-border/60", // Fixed height or min-height to match mockup uniformity
@@ -68,6 +80,9 @@ export function MealSlot({ meal, dayName, clientId, clientAllergens, clientPrefe
                         <DropdownMenuItem onClick={handleToggleSkip}>
                             {isSkipped ? <Eye className="mr-2 h-4 w-4" /> : <EyeOff className="mr-2 h-4 w-4" />}
                             {isSkipped ? "Restaurar" : "Omitir"}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleDeleteMeal} className="text-red-600 focus:text-red-600 focus:bg-red-50">
+                            Eliminar comida
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
