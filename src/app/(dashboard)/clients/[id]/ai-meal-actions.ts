@@ -23,6 +23,7 @@ export async function analyzeMealWithAI(base64Image: string, mimeType: string) {
   "ingredients": [
     {
       "name": "Nombre descriptivo del ingrediente",
+      "category": "Categoría descriptiva corta (ej: Proteína magra, Carbohidrato complejo, Vegetal / Fibra, Grasas saludables)",
       "grams": cantidad estimada en gramos (número)
     }
   ]

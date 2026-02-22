@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Camera, Image as ImageIcon, Check, Loader2, Plus, X } from 'lucide-react'
+import { Camera, Check, Sparkles, ChevronRight, ArrowLeft, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { registerMealLog, deleteMealLog } from '@/app/(dashboard)/clients/[id]/meal-plan-actions'
 import { analyzeMealWithAI } from '@/app/(dashboard)/clients/[id]/ai-meal-actions'
@@ -36,7 +36,28 @@ export function MealLogger({ clientId, mealName, existingLogs }: MealLoggerProps
     const [selectedFile, setSelectedFile] = useState<File | null>(null)
     const [confirmOpen, setConfirmOpen] = useState(false)
     const [isAnalyzing, setIsAnalyzing] = useState(false)
-    const [aiData, setAiData] = useState<{ title?: string, macros?: { kcal?: number, protein?: number, carbs?: number, fats?: number } } | null>(null)
+    const [loadingTextIndex, setLoadingTextIndex] = useState(0)
+    const [aiData, setAiData] = useState<{
+        title?: string,
+        macros?: { kcal?: number, protein?: number, carbs?: number, fats?: number },
+        ingredients?: Array<{ name: string, category: string, grams: number }>
+    } | null>(null)
+
+    const loadingTexts = [
+        "Detectando ingredientes...",
+        "Estimando cantidades...",
+        "Calculando macros...",
+        "Preparando resumen..."
+    ]
+
+    // Cycle internal text if analyzing
+    useEffect(() => {
+        if (!isAnalyzing) return
+        const interval = setInterval(() => {
+            setLoadingTextIndex(prev => (prev + 1) % loadingTexts.length)
+        }, 1500)
+        return () => clearInterval(interval)
+    }, [isAnalyzing])
 
     const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
@@ -111,6 +132,19 @@ export function MealLogger({ clientId, mealName, existingLogs }: MealLoggerProps
         setPreviewUrl(null)
         setAiData(null)
         setIsAnalyzing(false)
+        setLoadingTextIndex(0)
+    }
+
+    const handleReanalyze = () => {
+        setAiData(null)
+        setIsAnalyzing(true)
+        setLoadingTextIndex(0)
+
+        // Simular re-análisis sin volver a llamar a la API consumiendo tokens
+        // En un caso real, esto llamaría de nuevo a la función
+        // Pero para UI testing podemos forzar cierre y apertura o reajustar state
+        handleCancel()
+        toast.info("Por favor, sube la foto nuevamente para reanalizar.")
     }
 
     const triggerFileRead = () => {
@@ -192,103 +226,200 @@ export function MealLogger({ clientId, mealName, existingLogs }: MealLoggerProps
                 </Button>
             </div>
 
-            {/* Confirmation Dialog */}
-            <Dialog open={confirmOpen} onOpenChange={(open) => !isUploading && !open && handleCancel()}>
-                <DialogContent className="sm:max-w-md p-0 overflow-hidden rounded-2xl gap-0">
-                    <div className="relative w-full aspect-[4/3] bg-black">
-                        {previewUrl && (
-                            <Image
-                                src={previewUrl}
-                                alt="Preview"
-                                fill
-                                className="object-contain"
-                            />
-                        )}
-                        <Button
-                            size="icon"
-                            variant="ghost"
-                            className="absolute top-2 right-2 text-white hover:bg-white/20 rounded-full"
+            {/* Fullscreen-like Modal for AI Analysis */}
+            <Dialog open={confirmOpen} onOpenChange={(open) => !isUploading && !isAnalyzing && !open && handleCancel()}>
+                <DialogContent className="sm:max-w-md w-full h-[100dvh] sm:h-auto sm:max-h-[90vh] p-0 overflow-y-auto bg-white rounded-none sm:rounded-[24px] border-none flex flex-col hide-scrollbar">
+
+                    {/* Header */}
+                    <div className="sticky top-0 bg-white/80 backdrop-blur-md z-10 px-4 py-4 flex items-center shrink-0">
+                        <button
                             onClick={handleCancel}
+                            disabled={isUploading}
+                            className="p-2 -ml-2 rounded-full hover:bg-gray-100 transition-colors"
                         >
-                            <X className="h-5 w-5" />
-                        </Button>
+                            <ArrowLeft className="w-6 h-6 text-gray-900" />
+                        </button>
+                        <h1 className="flex-1 text-center font-bold text-gray-900 absolute left-0 right-0 pointer-events-none uppercase tracking-widest text-xs">
+                            {isAnalyzing ? "Orbit AI" : "Análisis Orbit AI"}
+                        </h1>
                     </div>
-                    <div className="p-4 space-y-4 bg-white max-h-[60vh] overflow-y-auto">
-                        <div>
-                            <DialogTitle className="text-lg font-bold text-gray-900">Confirmar comida</DialogTitle>
-                            <DialogDescription className="text-sm text-gray-500">¿Estás registrando tu {mealName}?</DialogDescription>
+                    {(!isAnalyzing && aiData) && <div className="h-px bg-gray-100 w-full" />}
+
+                    {/* Content Scrollable Area */}
+                    <div className="px-6 pb-24 space-y-8 flex-1">
+
+                        {/* Image Header Block (Shared) */}
+                        <div className="relative w-full aspect-[4/3] rounded-[20px] overflow-hidden shadow-sm bg-gray-100 mt-2 shrink-0">
+                            {previewUrl && (
+                                <Image
+                                    src={previewUrl}
+                                    alt="Preview"
+                                    fill
+                                    className="object-cover"
+                                />
+                            )}
+
+                            {/* Overlay during loading to make it clean */}
+                            {isAnalyzing && (
+                                <div className="absolute inset-0 bg-black/10" />
+                            )}
+
+                            {/* Results Badge */}
+                            {(!isAnalyzing && aiData?.ingredients) && (
+                                <div className="absolute bottom-3 left-3 bg-white shadow-sm rounded-full py-1.5 px-3 flex items-center gap-2">
+                                    <Sparkles className="w-4 h-4 text-[#4139CF]" />
+                                    <span className="text-xs font-semibold text-gray-900">
+                                        IA detectó {aiData.ingredients.length} ingredientes
+                                    </span>
+                                </div>
+                            )}
                         </div>
 
+                        {/* --- STATE 1: LOADING --- */}
                         {isAnalyzing ? (
-                            <div className="flex items-center gap-3 p-4 bg-blue-50 text-blue-700 rounded-xl border border-blue-100">
-                                <Loader2 className="h-5 w-5 animate-spin" />
-                                <p className="text-sm font-medium">✨ Analizando la comida con IA...</p>
+                            <div className="flex flex-col items-center justify-center pt-8 text-center px-4 animate-in fade-in duration-500">
+                                <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-2">Estamos analizando tu plato</h2>
+
+                                <div className="h-6 mb-8 relative w-full flex justify-center">
+                                    <p
+                                        key={loadingTextIndex}
+                                        className="text-[15px] text-gray-500 absolute animate-in fade-in slide-in-from-bottom-2 duration-300"
+                                    >
+                                        {loadingTexts[loadingTextIndex]}
+                                    </p>
+                                </div>
+
+                                {/* Indeterminate Line Progress */}
+                                <div className="w-full max-w-[200px] h-[2px] bg-gray-100 rounded-full overflow-hidden relative">
+                                    <div className="absolute top-0 left-0 h-full bg-[#4139CF] rounded-full w-1/3 animate-[progress_1.5s_ease-in-out_infinite] origin-left" />
+                                </div>
                             </div>
                         ) : aiData ? (
-                            <div className="space-y-3">
+                            /* --- STATE 2: RESULTS --- */
+                            <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 pt-2">
+
                                 <div className="space-y-1">
-                                    <label className="text-xs font-bold text-gray-500 uppercase">Comida detectada</label>
-                                    <input
-                                        type="text"
-                                        className="w-full text-sm font-medium bg-gray-50 border border-gray-200 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                                        value={aiData.title || ''}
-                                        onChange={(e) => setAiData({ ...aiData, title: e.target.value })}
-                                    />
+                                    <h2 className="text-[26px] font-bold tracking-tight leading-tight text-gray-900">
+                                        Esto es lo que encontramos
+                                    </h2>
+                                    <p className="text-[15px] text-gray-500 leading-snug">
+                                        Puedes ajustar cualquier ingrediente si algo no coincide.
+                                    </p>
                                 </div>
-                                <div className="pt-1">
-                                    <label className="text-xs font-bold text-gray-500 uppercase mb-2 block">Macros Estimados</label>
-                                    <div className="grid grid-cols-4 gap-2">
-                                        <div className="flex flex-col">
-                                            <span className="text-[10px] text-gray-400 font-bold uppercase mb-1 text-center">Kcal</span>
-                                            <input type="number"
-                                                className="w-full text-center text-sm font-black text-gray-900 bg-gray-50 border border-gray-200 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500"
-                                                value={aiData.macros?.kcal || ''}
-                                                onChange={(e) => setAiData({ ...aiData, macros: { ...aiData.macros, kcal: Number(e.target.value) } })}
-                                            />
+
+                                {/* Macros Card */}
+                                <div className="bg-[#F9FAFB] rounded-[24px] p-6 pb-8 flex flex-col items-center shadow-sm">
+                                    {/* Main Kcal */}
+                                    <div className="flex items-baseline gap-1 mb-1">
+                                        <span className="text-[56px] font-black text-gray-900 tabular-nums leading-none tracking-tighter">
+                                            {aiData.macros?.kcal || 0}
+                                        </span>
+                                        <span className="text-xl font-bold text-[#4139CF]">kcal</span>
+                                    </div>
+                                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 mb-8">Total Estimado</span>
+
+                                    {/* Sub Macros Grid */}
+                                    <div className="flex items-end justify-between w-full max-w-[240px] px-2 relative h-[50px]">
+                                        {/* Divider Lines (Vertical) */}
+                                        <div className="absolute top-1/2 -translate-y-1/2 left-1/3 w-[1px] h-8 bg-gray-200" />
+                                        <div className="absolute top-1/2 -translate-y-1/2 right-1/3 w-[1px] h-8 bg-gray-200" />
+
+                                        {/* Protein */}
+                                        <div className="flex flex-col items-center flex-1 z-10 group relative pb-3">
+                                            <span className="text-lg font-bold text-gray-900 leading-none mb-1 tabular-nums">{aiData.macros?.protein || 0}g</span>
+                                            <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Proteína</span>
+                                            {/* Accent Line Bottom */}
+                                            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-[3px] rounded-full bg-blue-500" />
                                         </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-[10px] text-gray-400 font-bold uppercase mb-1 text-center">P</span>
-                                            <input type="number"
-                                                className="w-full text-center text-sm font-black text-[#C50D00] bg-gray-50 border border-gray-200 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500"
-                                                value={aiData.macros?.protein || ''}
-                                                onChange={(e) => setAiData({ ...aiData, macros: { ...aiData.macros, protein: Number(e.target.value) } })}
-                                            />
+
+                                        {/* Carbs */}
+                                        <div className="flex flex-col items-center flex-1 z-10 group relative pb-3">
+                                            <span className="text-lg font-bold text-gray-900 leading-none mb-1 tabular-nums">{aiData.macros?.carbs || 0}g</span>
+                                            <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Carbos</span>
+                                            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-[3px] rounded-full bg-yellow-500" />
                                         </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-[10px] text-gray-400 font-bold uppercase mb-1 text-center">C</span>
-                                            <input type="number"
-                                                className="w-full text-center text-sm font-black text-[#E7A202] bg-gray-50 border border-gray-200 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500"
-                                                value={aiData.macros?.carbs || ''}
-                                                onChange={(e) => setAiData({ ...aiData, macros: { ...aiData.macros, carbs: Number(e.target.value) } })}
-                                            />
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-[10px] text-gray-400 font-bold uppercase mb-1 text-center">G</span>
-                                            <input type="number"
-                                                className="w-full text-center text-sm font-black text-[#009B27] bg-gray-50 border border-gray-200 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500"
-                                                value={aiData.macros?.fats || ''}
-                                                onChange={(e) => setAiData({ ...aiData, macros: { ...aiData.macros, fats: Number(e.target.value) } })}
-                                            />
+
+                                        {/* Fats */}
+                                        <div className="flex flex-col items-center flex-1 z-10 group relative pb-3">
+                                            <span className="text-lg font-bold text-gray-900 leading-none mb-1 tabular-nums">{aiData.macros?.fats || 0}g</span>
+                                            <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Grasas</span>
+                                            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-[3px] rounded-full bg-red-500" />
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* Ingredients List */}
+                                <div className="space-y-4">
+                                    <div className="flex items-end justify-between pb-2">
+                                        <div>
+                                            <h3 className="text-lg font-bold text-gray-900">Ingredientes detectados</h3>
+                                            <p className="text-[13px] text-gray-500">Toca para editar cantidades o eliminar</p>
+                                        </div>
+                                        <button className="text-[#4139CF] text-sm font-semibold hover:opacity-80 transition-opacity">
+                                            + Añadir
+                                        </button>
+                                    </div>
+
+                                    <div className="space-y-0 relative">
+                                        {aiData.ingredients?.map((ing, idx) => (
+                                            <div key={idx} className="relative cursor-pointer group hover:bg-gray-50/50 transition-colors">
+                                                <div className="flex items-center justify-between py-4">
+                                                    <div className="font-medium pr-4">
+                                                        <p className="text-[15px] text-gray-900 leading-snug">{ing.name}</p>
+                                                        <p className="text-[13px] text-gray-500 mt-0.5">{ing.category}</p>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 shrink-0">
+                                                        <span className="text-[15px] font-bold text-gray-900">{ing.grams}g</span>
+                                                        <ChevronRight className="w-4 h-4 text-gray-300" />
+                                                    </div>
+                                                </div>
+                                                {/* Divider except last */}
+                                                {idx < aiData.ingredients!.length - 1 && (
+                                                    <div className="absolute bottom-0 right-0 left-0 h-[1px] bg-gray-100" />
+                                                )}
+                                            </div>
+                                        ))}
+
+                                        {/* Fallback string for old structures */}
+                                        {(!aiData.ingredients || aiData.ingredients.length === 0) && (
+                                            <div className="py-4 text-sm text-gray-500 italic">
+                                                {aiData.title || "No se detallaron ingredientes individuales."}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
                             </div>
                         ) : null}
-
-                        <div className="flex gap-3 pt-2">
-                            <Button variant="outline" className="flex-1" onClick={handleCancel}>
-                                Cancelar
-                            </Button>
-                            <Button
-                                className="flex-1 bg-zinc-900 text-white hover:bg-zinc-800 rounded-xl"
-                                onClick={handleConfirmUpload}
-                                disabled={isUploading || isAnalyzing}
-                            >
-                                {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                {isUploading ? 'Subiendo...' : 'Confirmar'}
-                            </Button>
-                        </div>
                     </div>
+
+                    {/* Fixed Bottom CTA for Results */}
+                    {(!isAnalyzing && aiData) && (
+                        <div className="fixed bottom-0 left-0 right-0 sm:absolute bg-white/95 backdrop-blur-xl border-t border-gray-100 p-6 pt-4 pb-8 sm:pb-6 flex flex-col gap-3">
+                            <Button
+                                className="w-full h-14 bg-[#111827] hover:bg-[#1F2937] text-white rounded-[16px] text-[16px] font-bold shadow-sm transition-all active:scale-[0.98]"
+                                onClick={handleConfirmUpload}
+                                disabled={isUploading}
+                            >
+                                {isUploading ? (
+                                    <>
+                                        <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin mr-2" />
+                                        Subiendo...
+                                    </>
+                                ) : (
+                                    'Confirmar y registrar'
+                                )}
+                            </Button>
+
+                            <button
+                                onClick={handleReanalyze}
+                                disabled={isUploading}
+                                className="w-full text-[15px] font-medium text-gray-500 hover:text-gray-900 py-2 transition-colors"
+                            >
+                                Volver a analizar
+                            </button>
+                        </div>
+                    )}
                 </DialogContent>
             </Dialog>
         </div>
