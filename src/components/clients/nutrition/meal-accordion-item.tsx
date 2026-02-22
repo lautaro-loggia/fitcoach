@@ -280,6 +280,7 @@ export function MealAccordionItem({ meal, log, outOfPlanLog, clientId }: MealAcc
                         <div className="flex-1 w-full bg-white flex flex-col relative overflow-hidden">
                             {/* Header */}
                             <div className="sticky top-0 bg-white/80 backdrop-blur-md z-10 px-4 flex items-center shrink-0 h-16">
+                                <DialogTitle className="sr-only">Análisis de Orbit AI</DialogTitle>
                                 <button
                                     onClick={() => { setAiState('idle'); setPhoto(null); setAiData(null); }}
                                     disabled={isUploading}

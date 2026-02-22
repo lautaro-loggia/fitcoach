@@ -232,6 +232,7 @@ export function MealLogger({ clientId, mealName, existingLogs }: MealLoggerProps
 
                     {/* Header */}
                     <div className="sticky top-0 bg-white/80 backdrop-blur-md z-10 px-4 py-4 flex items-center shrink-0">
+                        <DialogTitle className="sr-only">Análisis de Orbit AI</DialogTitle>
                         <button
                             onClick={handleCancel}
                             disabled={isUploading}
