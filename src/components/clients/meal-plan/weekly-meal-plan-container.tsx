@@ -104,7 +104,7 @@ export function WeeklyMealPlanContainer({ client }: WeeklyMealPlanContainerProps
                     <h3 className="text-lg font-semibold">No hay plan semanal activo</h3>
                     <p className="text-muted-foreground max-w-sm">Configura un plan semanal para organizar las comidas de tu asesorado día por día.</p>
                 </div>
-                <Button onClick={() => setWizardOpen(true)}>Crear Plan Semanal</Button>
+                <Button onClick={() => setWizardOpen(true)} className="cursor-pointer">Crear Plan Semanal</Button>
                 <PlanWizard open={wizardOpen} onOpenChange={setWizardOpen} onConfirm={handleCreatePlan} />
             </div>
         )
