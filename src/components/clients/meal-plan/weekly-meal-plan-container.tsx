@@ -92,7 +92,9 @@ export function WeeklyMealPlanContainer({ client }: WeeklyMealPlanContainerProps
 
     if (loading) return <div className="flex justify-center p-12"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div>
 
-    if (!plan) {
+    const isPlanEmpty = plan && plan.days.every((d: any) => !d.meals || d.meals.length === 0)
+
+    if (!plan || isPlanEmpty) {
         return (
             <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed rounded-lg space-y-4">
                 <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center">
