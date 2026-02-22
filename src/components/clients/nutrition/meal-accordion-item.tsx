@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Camera, Check, ChevronRight, X, Loader2, Sun, Utensils, Apple, Moon } from 'lucide-react'
+import { Camera, Check, ChevronRight, X, Loader2, Sun, Utensils, Apple, Moon, Sparkles, ArrowLeft } from 'lucide-react'
 import { toast } from 'sonner'
 import Image from 'next/image'
 import { registerMealLog } from '@/app/(dashboard)/clients/[id]/meal-plan-actions'
@@ -42,7 +42,26 @@ export function MealAccordionItem({ meal, log, outOfPlanLog, clientId }: MealAcc
     const [aiState, setAiState] = useState<'idle' | 'analyzing' | 'review'>('idle')
     const [photo, setPhoto] = useState<File | null>(null)
     const [photoPreview, setPhotoPreview] = useState<string | null>(null)
-    const [aiData, setAiData] = useState<{ title: string, macros: { kcal: number, protein: number, carbs: number, fats: number }, ingredients: Array<{ name: string, grams: number }> } | null>(null)
+    const [aiData, setAiData] = useState<{ title: string, macros: { kcal: number, protein: number, carbs: number, fats: number }, ingredients: Array<{ name: string, category: string, grams: number }> } | null>(null)
+    const [loadingTextIndex, setLoadingTextIndex] = useState(0)
+
+    const loadingTexts = [
+        "Detectando ingredientes...",
+        "Estimando cantidades...",
+        "Calculando macros...",
+        "Preparando resumen..."
+    ]
+
+    useEffect(() => {
+        if (aiState === 'analyzing') {
+            const interval = setInterval(() => {
+                setLoadingTextIndex((prevIndex) => (prevIndex + 1) % loadingTexts.length)
+            }, 2000) // Change text every 2 seconds
+            return () => clearInterval(interval)
+        } else {
+            setLoadingTextIndex(0) // Reset when not analyzing
+        }
+    }, [aiState])
 
     // Calculate macros from meal items
     const calculateMacros = () => {
@@ -258,135 +277,218 @@ export function MealAccordionItem({ meal, log, outOfPlanLog, clientId }: MealAcc
 
                 <DialogContent className="max-w-md w-[95vw] max-h-[90vh] rounded-[32px] p-0 border-none bg-white shadow-2xl overflow-hidden flex flex-col" showCloseButton={false}>
                     {aiState !== 'idle' ? (
-                        <div className="p-6 space-y-6 overflow-y-auto custom-scrollbar flex-1">
-                            <div className="flex justify-between items-start gap-4">
-                                <div>
-                                    <DialogTitle className="text-2xl font-bold text-gray-900 leading-tight">
-                                        Analizar con IA
-                                    </DialogTitle>
-                                    <p className="text-gray-500 font-medium mt-1">Revisión de tu plato</p>
+                        <div className="flex-1 w-full bg-white flex flex-col relative overflow-hidden">
+                            {/* Header */}
+                            <div className="sticky top-0 bg-white/80 backdrop-blur-md z-10 px-4 flex items-center shrink-0 h-16">
+                                <button
+                                    onClick={() => { setAiState('idle'); setPhoto(null); setAiData(null); }}
+                                    disabled={isUploading}
+                                    className="p-2 -ml-2 rounded-full hover:bg-gray-100 transition-colors z-20"
+                                >
+                                    <ArrowLeft className="w-6 h-6 text-gray-900" />
+                                </button>
+                                <h1 className="flex-1 text-center font-bold text-gray-900 absolute inset-0 flex items-center justify-center pointer-events-none uppercase tracking-widest text-xs">
+                                    {aiState === 'analyzing' ? "Orbit AI" : "Análisis Orbit AI"}
+                                </h1>
+                            </div>
+                            {(aiState === 'review' && aiData) && <div className="h-px bg-gray-100 w-full shrink-0" />}
+
+                            {/* Content Scrollable Area */}
+                            <div className="px-6 pb-28 space-y-8 flex-1 overflow-y-auto custom-scrollbar">
+
+                                {/* Image Header Block */}
+                                <div className="relative w-full aspect-[4/3] rounded-[20px] overflow-hidden shadow-sm bg-gray-100 mt-2 shrink-0">
+                                    {photoPreview && (
+                                        <Image
+                                            src={photoPreview}
+                                            alt="Preview"
+                                            fill
+                                            className="object-cover"
+                                        />
+                                    )}
+
+                                    {/* Overlay during loading */}
+                                    {aiState === 'analyzing' && (
+                                        <div className="absolute inset-0 bg-black/10" />
+                                    )}
+
+                                    {/* Results Badge */}
+                                    {(aiState === 'review' && aiData?.ingredients) && (
+                                        <div className="absolute bottom-3 left-3 bg-white shadow-sm rounded-full py-1.5 px-3 flex items-center gap-2">
+                                            <Sparkles className="w-4 h-4 text-[#4139CF]" />
+                                            <span className="text-xs font-semibold text-gray-900">
+                                                IA detectó {aiData.ingredients.length} ingredientes
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
-                                <DialogClose className="p-2 bg-gray-100/50 hover:bg-gray-100 rounded-full transition-colors">
-                                    <X className="w-5 h-5 text-gray-400" />
-                                </DialogClose>
+
+                                {/* --- STATE 1: LOADING --- */}
+                                {aiState === 'analyzing' ? (
+                                    <div className="flex flex-col items-center justify-center pt-8 text-center px-4 animate-in fade-in duration-500">
+                                        <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-2">Estamos analizando tu plato</h2>
+
+                                        <div className="h-6 mb-8 relative w-full flex justify-center">
+                                            <p
+                                                key={loadingTextIndex}
+                                                className="text-[15px] text-gray-500 absolute animate-in fade-in slide-in-from-bottom-2 duration-300"
+                                            >
+                                                {loadingTexts[loadingTextIndex] || "Analizando..."}
+                                            </p>
+                                        </div>
+
+                                        {/* Indeterminate Line Progress */}
+                                        <div className="w-full max-w-[200px] h-[2px] bg-gray-100 rounded-full overflow-hidden relative">
+                                            <div className="absolute top-0 left-0 h-full bg-[#4139CF] rounded-full w-1/3 animate-[progress_1.5s_ease-in-out_infinite] origin-left" />
+                                        </div>
+                                    </div>
+                                ) : (
+                                    /* --- STATE 2: RESULTS --- */
+                                    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 pt-2 pb-10">
+
+                                        <div className="space-y-1">
+                                            <h2 className="text-[26px] font-bold tracking-tight leading-tight text-gray-900">
+                                                Esto es lo que encontramos
+                                            </h2>
+                                            <p className="text-[15px] text-gray-500 leading-snug">
+                                                Puedes ajustar cualquier ingrediente si algo no coincide.
+                                            </p>
+                                        </div>
+
+                                        {/* Macros Card */}
+                                        <div className="bg-[#F9FAFB] rounded-[24px] p-6 pb-8 flex flex-col items-center shadow-sm">
+                                            {/* Main Kcal */}
+                                            <div className="flex items-baseline gap-1 mb-1">
+                                                <span className="text-[56px] font-black text-gray-900 tabular-nums leading-none tracking-tighter">
+                                                    {aiData?.macros?.kcal || 0}
+                                                </span>
+                                                <span className="text-xl font-bold text-[#4139CF]">kcal</span>
+                                            </div>
+                                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 mb-8">Total Estimado</span>
+
+                                            {/* Sub Macros Grid */}
+                                            <div className="flex items-end justify-between w-full max-w-[240px] px-2 relative h-[50px]">
+                                                {/* Divider Lines */}
+                                                <div className="absolute top-1/2 -translate-y-1/2 left-1/3 w-[1px] h-8 bg-gray-200" />
+                                                <div className="absolute top-1/2 -translate-y-1/2 right-1/3 w-[1px] h-8 bg-gray-200" />
+
+                                                {/* Protein */}
+                                                <div className="flex flex-col items-center flex-1 z-10 relative pb-3">
+                                                    <span className="text-lg font-bold text-gray-900 leading-none mb-1 tabular-nums">{aiData?.macros?.protein || 0}g</span>
+                                                    <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Proteína</span>
+                                                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-[3px] rounded-full bg-blue-500" />
+                                                </div>
+
+                                                {/* Carbs */}
+                                                <div className="flex flex-col items-center flex-1 z-10 relative pb-3">
+                                                    <span className="text-lg font-bold text-gray-900 leading-none mb-1 tabular-nums">{aiData?.macros?.carbs || 0}g</span>
+                                                    <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Carbos</span>
+                                                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-[3px] rounded-full bg-yellow-500" />
+                                                </div>
+
+                                                {/* Fats */}
+                                                <div className="flex flex-col items-center flex-1 z-10 relative pb-3">
+                                                    <span className="text-lg font-bold text-gray-900 leading-none mb-1 tabular-nums">{aiData?.macros?.fats || 0}g</span>
+                                                    <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Grasas</span>
+                                                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-[3px] rounded-full bg-red-500" />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Ingredients List */}
+                                        <div className="space-y-4">
+                                            <div className="flex items-end justify-between pb-2">
+                                                <div>
+                                                    <h3 className="text-lg font-bold text-gray-900">Ingredientes detectados</h3>
+                                                    <p className="text-[13px] text-gray-500">Toca para editar cantidades o eliminar</p>
+                                                </div>
+                                                <button className="text-[#4139CF] text-sm font-semibold hover:opacity-80 transition-opacity">
+                                                    + Añadir
+                                                </button>
+                                            </div>
+
+                                            <div className="space-y-0 relative">
+                                                {aiData?.ingredients?.map((ing, idx) => (
+                                                    <div key={idx} className="relative group hover:bg-gray-50/50 transition-colors">
+                                                        <div className="flex items-center justify-between py-4">
+                                                            <div className="font-medium pr-4">
+                                                                <input
+                                                                    value={ing.name}
+                                                                    onChange={(e) => {
+                                                                        const newIngs = [...(aiData.ingredients || [])];
+                                                                        newIngs[idx] = { ...newIngs[idx], name: e.target.value };
+                                                                        setAiData(prev => prev ? { ...prev, ingredients: newIngs } : null);
+                                                                    }}
+                                                                    className="text-[15px] font-medium text-gray-900 bg-transparent border-none outline-none focus:ring-1 focus:ring-gray-200 rounded px-1 -ml-1 w-full"
+                                                                />
+                                                                <p className="text-[13px] text-gray-500 mt-0.5">{ing.category}</p>
+                                                            </div>
+                                                            <div className="flex items-center gap-1 shrink-0 bg-gray-50 rounded px-2 focus-within:ring-1 focus-within:ring-gray-200">
+                                                                <input
+                                                                    type="number"
+                                                                    value={ing.grams || ''}
+                                                                    onChange={(e) => {
+                                                                        const newIngs = [...(aiData.ingredients || [])];
+                                                                        newIngs[idx] = { ...newIngs[idx], grams: Number(e.target.value) };
+                                                                        setAiData(prev => prev ? { ...prev, ingredients: newIngs } : null);
+                                                                    }}
+                                                                    className="w-12 text-right bg-transparent text-[15px] font-bold text-gray-900 outline-none p-0 border-none tabular-nums"
+                                                                />
+                                                                <span className="text-[15px] font-bold text-gray-900">g</span>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        const newIngs = [...(aiData.ingredients || [])];
+                                                                        newIngs.splice(idx, 1);
+                                                                        setAiData(prev => prev ? { ...prev, ingredients: newIngs } : null);
+                                                                    }}
+                                                                    className="ml-2 py-2 opacity-50 hover:opacity-100 hover:text-red-500 transition-colors"
+                                                                >
+                                                                    <X className="w-4 h-4" />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                        {idx < aiData.ingredients.length - 1 && (
+                                                            <div className="absolute bottom-0 right-0 left-0 h-[1px] bg-gray-100" />
+                                                        )}
+                                                    </div>
+                                                ))}
+
+                                                {(!aiData?.ingredients || aiData.ingredients.length === 0) && (
+                                                    <div className="py-4 text-sm text-gray-500 italic">
+                                                        {aiData?.title || "No se detallaron ingredientes individuales."}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
-                            {photoPreview && (
-                                <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden bg-gray-100 shadow-inner">
-                                    <Image src={photoPreview} alt="Preview" fill className="object-cover" />
-                                </div>
-                            )}
+                            {/* Fixed Bottom CTA for Results */}
+                            {aiState === 'review' && (
+                                <div className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-gray-100 p-6 pt-4 flex flex-col gap-3">
+                                    <Button
+                                        className="w-full h-14 bg-[#111827] hover:bg-[#1F2937] text-white rounded-[16px] text-[16px] font-bold shadow-sm transition-all active:scale-[0.98]"
+                                        onClick={handleSaveLog}
+                                        disabled={isUploading}
+                                    >
+                                        {isUploading ? (
+                                            <>
+                                                <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin mr-2" />
+                                                Subiendo...
+                                            </>
+                                        ) : (
+                                            'Confirmar y registrar'
+                                        )}
+                                    </Button>
 
-                            {aiState === 'analyzing' ? (
-                                <div className="flex flex-col items-center justify-center py-8 space-y-4">
-                                    <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-                                    <p className="text-sm font-bold text-gray-700 animate-pulse">✨ Analizando la comida con IA...</p>
-                                </div>
-                            ) : (
-                                <div className="space-y-6">
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Detalle del plato</label>
-                                        <Input
-                                            value={aiData?.title || ''}
-                                            onChange={(e) => setAiData(prev => prev ? { ...prev, title: e.target.value } : { title: e.target.value, macros: { kcal: 0, protein: 0, carbs: 0, fats: 0 }, ingredients: [] })}
-                                            className="font-semibold text-lg h-12 rounded-xl bg-gray-50"
-                                            placeholder="Detalle del plato..."
-                                        />
-                                    </div>
-                                    <div className="space-y-3">
-                                        <h4 className="text-[11px] font-bold text-gray-400 tracking-wider uppercase">MACROS ESTIMADOS POR IA</h4>
-                                        <div className="grid grid-cols-4 gap-2 pt-2">
-                                            <div className="flex flex-col">
-                                                <span className="text-[10px] text-gray-400 font-bold uppercase mb-1 text-center">Kcal</span>
-                                                <input type="number"
-                                                    className="w-full text-center text-sm font-black text-gray-900 bg-gray-50 border border-gray-200 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500"
-                                                    value={aiData?.macros.kcal === 0 ? '' : aiData?.macros.kcal || ''}
-                                                    onChange={(e) => setAiData(prev => prev ? { ...prev, macros: { ...prev.macros, kcal: Number(e.target.value) } } : null)}
-                                                />
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-[10px] text-gray-400 font-bold uppercase mb-1 text-center">P</span>
-                                                <input type="number"
-                                                    className="w-full text-center text-sm font-black text-[#C50D00] bg-gray-50 border border-gray-200 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500"
-                                                    value={aiData?.macros.protein === 0 ? '' : aiData?.macros.protein || ''}
-                                                    onChange={(e) => setAiData(prev => prev ? { ...prev, macros: { ...prev.macros, protein: Number(e.target.value) } } : null)}
-                                                />
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-[10px] text-gray-400 font-bold uppercase mb-1 text-center">C</span>
-                                                <input type="number"
-                                                    className="w-full text-center text-sm font-black text-[#E7A202] bg-gray-50 border border-gray-200 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500"
-                                                    value={aiData?.macros.carbs === 0 ? '' : aiData?.macros.carbs || ''}
-                                                    onChange={(e) => setAiData(prev => prev ? { ...prev, macros: { ...prev.macros, carbs: Number(e.target.value) } } : null)}
-                                                />
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-[10px] text-gray-400 font-bold uppercase mb-1 text-center">G</span>
-                                                <input type="number"
-                                                    className="w-full text-center text-sm font-black text-[#009B27] bg-gray-50 border border-gray-200 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500"
-                                                    value={aiData?.macros.fats === 0 ? '' : aiData?.macros.fats || ''}
-                                                    onChange={(e) => setAiData(prev => prev ? { ...prev, macros: { ...prev.macros, fats: Number(e.target.value) } } : null)}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-3">
-                                        <h4 className="text-[11px] font-bold text-gray-400 tracking-wider uppercase">INGREDIENTES ESTIMADOS</h4>
-                                        <div className="space-y-2">
-                                            {aiData?.ingredients?.length ? aiData.ingredients.map((ing, idx) => (
-                                                <div key={idx} className="flex gap-2 items-center">
-                                                    <Input
-                                                        value={ing.name}
-                                                        onChange={(e) => {
-                                                            const newIngs = [...(aiData.ingredients || [])];
-                                                            newIngs[idx] = { ...newIngs[idx], name: e.target.value };
-                                                            setAiData(prev => prev ? { ...prev, ingredients: newIngs } : null);
-                                                        }}
-                                                        className="flex-1 bg-gray-50 border-gray-200 text-sm font-medium"
-                                                        placeholder="Ingrediente..."
-                                                    />
-                                                    <div className="relative w-24">
-                                                        <Input
-                                                            type="number"
-                                                            value={ing.grams || ''}
-                                                            onChange={(e) => {
-                                                                const newIngs = [...(aiData.ingredients || [])];
-                                                                newIngs[idx] = { ...newIngs[idx], grams: Number(e.target.value) };
-                                                                setAiData(prev => prev ? { ...prev, ingredients: newIngs } : null);
-                                                            }}
-                                                            className="w-full bg-gray-50 border-gray-200 text-sm font-semibold pr-6"
-                                                            placeholder="0"
-                                                        />
-                                                        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">g</span>
-                                                    </div>
-                                                    <button
-                                                        onClick={() => {
-                                                            const newIngs = [...(aiData.ingredients || [])];
-                                                            newIngs.splice(idx, 1);
-                                                            setAiData(prev => prev ? { ...prev, ingredients: newIngs } : null);
-                                                        }}
-                                                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                                    >
-                                                        <X className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-                                            )) : (
-                                                <p className="text-xs text-gray-500 italic text-center py-2 bg-gray-50 rounded-lg">No se detectaron ingredientes específicos</p>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="pt-2">
-                                        <Button
-                                            onClick={handleSaveLog}
-                                            disabled={isUploading}
-                                            className="w-full bg-black hover:bg-black/90 text-white h-14 rounded-[20px] text-[15px] font-bold shadow-xl shadow-black/5"
-                                        >
-                                            {isUploading ? <Loader2 className="animate-spin mr-2" /> : <Check className="w-5 h-5 mr-2" />}
-                                            {isUploading ? 'Guardando...' : 'Confirmar y Guardar'}
-                                        </Button>
-                                    </div>
+                                    <button
+                                        onClick={() => fileInputRef.current?.click()}
+                                        disabled={isUploading}
+                                        className="w-full text-[15px] font-medium text-gray-500 hover:text-gray-900 py-2 transition-colors"
+                                    >
+                                        Volver a analizar
+                                    </button>
                                 </div>
                             )}
                         </div>
