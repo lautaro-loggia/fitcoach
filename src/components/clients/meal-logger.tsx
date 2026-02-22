@@ -10,6 +10,7 @@ import { compressImage } from '@/lib/image-utils'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
+import { InlineIngredientAdder } from './nutrition/inline-ingredient-adder'
 
 interface MealLoggerProps {
     clientId: string
@@ -397,15 +398,6 @@ export function MealLogger({ clientId, mealName, existingLogs }: MealLoggerProps
                                             <h3 className="text-lg font-bold text-gray-900">Ingredientes detectados</h3>
                                             <p className="text-[13px] text-gray-500">Toca para editar cantidades o eliminar</p>
                                         </div>
-                                        <button
-                                            onClick={() => {
-                                                const newIngs = [...(aiData?.ingredients || []), { name: 'Extra', category: 'Añadido', grams: 50 }];
-                                                handleUpdateIngredients(newIngs);
-                                            }}
-                                            className="text-[#4139CF] text-sm font-semibold hover:opacity-80 transition-opacity"
-                                        >
-                                            + Añadir
-                                        </button>
                                     </div>
 
                                     <div className="space-y-0 relative">
@@ -461,6 +453,13 @@ export function MealLogger({ clientId, mealName, existingLogs }: MealLoggerProps
                                                 {aiData.title || "No se detallaron ingredientes individuales."}
                                             </div>
                                         )}
+
+                                        <InlineIngredientAdder
+                                            onAdd={(ing, grams) => {
+                                                const newIngs = [...(aiData?.ingredients || []), { name: ing.name, category: 'Añadido', grams }];
+                                                handleUpdateIngredients(newIngs);
+                                            }}
+                                        />
                                     </div>
                                 </div>
 

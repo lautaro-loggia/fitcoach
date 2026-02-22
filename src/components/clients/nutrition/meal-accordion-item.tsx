@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils'
 import { Dialog, DialogContent, DialogTrigger, DialogClose, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { analyzeMealWithAI } from '@/app/(dashboard)/clients/[id]/ai-meal-actions'
+import { InlineIngredientAdder } from './inline-ingredient-adder'
 
 const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -434,15 +435,6 @@ export function MealAccordionItem({ meal, log, clientId }: MealAccordionItemProp
                                                     <h3 className="text-lg font-bold text-gray-900">Ingredientes detectados</h3>
                                                     <p className="text-[13px] text-gray-500">Toca para editar cantidades o eliminar</p>
                                                 </div>
-                                                <button
-                                                    onClick={() => {
-                                                        const newIngs = [...(aiData?.ingredients || []), { name: 'Extra', category: 'Añadido', grams: 50 }];
-                                                        handleUpdateIngredients(newIngs);
-                                                    }}
-                                                    className="text-[#4139CF] text-sm font-semibold hover:opacity-80 transition-opacity"
-                                                >
-                                                    + Añadir
-                                                </button>
                                             </div>
 
                                             <div className="space-y-0 relative">
@@ -496,6 +488,13 @@ export function MealAccordionItem({ meal, log, clientId }: MealAccordionItemProp
                                                         {aiData?.title || "No se detallaron ingredientes individuales."}
                                                     </div>
                                                 )}
+
+                                                <InlineIngredientAdder
+                                                    onAdd={(ing, grams) => {
+                                                        const newIngs = [...(aiData?.ingredients || []), { name: ing.name, category: 'Añadido', grams }];
+                                                        handleUpdateIngredients(newIngs);
+                                                    }}
+                                                />
                                             </div>
                                         </div>
                                     </div>
