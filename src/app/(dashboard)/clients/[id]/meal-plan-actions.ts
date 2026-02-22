@@ -43,7 +43,7 @@ export async function getWeeklyPlan(clientId: string) {
     const adminSupabase = createAdminClient()
 
     // Attempt to fetch existing active plan
-    const { data: plan } = await adminSupabase
+    const { data: plan, error: planError } = await adminSupabase
         .from('weekly_meal_plans')
         .select(`
             *,
@@ -60,7 +60,9 @@ export async function getWeeklyPlan(clientId: string) {
         `)
         .eq('client_id', clientId)
         .eq('status', 'active')
-        .single()
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
 
     if (plan) {
         // Sort days and meals here or in UI. SQL result order isn't guaranteed without order by.
@@ -111,6 +113,13 @@ export async function createWeeklyPlan(clientId: string, mealConfig: string[]) {
 
     // Bypass RLS for the inserts due to complex hierarchical policies failing
     const adminSupabase = createAdminClient()
+
+    // 0. Archive any existing active plans
+    await adminSupabase
+        .from('weekly_meal_plans')
+        .update({ status: 'archived' })
+        .eq('client_id', clientId)
+        .eq('status', 'active')
 
     // 1. Create Plan
     const { data: plan, error: planError } = await adminSupabase
