@@ -112,11 +112,13 @@ export function MealLogger({ clientId, mealName, existingLogs }: MealLoggerProps
                         totalGrams: computedTotalGrams > 0 ? computedTotalGrams : 1
                     })
                 } else {
-                    toast.error('No se pudieron estimar los macros.')
+                    toast.error(result.error || 'No se pudieron estimar los macros.')
+                    handleCancel()
                 }
             } catch (err) {
                 console.error('Error analyzing meal:', err)
                 toast.error('Error al analizar la imagen.')
+                handleCancel()
             } finally {
                 setIsAnalyzing(false)
             }

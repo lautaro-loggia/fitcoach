@@ -201,3 +201,9 @@
 ✓ Compiled in 158ms
  POST /dashboard/diet 200 in 10.9s (compile: 133ms, proxy.ts: 852ms, render: 9.9s)
 ✓ Compiled in 668ms
+ POST /dashboard/diet 200 in 14.1s (compile: 199ms, proxy.ts: 1546ms, render: 12.4s)
+✓ Compiled in 691ms
+ GET /dashboard/diet 200 in 1065ms (compile: 118ms, proxy.ts: 539ms, render: 408ms)
+ GET /manifest.webmanifest 200 in 18ms (compile: 5ms, render: 13ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 2.3s (compile: 70ms, proxy.ts: 1349ms, render: 846ms)
+✓ Compiled in 57ms

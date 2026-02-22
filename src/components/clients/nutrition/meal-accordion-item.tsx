@@ -172,14 +172,21 @@ export function MealAccordionItem({ meal, log, clientId }: MealAccordionItemProp
                         macros: { ...macros },
                         totalGrams: computedTotalGrams > 0 ? computedTotalGrams : 1
                     })
+                    setAiState('review')
                 } else {
                     toast.error(result.error || 'No se pudieron estimar los macros.')
+                    setAiState('idle')
+                    setPhoto(null)
+                    setPhotoPreview(null)
+                    setIsDialogOpen(false)
                 }
             } catch (error) {
                 console.error('AI Error:', error)
                 toast.error('Error al analizar la imagen.')
-            } finally {
-                setAiState('review')
+                setAiState('idle')
+                setPhoto(null)
+                setPhotoPreview(null)
+                setIsDialogOpen(false)
             }
         } catch (error) {
             console.error('Upload Error:', error)

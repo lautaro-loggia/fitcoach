@@ -11,8 +11,15 @@ export async function analyzeMealWithAI(base64Image: string, mimeType: string) {
     const ai = new GoogleGenAI({ apiKey })
 
     try {
-        const prompt = `Analiza esta imagen de una comida. Estima los macronutrientes totales. Responde estricta y únicamente con un objeto JSON respetando este esquema:
+        const prompt = `Analiza esta foto. IMPORTANTE: Primero que nada, determina si esta imagen muestra ALIMENTOS / COMIDA.
+Si la imagen NO parece ser comida (ej: es una foto tuya, una persona, una captura de pantalla de un chat, un teclado, un perro, o cualquier cosa que no se coma), debes responder única y estrictamente con:
 {
+  "is_food": false
+}
+
+Si la imagen SÍ muestra comida, estima los macronutrientes totales. Responde estricta y únicamente con un objeto JSON respetando este esquema:
+{
+  "is_food": true,
   "title": "Un nombre corto y descriptivo de la comida",
   "macros": {
     "kcal": número de calorías totales estimadas,
@@ -55,6 +62,10 @@ No incluyas ningún texto fuera del JSON, sin bloques de markdown (\`\`\`json).`
         if (!textResponse) throw new Error("Respuesta vacía de Gemini")
 
         const data = JSON.parse(textResponse)
+
+        if (data.is_food === false) {
+            return { error: 'La imagen no parece ser comida. Por favor, sube una foto de tu plato.' }
+        }
 
         return { success: true, data }
     } catch (error: any) {
