@@ -21,6 +21,7 @@ export interface ClientDue {
     id: string
     full_name: string
     avatar_url: string | null
+    phone: string | null
     plan_name: string | null
     next_due_date: string
     price_monthly: number
@@ -31,6 +32,7 @@ export interface CheckinDue {
     id: string
     full_name: string
     avatar_url: string | null
+    phone: string | null
     next_checkin_date: string
     status: 'pending' | 'overdue'
 }
@@ -185,6 +187,7 @@ export async function getUpcomingPayments(): Promise<ClientDue[]> {
             id, 
             full_name,
             avatar_url,
+            phone,
             next_due_date, 
             price_monthly,
             payment_status,
@@ -207,6 +210,7 @@ export async function getUpcomingPayments(): Promise<ClientDue[]> {
             id: client.id,
             full_name: client.full_name,
             avatar_url: client.avatar_url || null,
+            phone: client.phone || null,
             plan_name: planName,
             next_due_date: client.next_due_date,
             price_monthly: client.price_monthly || 0,
@@ -228,6 +232,7 @@ export async function getPendingCheckins(): Promise<CheckinDue[]> {
             id, 
             full_name,
             avatar_url,
+            phone,
             next_checkin_date
         `)
         .eq('trainer_id', user.id)
@@ -253,6 +258,7 @@ export async function getPendingCheckins(): Promise<CheckinDue[]> {
             id: client.id,
             full_name: client.full_name,
             avatar_url: client.avatar_url || null,
+            phone: client.phone || null,
             next_checkin_date: client.next_checkin_date,
             status: status
         }

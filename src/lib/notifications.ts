@@ -16,7 +16,7 @@ interface CreateNotificationParams {
     type: NotificationType
     title: string
     body: string
-    data?: Record<string, any>
+    data?: Record<string, unknown>
 }
 
 /**

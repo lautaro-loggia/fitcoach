@@ -4,13 +4,29 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { createNotification } from '@/lib/notifications'
 
+async function getClientAuthUserId(supabase: Awaited<ReturnType<typeof createClient>>, clientId: string, trainerId: string) {
+    const { data: client, error } = await supabase
+        .from('clients')
+        .select('user_id')
+        .eq('id', clientId)
+        .eq('trainer_id', trainerId)
+        .single()
+
+    if (error) {
+        console.error('Error fetching client auth user for notification:', error)
+        return null
+    }
+
+    return client?.user_id || null
+}
+
 export async function createCheckinAction(data: {
     clientId: string
     date: string
     weight: number
     bodyFat?: number
     leanMass?: number
-    measurements: any // { chest, waist, hips, etc }
+    measurements: Record<string, unknown> // { chest, waist, hips, etc }
     observations?: string
     photos?: string[]
     nextCheckinDate?: string
@@ -112,17 +128,20 @@ export async function updateCheckinNoteAction(checkinId: string, clientId: strin
         return { error: error.message || 'Error al actualizar la nota' }
     }
 
-    // Notify Client
-    await createNotification({
-        userId: clientId,
-        type: 'coach_feedback',
-        title: 'Feedback recibido',
-        body: 'Tu coach ha respondido a tu check-in.',
-        data: {
-            checkinId,
-            url: '/dashboard/progress'
-        }
-    })
+    // Notify Client (auth user id, not client row id)
+    const clientUserId = await getClientAuthUserId(supabase, clientId, user.id)
+    if (clientUserId) {
+        await createNotification({
+            userId: clientUserId,
+            type: 'coach_feedback',
+            title: 'Feedback recibido',
+            body: 'Tu coach ha respondido a tu check-in.',
+            data: {
+                checkinId,
+                url: '/dashboard/progress'
+            }
+        })
+    }
 
     revalidatePath(`/clients/${clientId}`)
     return { success: true }

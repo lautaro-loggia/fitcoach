@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
+import { createNotification } from '@/lib/notifications'
 
 export async function logMeal(formData: FormData) {
     const supabase = await createClient()
@@ -61,12 +62,15 @@ export async function logMeal(formData: FormData) {
             .single()
 
         if (client?.trainer_id) {
-            await adminClient.from('notifications').insert({
-                user_id: client.trainer_id,
-                type: 'meal_log',
+            await createNotification({
+                userId: client.trainer_id,
+                type: 'meal_photo_reminder',
                 title: 'Nueva comida registrada',
                 body: `${client.full_name} ha subido una foto de su comida`,
-                data: { url: `/clients/${clientId}` }
+                data: {
+                    clientId,
+                    url: `/clients/${clientId}?tab=diet`
+                }
             })
         }
     } catch (notifError) {

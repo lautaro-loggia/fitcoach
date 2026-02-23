@@ -1,6 +1,6 @@
 'use client'
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { ClientAvatar } from "@/components/clients/client-avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -8,6 +8,7 @@ import { formatCurrency } from "@/lib/utils"
 import { ClientDue, CheckinDue } from "@/lib/actions/dashboard"
 import { Wallet01Icon, Mail01Icon, AlertCircleIcon } from "hugeicons-react"
 import Link from "next/link"
+import { toast } from "sonner"
 
 interface UrgentActionsProps {
     overduePayments: ClientDue[]
@@ -19,12 +20,26 @@ export function UrgentActions({ overduePayments, pendingCheckins }: UrgentAction
 
     if (totalCount === 0) return null
 
-    const handleSendReminder = (clientName: string, type: 'payment' | 'checkin') => {
+    const openWhatsAppReminder = (phone: string | null, message: string) => {
+        const encodedMessage = encodeURIComponent(message)
+        const cleanPhone = phone?.replace(/\D/g, '') || ''
+        const target = cleanPhone
+            ? `https://wa.me/${cleanPhone}?text=${encodedMessage}`
+            : `https://wa.me/?text=${encodedMessage}`
+
+        if (!cleanPhone) {
+            toast.info('El asesorado no tiene teléfono cargado. Seleccioná el contacto manualmente en WhatsApp.')
+        }
+
+        window.open(target, '_blank')
+    }
+
+    const handleSendReminder = (clientName: string, phone: string | null, type: 'payment' | 'checkin') => {
         const message = type === 'payment'
             ? `Hola ${clientName.split(' ')[0]}, te recuerdo que tu pago ha vencido. Por favor regulariza tu situación.`
             : `Hola ${clientName.split(' ')[0]}, te recuerdo que debes realizar tu check-in hoy.`
 
-        window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank')
+        openWhatsAppReminder(phone, message)
     }
 
     const getDaysOverdue = (dateString: string) => {
@@ -82,14 +97,25 @@ export function UrgentActions({ overduePayments, pendingCheckins }: UrgentAction
                                 </div>
                             </div>
 
-                            <Link href={`/clients/${client.id}?tab=billing`}>
+                            <div className="flex w-full sm:w-auto items-center gap-2">
+                                <Link href={`/pagos?action=register&clientId=${client.id}`} className="flex-1 sm:flex-none">
+                                    <Button
+                                        className="w-full sm:w-auto bg-[#0F172A] hover:bg-[#1E293B] text-white font-medium h-9 text-xs sm:text-sm"
+                                    >
+                                        <Wallet01Icon className="mr-2 h-3.5 w-3.5" />
+                                        Registrar pago
+                                    </Button>
+                                </Link>
                                 <Button
-                                    className="w-full sm:w-auto bg-[#0F172A] hover:bg-[#1E293B] text-white font-medium h-9 text-xs sm:text-sm"
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-9 w-9 shrink-0"
+                                    onClick={() => handleSendReminder(client.full_name, client.phone, 'payment')}
+                                    title="Enviar recordatorio de pago"
                                 >
-                                    <Wallet01Icon className="mr-2 h-3.5 w-3.5" />
-                                    Registrar pago
+                                    <Mail01Icon className="h-3.5 w-3.5" />
                                 </Button>
-                            </Link>
+                            </div>
                         </div>
                     ))}
 
@@ -123,14 +149,25 @@ export function UrgentActions({ overduePayments, pendingCheckins }: UrgentAction
                                 </div>
                             </div>
 
-                            <Button
-                                variant="outline"
-                                className="w-full sm:w-auto h-9 text-xs sm:text-sm font-medium"
-                                onClick={() => handleSendReminder(client.full_name, 'checkin')}
-                            >
-                                <Mail01Icon className="mr-2 h-3.5 w-3.5" />
-                                Enviar recordatorio
-                            </Button>
+                            <div className="flex w-full sm:w-auto items-center gap-2">
+                                <Link href={`/clients/${client.id}?tab=checkin`} className="flex-1 sm:flex-none">
+                                    <Button
+                                        variant="outline"
+                                        className="w-full sm:w-auto h-9 text-xs sm:text-sm font-medium"
+                                    >
+                                        Revisar check-in
+                                    </Button>
+                                </Link>
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-9 w-9 shrink-0"
+                                    onClick={() => handleSendReminder(client.full_name, client.phone, 'checkin')}
+                                    title="Enviar recordatorio de check-in"
+                                >
+                                    <Mail01Icon className="h-3.5 w-3.5" />
+                                </Button>
+                            </div>
                         </div>
                     ))}
                 </CardContent>
