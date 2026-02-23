@@ -30,10 +30,6 @@ export function NotificationsForm({ userId, initialEnabled, initialPreferences }
 
     const handlePushToggle = async () => {
         if (isPushEnabled) {
-            // We don't really 'unsubscribe' from browser usually in UI as it clears everything, 
-            // but for this MVP let's allow it if user wants to kill all notifs.
-            // Or better: just updating the profile 'notifications_enabled' flag is softer.
-            // But let's use the hook logic.
             await unsubscribe()
             toast.success('Notificaciones desactivadas en este dispositivo')
         } else {
