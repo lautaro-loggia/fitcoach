@@ -9,6 +9,7 @@ import { UrgentActions } from '@/components/dashboard/urgent-actions'
 import { redirect } from 'next/navigation'
 import { FloatingActionButton } from '@/components/ui/fab'
 import { CoachOnboardingWrapper } from '@/components/onboarding/coach-onboarding-wrapper'
+import { getARTHour } from '@/lib/utils'
 
 
 
@@ -42,7 +43,7 @@ export default async function DashboardPage() {
 
     // Function to get greeting based on time of day
     const getGreeting = () => {
-        const hour = new Date().getHours()
+        const hour = getARTHour()
         if (hour >= 6 && hour < 12) return 'Buenos días'
         if (hour >= 12 && hour < 20) return 'Buenas tardes'
         return 'Buenas noches'

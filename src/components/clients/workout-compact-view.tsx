@@ -2,10 +2,10 @@
 
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { cn } from "@/lib/utils"
+import { cn, diffDateStringsInDays, getNormalizedARTWeekday, getTodayString, normalizeText } from "@/lib/utils"
 // import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip" // TooltipProvider is usually needed higher up or local
 import { MoreHorizontal, Edit2, Play, Trash2, Download, Calendar } from "lucide-react"
-import { format, parseISO, isSameDay } from "date-fns"
+import { format, parseISO } from "date-fns"
 import { es } from "date-fns/locale"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
@@ -30,8 +30,7 @@ interface WorkoutCompactViewProps {
 const DAYS_ORDER = ['lunes', 'martes', 'miércoles', 'miercoles', 'jueves', 'viernes', 'sábado', 'sabado', 'domingo']
 
 export function WorkoutCompactView({ workouts, onEdit, onDelete, onView, onDownload, onStart }: WorkoutCompactViewProps) {
-    const today = new Date()
-    const todayName = format(today, 'EEEE', { locale: es }).toLowerCase()
+    const todayName = getNormalizedARTWeekday()
 
     // Group workouts by day
     const groupedWorkouts: Record<string, Workout[]> = {}
@@ -64,7 +63,7 @@ export function WorkoutCompactView({ workouts, onEdit, onDelete, onView, onDownl
                 const dayWorkouts = groupedWorkouts[day]
                 if (!dayWorkouts || dayWorkouts.length === 0) return null
 
-                const isToday = day === todayName
+                const isToday = day !== 'sin_dia' && normalizeText(day) === todayName
                 const displayDay = day === 'sin_dia' ? 'Sin día asignado' : day.charAt(0).toUpperCase() + day.slice(1)
 
                 return (
@@ -145,7 +144,7 @@ function CompactWorkoutRow({
                         {workout.valid_until && (
                             (() => {
                                 const reviewDate = parseISO(workout.valid_until)
-                                const diffDays = Math.ceil((reviewDate.getTime() - new Date().getTime()) / (1000 * 3600 * 24))
+                                const diffDays = diffDateStringsInDays(workout.valid_until, getTodayString())
                                 const isUpcoming = diffDays <= 7 && diffDays >= 0
 
                                 return (

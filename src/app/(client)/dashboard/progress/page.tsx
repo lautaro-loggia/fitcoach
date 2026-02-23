@@ -3,10 +3,11 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { Flame, Dumbbell, Target } from 'lucide-react'
-import { format, subDays, isToday, parseISO } from 'date-fns'
+import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { WeightChart } from '@/components/client/progress/weight-chart'
 import { RecentHistoryList } from '@/components/client/progress/recent-history-list'
+import { addDaysToDateString, compareDateStrings, dateOnlyToLocalNoon, getTodayString } from '@/lib/utils'
 
 export default async function ProgressPage() {
     const supabase = await createClient()
@@ -26,7 +27,8 @@ export default async function ProgressPage() {
     if (!client) return <div>Cliente no encontrado</div>
 
     // 1. Calculate Compliance (Last 30 Days)
-    const startDate = subDays(new Date(), 30).toISOString().split('T')[0]
+    const todayStr = getTodayString()
+    const startDate = addDaysToDateString(todayStr, -30)
     const { count: completedCount } = await adminClient
         .from('workout_logs')
         .select('id', { count: 'exact', head: true })
@@ -70,7 +72,7 @@ export default async function ProgressPage() {
 
     // Formatting Data for Chart
     const chartData = checkins?.map(c => ({
-        date: format(new Date(c.date), 'dd MMM', { locale: es }),
+        date: format(dateOnlyToLocalNoon(c.date), 'dd MMM', { locale: es }),
         weight: c.weight || 0
     })) || []
 
@@ -198,7 +200,11 @@ export default async function ProgressPage() {
                         <div className="flex items-center gap-2 mt-auto">
                             <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse ring-2 ring-green-100"></span>
                             <div className="text-base font-bold text-gray-900">
-                                {latestCheckin ? (isToday(parseISO(latestCheckin.date)) ? 'Hoy' : format(parseISO(latestCheckin.date), 'dd MMM', { locale: es })) : 'Pendiente'}
+                                {latestCheckin
+                                    ? (compareDateStrings(latestCheckin.date, todayStr) === 0
+                                        ? 'Hoy'
+                                        : format(dateOnlyToLocalNoon(latestCheckin.date), 'dd MMM', { locale: es }))
+                                    : 'Pendiente'}
                             </div>
                         </div>
                     </Card>

@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { createNotification } from '@/lib/notifications'
+import { getARTDayBounds, getNormalizedARTWeekday, getTodayString, normalizeText } from '@/lib/utils'
 
 // Types
 export interface WorkoutSession {
@@ -58,10 +59,7 @@ export async function getOrCreateSession(assignedWorkoutId: string) {
 
     // Determine Trainer ID and check for existing session in PARALLEL
     const adminSupabase = createAdminClient()
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const tomorrow = new Date(today)
-    tomorrow.setDate(tomorrow.getDate() + 1)
+    const { startISO, endISO } = getARTDayBounds()
 
     const [workoutResult, existingSessionResult] = await Promise.all([
         adminSupabase
@@ -81,8 +79,8 @@ export async function getOrCreateSession(assignedWorkoutId: string) {
             `)
             .eq('client_id', client.id)
             .eq('assigned_workout_id', assignedWorkoutId)
-            .gte('started_at', today.toISOString())
-            .lt('started_at', tomorrow.toISOString())
+            .gte('started_at', startISO)
+            .lt('started_at', endISO)
             .order('started_at', { ascending: false })
             .limit(1)
             .maybeSingle()
@@ -415,7 +413,7 @@ export async function completeSession(sessionId: string, feedback?: any) {
         .insert({
             client_id: session.client_id,
             workout_id: session.assigned_workout_id,
-            date: new Date().toISOString().split('T')[0],
+            date: getTodayString(),
             completed_at: new Date().toISOString(),
             exercises_log: [], // storing empty for now, detail is in set_logs
             feedback: feedback || {}
@@ -496,15 +494,13 @@ export async function getTodaysWorkouts() {
 
     if (!workouts) return { workouts: [] }
 
-    const daysOfWeek = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado']
-    const todayIndex = new Date().getDay()
-    const todayName = daysOfWeek[todayIndex]
+    const todayName = getNormalizedARTWeekday()
 
     const todaysWorkouts = workouts.filter(w => {
         // @ts-ignore
         if (!w.scheduled_days || w.scheduled_days.length === 0) return true
         // @ts-ignore
-        return w.scheduled_days.map(d => d.toLowerCase()).includes(todayName)
+        return w.scheduled_days.map((d: string) => normalizeText(d)).includes(todayName)
     })
 
     const { data: clientInfo } = await supabase.from('clients').select('id, full_name').eq('id', client.id).single()

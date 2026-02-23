@@ -13,10 +13,17 @@ import {
     ArrowRight
 } from 'lucide-react'
 import Link from 'next/link'
-import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { getARTDate } from '@/lib/utils'
+import {
+    addDaysToDateString,
+    compareDateStrings,
+    diffDateStringsInDays,
+    formatDateInART,
+    getARTDayBounds,
+    getNormalizedARTWeekday,
+    getTodayString,
+    normalizeText
+} from '@/lib/utils'
 import { WorkoutStartDialog } from '@/components/clients/workout-start-dialog'
 import { AdvisedDashboardMenu } from '@/components/clients/advised-dashboard-menu'
 
@@ -55,8 +62,8 @@ export default async function ClientDashboard() {
     }
 
     // 1. Get Today's Workout (ART Time)
-    const artNow = getARTDate()
-    const todayName = format(artNow, 'EEEE', { locale: es }).toLowerCase()
+    const todayStr = getTodayString()
+    const todayName = getNormalizedARTWeekday()
 
     // Fetch all workouts to find today's
     const { data: workouts } = await adminClient
@@ -64,15 +71,14 @@ export default async function ClientDashboard() {
         .select('id, name, structure, scheduled_days')
         .eq('client_id', client.id)
 
-    const todayWorkout = workouts?.find(w =>
-        w.scheduled_days?.map((d: string) => d.toLowerCase()).includes(todayName)
+    const todayWorkout = workouts?.find((w) =>
+        w.scheduled_days?.some((d: string) => normalizeText(d) === todayName)
     )
 
     // 2. Check if workout is completed today (verifica ambas tablas para consistencia)
     let isCompleted = false
     if (todayWorkout) {
-        const startOfDay = new Date(artNow)
-        startOfDay.setHours(0, 0, 0, 0)
+        const { startISO, endISO } = getARTDayBounds()
 
         const [logsResult, sessionsResult] = await Promise.all([
             adminClient
@@ -80,14 +86,16 @@ export default async function ClientDashboard() {
                 .select('id', { count: 'exact', head: true })
                 .eq('client_id', client.id)
                 .eq('workout_id', todayWorkout.id)
-                .gte('completed_at', startOfDay.toISOString()),
+                .gte('completed_at', startISO)
+                .lt('completed_at', endISO),
             adminClient
                 .from('workout_sessions')
                 .select('id', { count: 'exact', head: true })
                 .eq('client_id', client.id)
                 .eq('assigned_workout_id', todayWorkout.id)
                 .eq('status', 'completed')
-                .gte('started_at', startOfDay.toISOString())
+                .gte('started_at', startISO)
+                .lt('started_at', endISO)
         ])
 
         isCompleted = (logsResult.count || 0) > 0 || (sessionsResult.count || 0) > 0
@@ -103,16 +111,14 @@ export default async function ClientDashboard() {
         .maybeSingle()
 
     // 3. Weekly Stats (Real)
-    const today = getARTDate()
-    const thirtyFiveDaysAgo = new Date(today)
-    thirtyFiveDaysAgo.setDate(today.getDate() - 35)
+    const thirtyFiveDaysAgo = addDaysToDateString(todayStr, -35)
 
     // Fetch logs from last 5 weeks
     const { data: recentLogs } = await adminClient
         .from('workout_logs')
         .select('date')
         .eq('client_id', client.id)
-        .gte('date', thirtyFiveDaysAgo.toISOString().split('T')[0])
+        .gte('date', thirtyFiveDaysAgo)
 
     let weeklyTarget = 0
     workouts?.forEach(w => {
@@ -125,10 +131,8 @@ export default async function ClientDashboard() {
     // Calculate weekly counts for the last 5 weeks (rolling windows)
     const logsByWeek = [0, 0, 0, 0, 0] // [Week-4, Week-3, Week-2, PreviousWeek, CurrentWeek]
 
-    recentLogs?.forEach(log => {
-        const logDate = new Date(log.date)
-        const diffTime = today.getTime() - logDate.getTime()
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+    recentLogs?.forEach((log) => {
+        const diffDays = diffDateStringsInDays(todayStr, log.date)
 
         if (diffDays < 7) logsByWeek[4]++             // Current Week
         else if (diffDays < 14) logsByWeek[3]++       // Previous Week
@@ -212,29 +216,22 @@ export default async function ClientDashboard() {
                         TU DÍA HOY
                     </h2>
                     <span className="text-xs font-semibold text-gray-400 capitalize">
-                        {format(artNow, 'EEE, d MMM', { locale: es })}
+                        {formatDateInART(new Date(), { weekday: 'short', day: 'numeric', month: 'short' })}
                     </span>
                 </div>
 
                 {/* Check-in Card Logic */}
                 {(() => {
-                    const todayDate = new Date(artNow)
-                    todayDate.setHours(0, 0, 0, 0)
                     let isCheckInDay = false
 
                     if (client.next_checkin_date) {
-                        const nextDate = new Date(client.next_checkin_date + 'T00:00:00')
-                        if (todayDate >= nextDate) {
+                        if (compareDateStrings(todayStr, client.next_checkin_date) >= 0) {
                             isCheckInDay = true
 
                             // If a check-in is already logged on or after the scheduled date (with a small margin), hide the button
                             if (latestCheckin?.date) {
-                                const lastCheckinDate = new Date(latestCheckin.date + 'T00:00:00')
-
-                                const marginDate = new Date(nextDate)
-                                marginDate.setDate(marginDate.getDate() - 3)
-
-                                if (lastCheckinDate >= marginDate) {
+                                const marginDate = addDaysToDateString(client.next_checkin_date, -3)
+                                if (compareDateStrings(latestCheckin.date, marginDate) >= 0) {
                                     isCheckInDay = false
                                 }
                             }

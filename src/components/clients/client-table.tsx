@@ -64,7 +64,7 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
-import { cn } from '@/lib/utils'
+import { cn, dateOnlyToLocalNoon, getTodayString } from '@/lib/utils'
 
 // We define a type for the client data we expect
 export interface Client {
@@ -108,10 +108,11 @@ function getGoalLabel(goal: string | null) {
 
 
 function parseLocalDate(dateStr: string) {
-    if (!dateStr) return new Date()
-    const parts = dateStr.split('-')
+    if (!dateStr) return dateOnlyToLocalNoon(getTodayString())
+    const normalized = dateStr.split('T')[0] || dateStr
+    const parts = normalized.split('-')
     if (parts.length === 3) {
-        return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]))
+        return dateOnlyToLocalNoon(`${parts[0]}-${parts[1]}-${parts[2]}`)
     }
     return new Date(dateStr)
 }
@@ -124,11 +125,7 @@ function getCheckinStatus(client: Client): { status: CheckinStatus | 'pending_re
         // Assuming checkin.date is YYYY-MM-DD from DB or ISO string. 
         // If it's pure date string from postgres 'date' column, it might come as YYYY-MM-DD.
         // Convert strict to avoid timezone shift.
-        if (lastCheckin.date.includes('T')) {
-            lastCheckinDate = new Date(lastCheckin.date)
-        } else {
-            lastCheckinDate = parseLocalDate(lastCheckin.date)
-        }
+        lastCheckinDate = parseLocalDate(lastCheckin.date)
         // Normalize time
         lastCheckinDate.setHours(0, 0, 0, 0)
     }
@@ -154,8 +151,7 @@ function getCheckinStatus(client: Client): { status: CheckinStatus | 'pending_re
         return { status: 'pending_review', date: scheduledDate, labels: 'Definir Próximo', color: 'text-orange-600 font-bold' }
     }
 
-    const now = new Date()
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const today = parseLocalDate(getTodayString())
 
     const diffTime = scheduledDate.getTime() - today.getTime()
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))

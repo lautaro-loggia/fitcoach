@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { ClientAvatar } from "@/components/clients/client-avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { formatCurrency } from "@/lib/utils"
+import { diffDateStringsInDays, formatCurrency, getTodayString } from "@/lib/utils"
 import { ClientDue, CheckinDue } from "@/lib/actions/dashboard"
 import { Wallet01Icon, Mail01Icon, AlertCircleIcon } from "hugeicons-react"
 import Link from "next/link"
@@ -43,14 +43,10 @@ export function UrgentActions({ overduePayments, pendingCheckins }: UrgentAction
     }
 
     const getDaysOverdue = (dateString: string) => {
-        const date = new Date(dateString)
-        const today = new Date()
-        date.setHours(0, 0, 0, 0)
-        today.setHours(0, 0, 0, 0)
-        const diffTime = today.getTime() - date.getTime()
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+        const diffDays = diffDateStringsInDays(getTodayString(), dateString)
 
         if (diffDays === 0) return "hoy"
+        if (diffDays < 0) return `en ${Math.abs(diffDays)} días`
         return `hace ${diffDays} días`
     }
 

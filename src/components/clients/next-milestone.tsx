@@ -1,7 +1,6 @@
 import { Card } from "@/components/ui/card"
-import { CalendarDays, Target, ArrowRight } from "lucide-react"
-import { differenceInDays, format } from "date-fns"
-import { es } from "date-fns/locale"
+import { CalendarDays, Target } from "lucide-react"
+import { diffDateStringsInDays, getTodayString } from "@/lib/utils"
 
 interface NextMilestoneProps {
     nextCheckinDate: string | null
@@ -12,11 +11,7 @@ export function NextMilestone({ nextCheckinDate, weeklyGoalText }: NextMilestone
     if (!nextCheckinDate) return null
 
     // 1. Calculate Days Remaining
-    const today = new Date()
-    // Parse strictly YYYY-MM-DD to avoid timezone issues if possible, or use standard date object
-    // Assuming nextCheckinDate is 'YYYY-MM-DD'
-    const checkinDate = new Date(`${nextCheckinDate}T00:00:00`)
-    const daysRemaining = differenceInDays(checkinDate, today)
+    const daysRemaining = diffDateStringsInDays(nextCheckinDate, getTodayString())
 
     let timeText = ""
     if (daysRemaining < 0) timeText = "Vencido"

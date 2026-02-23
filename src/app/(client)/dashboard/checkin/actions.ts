@@ -3,9 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
-import { addDays, format } from 'date-fns'
-import { getTodayString, getARTDate } from '@/lib/utils'
+import { addDaysToDateString, getTodayString } from '@/lib/utils'
 import { createNotification } from '@/lib/notifications'
 
 export async function createCheckin(data: {
@@ -76,14 +74,13 @@ export async function createCheckin(data: {
     // 3. Update Client Current Weight
     const updateData: any = {
         current_weight: data.weight,
-        updated_at: getARTDate().toISOString()
+        updated_at: new Date().toISOString()
     }
 
     // 4. Calculate Next Check-in Date
     // If client has a frequency set, we calculate next date from TODAY.
     if (client.checkin_frequency_days) {
-        const nextDate = addDays(getARTDate(), client.checkin_frequency_days)
-        updateData.next_checkin_date = format(nextDate, 'yyyy-MM-dd')
+        updateData.next_checkin_date = addDaysToDateString(getTodayString(), client.checkin_frequency_days)
     }
 
     await adminSupabase

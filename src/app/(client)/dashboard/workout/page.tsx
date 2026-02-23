@@ -1,14 +1,12 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
 import Image from 'next/image'
 import { Card } from '@/components/ui/card'
 import { ChevronRight, Dumbbell, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { getARTDate } from '@/lib/utils'
+import { getNormalizedARTWeekday, getTodayString, normalizeText } from '@/lib/utils'
 import { WorkoutStartDialog } from '@/components/clients/workout-start-dialog'
 
 export default async function WorkoutPage() {
@@ -42,20 +40,15 @@ export default async function WorkoutPage() {
     // If there is ONLY ONE workout active schedule, just show it? 
     // Implementing a list view for now to satisfy "Lista de ejercicios" (which is inside the specific routine).
 
-    const todayName = format(getARTDate(), 'EEEE', { locale: es }).toLowerCase()
+    const todayName = getNormalizedARTWeekday()
     const todayWorkout = workouts?.find(w =>
-        w.scheduled_days?.map((d: string) => d.toLowerCase()).includes(todayName)
+        w.scheduled_days?.some((d: string) => normalizeText(d) === todayName)
     )
 
     // Check if today's workout is completed
     let isTodayCompleted = false
     if (todayWorkout) {
-        const todayStr = new Intl.DateTimeFormat('en-CA', {
-            timeZone: 'America/Argentina/Buenos_Aires',
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
-        }).format(new Date())
+        const todayStr = getTodayString()
 
         const { count } = await adminClient
             .from('workout_logs')

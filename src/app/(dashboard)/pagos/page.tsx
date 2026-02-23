@@ -15,7 +15,14 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table'
-import { cn } from '@/lib/utils'
+import {
+    cn,
+    compareDateStrings,
+    dateOnlyToLocalNoon,
+    diffDateStringsInDays,
+    formatCurrency,
+    getTodayString
+} from '@/lib/utils'
 import {
     Plus,
     Mail,
@@ -50,7 +57,6 @@ import {
 import { RegisterPaymentDialog } from '@/components/payments/register-payment-dialog'
 import { ChangePlanDialog } from '@/components/payments/change-plan-dialog'
 import { toast } from 'sonner'
-import { formatCurrency } from '@/lib/utils'
 
 import { DashboardTopBar } from '@/components/layout/dashboard-top-bar'
 
@@ -180,7 +186,7 @@ export default function PagosPage() {
             // Secondary Sort: Next Due Date Ascending (Earlier dates first)
             if (!a.next_due_date) return 1
             if (!b.next_due_date) return -1
-            return new Date(a.next_due_date).getTime() - new Date(b.next_due_date).getTime()
+            return compareDateStrings(a.next_due_date, b.next_due_date)
         })
 
         return filtered
@@ -194,14 +200,7 @@ export default function PagosPage() {
 
     function getRelativeDate(dateStr: string | null) {
         if (!dateStr) return '-'
-        // Add T12:00:00 to avoid timezone issues
-        const due = new Date(dateStr + 'T12:00:00')
-        const today = new Date()
-        // Reset time part for accurate day calculation
-        today.setHours(12, 0, 0, 0)
-
-        const diffTime = due.getTime() - today.getTime()
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+        const diffDays = diffDateStringsInDays(dateStr, getTodayString())
 
         if (diffDays === 0) return 'Vence hoy'
         if (diffDays === 1) return 'Vence mañana'
@@ -213,7 +212,7 @@ export default function PagosPage() {
     // Display formatted date (keep original format for Tooltip or alternative view if needed)
     function formatDate(date: string | null) {
         if (!date) return '-'
-        return new Date(date + 'T12:00:00').toLocaleDateString('es-AR', {
+        return dateOnlyToLocalNoon(date).toLocaleDateString('es-AR', {
             day: '2-digit',
             month: '2-digit',
             year: 'numeric',
@@ -222,9 +221,7 @@ export default function PagosPage() {
 
     function isDueSoon(dueDate: string | null) {
         if (!dueDate) return false
-        const due = new Date(dueDate + 'T12:00:00')
-        const today = new Date()
-        const diffDays = Math.floor((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+        const diffDays = diffDateStringsInDays(dueDate, getTodayString())
         return diffDays >= 0 && diffDays <= 3
     }
 

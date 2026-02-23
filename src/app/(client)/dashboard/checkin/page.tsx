@@ -4,6 +4,7 @@ import { CheckinForm } from './_components/checkin-form'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { addDaysToDateString, compareDateStrings, getTodayString } from '@/lib/utils'
 
 export default async function CheckinPage() {
     const supabase = await createClient()
@@ -29,22 +30,16 @@ export default async function CheckinPage() {
         .maybeSingle()
 
     const hasCheckins = !!latestCheckin
+    const todayStr = getTodayString()
 
     if (client && client.next_checkin_date) {
-        const nextDate = new Date(client.next_checkin_date + 'T00:00:00')
-        const today = new Date()
-        today.setHours(0, 0, 0, 0)
-
-        if (today < nextDate) {
+        if (compareDateStrings(todayStr, client.next_checkin_date) < 0) {
             redirect('/dashboard')
         }
 
         if (latestCheckin?.date) {
-            const lastCheckinDate = new Date(latestCheckin.date + 'T00:00:00')
-            const marginDate = new Date(nextDate)
-            marginDate.setDate(marginDate.getDate() - 3)
-
-            if (lastCheckinDate >= marginDate) {
+            const marginDate = addDaysToDateString(client.next_checkin_date, -3)
+            if (compareDateStrings(latestCheckin.date, marginDate) >= 0) {
                 redirect('/dashboard')
             }
         }

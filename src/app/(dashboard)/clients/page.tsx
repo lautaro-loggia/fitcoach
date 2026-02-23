@@ -1,9 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { ClientTable, Client } from '@/components/clients/client-table'
 import { Workout } from '@/components/clients/presential-calendar-dialog'
-import { DashboardTopBar } from '@/components/layout/dashboard-top-bar'
-import { AddClientDialog } from '@/components/clients/add-client-dialog'
-import { PresentialCalendarDialog } from '@/components/clients/presential-calendar-dialog'
+import { compareDateStrings } from '@/lib/utils'
 
 interface ClientsPageProps {
     searchParams: Promise<{ [key: string]: string | string[] | undefined }>
@@ -34,7 +32,9 @@ export default async function ClientsPage({ searchParams: searchParamsPromise }:
 
     const formattedClients: Client[] = clients?.map(client => ({
         ...client,
-        checkins: client.checkins ? client.checkins.sort((a: { date: string }, b: { date: string }) => new Date(b.date).getTime() - new Date(a.date).getTime()) : []
+        checkins: client.checkins
+            ? client.checkins.sort((a: { date: string }, b: { date: string }) => compareDateStrings(b.date, a.date))
+            : []
     })) as Client[] || []
 
     // Fetch presential workouts for the calendar

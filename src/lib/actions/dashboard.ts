@@ -1,7 +1,13 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { getTodayString } from '@/lib/utils'
+import {
+    addDaysToDateString,
+    compareDateStrings,
+    formatDateInART,
+    getMonthStartDateStringART,
+    getTodayString
+} from '@/lib/utils'
 
 export interface DashboardStats {
     activeClients: number
@@ -42,8 +48,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Not authenticated')
 
-    const now = new Date()
-    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+    const firstDayOfMonth = getMonthStartDateStringART()
 
     // 4. Pending Check-ins Count (Due today or overdue)
     const todayStr = getTodayString()
@@ -104,40 +109,38 @@ export async function getIncomeHistory(rangeStart?: Date, rangeEnd?: Date): Prom
     if (!user) throw new Error('Not authenticated')
 
     // Default to last 6 months if not provided
-    let startDate = rangeStart
-    const endDate = rangeEnd || new Date()
+    let startDateStr: string
+    const endDateStr = rangeEnd ? getTodayString(rangeEnd) : getTodayString()
 
-    if (!startDate) {
-        startDate = new Date()
-        startDate.setMonth(startDate.getMonth() - 5)
-        startDate.setDate(1)
+    if (rangeStart) {
+        startDateStr = getTodayString(rangeStart)
+    } else {
+        const base = new Date()
+        base.setMonth(base.getMonth() - 5)
+        startDateStr = `${getTodayString(base).slice(0, 7)}-01`
     }
 
     const { data: payments } = await supabase
         .from('payments')
         .select('amount, paid_at')
         .eq('trainer_id', user.id)
-        .gte('paid_at', startDate.toISOString().split('T')[0])
-        .lte('paid_at', endDate.toISOString().split('T')[0])
+        .gte('paid_at', startDateStr)
+        .lte('paid_at', endDateStr)
         .order('paid_at', { ascending: true })
 
     if (!payments) return []
 
     // Group by month
     const grouped = payments.reduce((acc, payment) => {
-        const date = new Date(payment.paid_at)
-        // Use full month name + year if needed, but for now stick to previous format or smart format
-        // Let's use "MMM" format.
-        const key = date.toLocaleDateString('es-AR', { month: 'short' })
-        const monthName = key.charAt(0).toUpperCase() + key.slice(1)
+        const [year, month] = payment.paid_at.split('-')
+        if (!year || !month) return acc
 
-        // We might want to include year if the range spans multiple years, 
-        // but for simplicity in current UI request (Trimestral/Semestral/Anual), month name is usually enough unique identifier 
-        // UNLESS it's a very long range. Let's stick to simple month buckets for now.
-        // Actually, for correct sorting and display in a custom range, we should map them properly.
-
-        // Let's create a "YYYY-MM" key for sorting/grouping first
-        const sortKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+        const monthNameRaw = formatDateInART(
+            new Date(Date.UTC(Number(year), Number(month) - 1, 15)),
+            { month: 'short' }
+        )
+        const monthName = monthNameRaw.charAt(0).toUpperCase() + monthNameRaw.slice(1)
+        const sortKey = `${year}-${month}`
 
         if (!acc[sortKey]) {
             acc[sortKey] = { amount: 0, label: monthName }
@@ -148,25 +151,32 @@ export async function getIncomeHistory(rangeStart?: Date, rangeEnd?: Date): Prom
 
     // Generate all months in range to fill gaps with 0
     const result: IncomeData[] = []
-    const current = new Date(startDate)
+    const [startYearRaw, startMonthRaw] = startDateStr.split('-')
+    const [endYearRaw, endMonthRaw] = endDateStr.split('-')
 
-    // Normalize to start of month to avoid skipping via day mismatch
-    // But wait, user might select custom days (01/07 to 28/12). 
-    // We should iterate month by month from start to end.
-    const loopDate = new Date(current.getFullYear(), current.getMonth(), 1)
-    const endLoopDate = new Date(endDate.getFullYear(), endDate.getMonth(), 1)
+    let loopYear = Number(startYearRaw)
+    let loopMonth = Number(startMonthRaw)
+    const endYear = Number(endYearRaw)
+    const endMonth = Number(endMonthRaw)
 
-    while (loopDate <= endLoopDate) {
-        const sortKey = `${loopDate.getFullYear()}-${String(loopDate.getMonth() + 1).padStart(2, '0')}`
-        const key = loopDate.toLocaleDateString('es-AR', { month: 'short' })
-        const monthName = key.charAt(0).toUpperCase() + key.slice(1)
+    while (loopYear < endYear || (loopYear === endYear && loopMonth <= endMonth)) {
+        const sortKey = `${loopYear}-${String(loopMonth).padStart(2, '0')}`
+        const monthNameRaw = formatDateInART(
+            new Date(Date.UTC(loopYear, loopMonth - 1, 15)),
+            { month: 'short' }
+        )
+        const monthName = monthNameRaw.charAt(0).toUpperCase() + monthNameRaw.slice(1)
 
         result.push({
             month: monthName,
             amount: grouped[sortKey]?.amount || 0
         })
 
-        loopDate.setMonth(loopDate.getMonth() + 1)
+        loopMonth += 1
+        if (loopMonth > 12) {
+            loopMonth = 1
+            loopYear += 1
+        }
     }
 
     return result
@@ -177,9 +187,7 @@ export async function getUpcomingPayments(): Promise<ClientDue[]> {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Not authenticated')
 
-    const sevenDaysLater = new Date()
-    sevenDaysLater.setDate(sevenDaysLater.getDate() + 7)
-    const sevenDaysLaterStr = sevenDaysLater.toISOString().split('T')[0]
+    const sevenDaysLaterStr = addDaysToDateString(getTodayString(), 7)
 
     const { data: clients } = await supabase
         .from('clients')
@@ -244,15 +252,7 @@ export async function getPendingCheckins(): Promise<CheckinDue[]> {
     if (!clients) return []
 
     return clients.map(client => {
-        // Calculate status based on date
-        const checkinDate = new Date(client.next_checkin_date)
-        const today = new Date()
-        checkinDate.setHours(0, 0, 0, 0)
-        today.setHours(0, 0, 0, 0)
-
-        // If checkin date is before today, it's overdue (atrasado)
-        // If checkin date is today, it's pending (pendiente hoy)
-        const status = checkinDate < today ? 'overdue' : 'pending'
+        const status = compareDateStrings(client.next_checkin_date, todayStr) < 0 ? 'overdue' : 'pending'
 
         return {
             id: client.id,
@@ -280,9 +280,7 @@ export async function getTodayPresentialTrainings(): Promise<PresentialTraining[
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return []
 
-    const today = new Date()
-    // Helper to get day name in 'Lunes', 'Martes' format
-    const dayName = today.toLocaleDateString('es-ES', { weekday: 'long', timeZone: 'America/Argentina/Buenos_Aires' })
+    const dayName = formatDateInART(new Date(), { weekday: 'long' })
     const capitalizedDay = dayName.charAt(0).toUpperCase() + dayName.slice(1)
     const todayStr = getTodayString()
 
