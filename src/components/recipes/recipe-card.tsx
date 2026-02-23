@@ -179,14 +179,14 @@ export function RecipeCard({ recipe, isAdmin, onSelect, isSelected }: RecipeCard
                 </div>
 
                 {/* Content */}
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                     {/* Title */}
                     <div>
-                        <h3 className="text-xl font-bold leading-tight tracking-tight text-foreground">
+                        <h3 className="line-clamp-2 text-base sm:text-xl font-bold leading-tight tracking-tight text-foreground">
                             {recipe.name}
                         </h3>
                         {/* Meta: Time & Servings */}
-                        <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
+                        <div className="mt-1 sm:mt-2 flex items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground flex-wrap">
                             {!!recipe.prep_time_min && (
                                 <div className="flex items-center gap-1.5">
                                     <Clock className="h-4 w-4" />
@@ -204,61 +204,61 @@ export function RecipeCard({ recipe, isAdmin, onSelect, isSelected }: RecipeCard
                     </div>
 
                     {/* Macros Grid */}
-                    <div className="grid grid-cols-4 gap-2">
-                        <div className="flex flex-col items-center justify-center rounded-lg bg-zinc-50 p-2 dark:bg-zinc-900">
-                            <span className="text-lg font-bold text-zinc-900 dark:text-zinc-50">{Math.round(macros.kcal)}</span>
-                            <span className="text-[10px] font-semibold uppercase text-zinc-500">KCAL</span>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
+                        <div className="flex flex-col items-center justify-center rounded-lg bg-zinc-50 p-1.5 sm:p-2 dark:bg-zinc-900">
+                            <span className="text-sm sm:text-lg font-bold text-zinc-900 dark:text-zinc-50">{Math.round(macros.kcal)}</span>
+                            <span className="text-[8px] sm:text-[10px] font-semibold uppercase text-zinc-500">KCAL</span>
                         </div>
-                        <div className="flex flex-col items-center justify-center rounded-lg bg-blue-50 p-2 dark:bg-blue-900/20">
-                            <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{Math.round(macros.protein)}g</span>
-                            <span className="text-[10px] font-semibold uppercase text-blue-600/70">PROT</span>
+                        <div className="flex flex-col items-center justify-center rounded-lg bg-blue-50 p-1.5 sm:p-2 dark:bg-blue-900/20">
+                            <span className="text-sm sm:text-lg font-bold text-blue-600 dark:text-blue-400">{Math.round(macros.protein)}g</span>
+                            <span className="text-[8px] sm:text-[10px] font-semibold uppercase text-blue-600/70">PROT</span>
                         </div>
-                        <div className="flex flex-col items-center justify-center rounded-lg bg-amber-50 p-2 dark:bg-amber-900/20">
-                            <span className="text-lg font-bold text-amber-600 dark:text-amber-400">{Math.round(macros.carbs)}g</span>
-                            <span className="text-[10px] font-semibold uppercase text-amber-600/70">CARBS</span>
+                        <div className="flex flex-col items-center justify-center rounded-lg bg-amber-50 p-1.5 sm:p-2 dark:bg-amber-900/20">
+                            <span className="text-sm sm:text-lg font-bold text-amber-600 dark:text-amber-400">{Math.round(macros.carbs)}g</span>
+                            <span className="text-[8px] sm:text-[10px] font-semibold uppercase text-amber-600/70">CARBS</span>
                         </div>
-                        <div className="flex flex-col items-center justify-center rounded-lg bg-rose-50 p-2 dark:bg-rose-900/20">
-                            <span className="text-lg font-bold text-rose-600 dark:text-rose-400">{Math.round(macros.fat)}g</span>
-                            <span className="text-[10px] font-semibold uppercase text-rose-600/70">GRASAS</span>
+                        <div className="flex flex-col items-center justify-center rounded-lg bg-rose-50 p-1.5 sm:p-2 dark:bg-rose-900/20">
+                            <span className="text-sm sm:text-lg font-bold text-rose-600 dark:text-rose-400">{Math.round(macros.fat)}g</span>
+                            <span className="text-[8px] sm:text-[10px] font-semibold uppercase text-rose-600/70">GRASAS</span>
                         </div>
                     </div>
 
                     {/* Actions - Only show if not in selection mode */}
                     {!onSelect && (
-                        <div className="flex items-center gap-2 pt-1">
+                        <div className="flex flex-wrap sm:flex-nowrap items-center gap-1.5 sm:gap-2 pt-1">
                             <Button
                                 variant="outline"
-                                className="flex-1 gap-2 rounded-xl h-11 border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-900 font-medium"
+                                className="flex-1 gap-1.5 sm:gap-2 rounded-lg sm:rounded-xl h-9 sm:h-11 border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-900 font-medium px-2 sm:px-4 text-xs sm:text-sm"
                                 onClick={handleDuplicate}
                                 disabled={isDuplicating}
                             >
-                                {isDuplicating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Copy className="h-4 w-4" />}
-                                Duplicar receta
+                                {isDuplicating ? <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" /> : <Copy className="h-3 w-3 sm:h-4 sm:w-4 hidden sm:inline" />}
+                                Duplicar
                             </Button>
 
                             {/* Admin Edit Button */}
                             {isAdmin && (
                                 <Button
                                     variant="outline"
-                                    className="h-11 w-11 rounded-xl border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-900 p-0 shrink-0"
+                                    className="h-9 w-9 sm:h-11 sm:w-11 rounded-lg sm:rounded-xl border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-900 p-0 shrink-0"
                                     onClick={(e) => {
                                         e.stopPropagation()
                                         router.push(`/recipes/${recipe.id}`)
                                     }}
                                     title="Editar Receta"
                                 >
-                                    <Utensils className="h-5 w-5" />
+                                    <Utensils className="h-4 w-4 sm:h-5 sm:w-5" />
                                 </Button>
                             )}
 
                             <Button
-                                className="h-11 w-11 rounded-xl bg-primary hover:bg-primary/90 text-white p-0 shrink-0"
+                                className="h-9 w-9 sm:h-11 sm:w-11 rounded-lg sm:rounded-xl bg-primary hover:bg-primary/90 text-white p-0 shrink-0"
                                 onClick={(e) => {
                                     e.stopPropagation()
                                     setShowAssignDialog(true)
                                 }}
                             >
-                                <Users className="h-5 w-5" />
+                                <Users className="h-4 w-4 sm:h-5 sm:w-5" />
                             </Button>
                         </div>
                     )}

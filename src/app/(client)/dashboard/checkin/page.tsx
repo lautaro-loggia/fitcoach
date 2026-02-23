@@ -20,19 +20,33 @@ export default async function CheckinPage() {
     if (!client) redirect('/dashboard')
 
     // Check for existing check-ins
-    const { count: checkinCount } = await supabase
+    const { data: latestCheckin } = await supabase
         .from('checkins')
-        .select('*', { count: 'exact', head: true })
-        .eq('client_id', (client as any).id) // Assuming we need client.id which we missed in the select
+        .select('date')
+        .eq('client_id', client.id)
+        .order('date', { ascending: false })
+        .limit(1)
+        .maybeSingle()
 
-    const hasCheckins = (checkinCount || 0) > 0
+    const hasCheckins = !!latestCheckin
 
     if (client && client.next_checkin_date) {
         const nextDate = new Date(client.next_checkin_date + 'T00:00:00')
         const today = new Date()
+        today.setHours(0, 0, 0, 0)
 
         if (today < nextDate) {
             redirect('/dashboard')
+        }
+
+        if (latestCheckin?.date) {
+            const lastCheckinDate = new Date(latestCheckin.date + 'T00:00:00')
+            const marginDate = new Date(nextDate)
+            marginDate.setDate(marginDate.getDate() - 3)
+
+            if (lastCheckinDate >= marginDate) {
+                redirect('/dashboard')
+            }
         }
     } else if (hasCheckins) {
         // Si tiene check-ins pero no tiene fecha de próximo (el coach debe definirla)

@@ -185,22 +185,22 @@ export function IngredientSelector({ onAdd }: IngredientSelectorProps) {
             </div>
 
             {macros && (
-                <div className="grid grid-cols-4 gap-4 p-4 bg-muted rounded-lg">
-                    <div>
-                        <p className="text-xs text-muted-foreground">Kcal</p>
-                        <p className="text-lg font-semibold">{macros.kcal}</p>
+                <div className="grid grid-cols-4 gap-2 sm:gap-4 p-3 sm:p-4 bg-muted/50 rounded-xl mt-4">
+                    <div className="flex flex-col items-center justify-center p-2 bg-background rounded-lg shadow-sm">
+                        <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">Kcal</span>
+                        <span className="text-lg font-bold">{macros.kcal}</span>
                     </div>
-                    <div>
-                        <p className="text-xs text-muted-foreground">Proteína (g)</p>
-                        <p className="text-lg font-semibold">{macros.protein}</p>
+                    <div className="flex flex-col items-center justify-center p-2 bg-background rounded-lg shadow-sm">
+                        <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">Proteína (g)</span>
+                        <span className="text-lg font-bold">{macros.protein}</span>
                     </div>
-                    <div>
-                        <p className="text-xs text-muted-foreground">Carbs (g)</p>
-                        <p className="text-lg font-semibold">{macros.carbs}</p>
+                    <div className="flex flex-col items-center justify-center p-2 bg-background rounded-lg shadow-sm">
+                        <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">Carbs (g)</span>
+                        <span className="text-lg font-bold">{macros.carbs}</span>
                     </div>
-                    <div>
-                        <p className="text-xs text-muted-foreground">Grasas (g)</p>
-                        <p className="text-lg font-semibold">{macros.fat}</p>
+                    <div className="flex flex-col items-center justify-center p-2 bg-background rounded-lg shadow-sm">
+                        <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">Grasas (g)</span>
+                        <span className="text-lg font-bold">{macros.fat}</span>
                     </div>
                 </div>
             )}

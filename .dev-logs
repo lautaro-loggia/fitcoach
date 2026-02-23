@@ -542,3 +542,28 @@ AuthApiError: Request rate limit reached
  GET /dashboard/diet 200 in 316ms (compile: 5ms, proxy.ts: 240ms, render: 70ms)
  GET /manifest.webmanifest 200 in 54ms (compile: 46ms, render: 8ms)
 ✓ Compiled in 115ms
+✓ Compiled in 362ms
+ GET /dashboard/diet 200 in 2.3s (compile: 77ms, proxy.ts: 422ms, render: 1756ms)
+ GET /manifest.webmanifest 200 in 29ms (compile: 13ms, render: 15ms)
+ GET /settings 200 in 3.0s (compile: 1471ms, proxy.ts: 870ms, render: 631ms)
+✓ Compiled in 136ms
+ GET /dashboard/diet 200 in 776ms (compile: 283ms, proxy.ts: 363ms, render: 129ms)
+ GET /settings 200 in 1021ms (compile: 7ms, proxy.ts: 411ms, render: 602ms)
+ GET /dashboard/diet 200 in 343ms (compile: 3ms, proxy.ts: 293ms, render: 47ms)
+ GET /manifest.webmanifest 200 in 6ms (compile: 2ms, render: 4ms)
+ GET /settings 200 in 688ms (compile: 5ms, proxy.ts: 243ms, render: 440ms)
+ GET /clients 200 in 5.6s (compile: 2.6s, proxy.ts: 1038ms, render: 1937ms)
+ GET /manifest.webmanifest 200 in 13ms (compile: 3ms, render: 9ms)
+ GET /clients 200 in 1354ms (compile: 9ms, proxy.ts: 238ms, render: 1108ms)
+ GET /recipes 200 in 1109ms (compile: 841ms, proxy.ts: 245ms, render: 23ms)
+ GET /recipes/2a636d8c-f2c7-4eea-8485-faa5fd5a6c32 200 in 3.4s (compile: 1182ms, proxy.ts: 1623ms, render: 624ms)
+ GET /recipes/2a636d8c-f2c7-4eea-8485-faa5fd5a6c32 200 in 816ms (compile: 7ms, proxy.ts: 278ms, render: 532ms)
+ POST /recipes/2a636d8c-f2c7-4eea-8485-faa5fd5a6c32 200 in 1041ms (compile: 8ms, proxy.ts: 240ms, render: 793ms)
+ POST /recipes/2a636d8c-f2c7-4eea-8485-faa5fd5a6c32 200 in 860ms (compile: 11ms, proxy.ts: 314ms, render: 535ms)
+ GET /recipes 200 in 366ms (compile: 26ms, proxy.ts: 300ms, render: 40ms)
+✓ Compiled in 409ms
+✓ Compiled in 266ms
+✓ Compiled in 352ms
+✓ Compiled in 358ms
+✓ Compiled in 131ms
+✓ Compiled in 303ms

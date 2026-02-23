@@ -20,12 +20,26 @@ interface NotificationsFormProps {
 export function NotificationsForm({ userId, initialEnabled, initialPreferences, role = 'coach' }: NotificationsFormProps) {
     const supabase = createClient()
     const { isSupported, permission, subscription, subscribe, unsubscribe, isLoading } = usePushNotifications()
-    const [preferences, setPreferences] = useState(initialPreferences || {
+    const [preferences, setPreferences] = useState({
         checkin_completed: true,
         workout_completed: true,
         payment_registered: true,
-        new_client: true
+        new_client: true,
+        checkin_reminder: true,
+        workout_assigned: true,
+        coach_feedback: true,
+        meal_photo_reminder: true,
+        reminder_time_desayuno: '09:00:00',
+        reminder_time_almuerzo: '12:00:00',
+        reminder_time_merienda: '17:00:00',
+        reminder_time_cena: '21:00:00',
+        ...initialPreferences // Override defaults with DB row
     })
+
+    const formatTimeInput = (timeStr?: string) => {
+        if (!timeStr) return '00:00'
+        return timeStr.substring(0, 5) // "09:00:00" -> "09:00"
+    }
 
     const isPushEnabled = permission === 'granted' && !!subscription
 
@@ -50,16 +64,16 @@ export function NotificationsForm({ userId, initialEnabled, initialPreferences, 
         }
     }
 
-    const handlePreferenceChange = async (key: string, checked: boolean) => {
+    const handlePreferenceChange = async (key: string, value: boolean | string) => {
         // Optimistic update
-        setPreferences((prev: any) => ({ ...prev, [key]: checked }))
+        setPreferences((prev: any) => ({ ...prev, [key]: value }))
 
         const { error } = await supabase
             .from('notification_preferences')
             .upsert({
                 user_id: userId,
                 ...preferences,
-                [key]: checked,
+                [key]: value,
                 updated_at: new Date().toISOString()
             }, { onConflict: 'user_id' })
 
@@ -67,7 +81,7 @@ export function NotificationsForm({ userId, initialEnabled, initialPreferences, 
             console.error('Error updating preferences:', error)
             toast.error('Error al guardar preferencia')
             // Revert
-            setPreferences((prev: any) => ({ ...prev, [key]: !checked }))
+            setPreferences((prev: any) => ({ ...prev, [key]: preferences[key as keyof typeof preferences] }))
         }
     }
 
@@ -211,16 +225,69 @@ export function NotificationsForm({ userId, initialEnabled, initialPreferences, 
                                         />
                                     </div>
 
-                                    <div className="flex items-center justify-between">
-                                        <Label htmlFor="meal_photo_reminder" className="flex-1 cursor-pointer">
-                                            <span className="block font-medium">Registro de Comidas</span>
-                                            <span className="text-xs text-muted-foreground">Desarrollo sobre tu plan alimenticio</span>
-                                        </Label>
-                                        <Switch
-                                            id="meal_photo_reminder"
-                                            checked={preferences.meal_photo_reminder ?? true}
-                                            onCheckedChange={(c) => handlePreferenceChange('meal_photo_reminder', c)}
-                                        />
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex items-center justify-between">
+                                            <Label htmlFor="meal_photo_reminder" className="flex-1 cursor-pointer">
+                                                <span className="block font-medium">Registro de Comidas</span>
+                                                <span className="text-xs text-muted-foreground">Recordatorios en los horarios de tus comidas</span>
+                                            </Label>
+                                            <Switch
+                                                id="meal_photo_reminder"
+                                                checked={preferences.meal_photo_reminder ?? true}
+                                                onCheckedChange={(c) => handlePreferenceChange('meal_photo_reminder', c)}
+                                            />
+                                        </div>
+
+                                        {(preferences.meal_photo_reminder ?? true) && (
+                                            <div className="pl-4 border-l-2 ml-1 space-y-3 mt-2 animate-in fade-in slide-in-from-top-2">
+                                                <h4 className="font-medium text-xs text-muted-foreground uppercase">Horarios de Notificación</h4>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-1">
+                                                        <Label htmlFor="reminder_time_desayuno" className="text-[11px] uppercase text-muted-foreground">Desayuno</Label>
+                                                        <input
+                                                            type="time"
+                                                            id="reminder_time_desayuno"
+                                                            className="w-full bg-transparent border rounded-[8px] px-2 py-1.5 text-xs text-foreground focus:ring-1 focus:ring-primary outline-none transition-all"
+                                                            value={formatTimeInput(preferences.reminder_time_desayuno || '09:00:00')}
+                                                            onChange={(e) => handlePreferenceChange('reminder_time_desayuno', e.target.value + ':00')}
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <Label htmlFor="reminder_time_almuerzo" className="text-[11px] uppercase text-muted-foreground">Almuerzo</Label>
+                                                        <input
+                                                            type="time"
+                                                            id="reminder_time_almuerzo"
+                                                            className="w-full bg-transparent border rounded-[8px] px-2 py-1.5 text-xs text-foreground focus:ring-1 focus:ring-primary outline-none transition-all"
+                                                            value={formatTimeInput(preferences.reminder_time_almuerzo || '12:00:00')}
+                                                            onChange={(e) => handlePreferenceChange('reminder_time_almuerzo', e.target.value + ':00')}
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <Label htmlFor="reminder_time_merienda" className="text-[11px] uppercase text-muted-foreground">Merienda</Label>
+                                                        <input
+                                                            type="time"
+                                                            id="reminder_time_merienda"
+                                                            className="w-full bg-transparent border rounded-[8px] px-2 py-1.5 text-xs text-foreground focus:ring-1 focus:ring-primary outline-none transition-all"
+                                                            value={formatTimeInput(preferences.reminder_time_merienda || '17:00:00')}
+                                                            onChange={(e) => handlePreferenceChange('reminder_time_merienda', e.target.value + ':00')}
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <Label htmlFor="reminder_time_cena" className="text-[11px] uppercase text-muted-foreground">Cena</Label>
+                                                        <input
+                                                            type="time"
+                                                            id="reminder_time_cena"
+                                                            className="w-full bg-transparent border rounded-[8px] px-2 py-1.5 text-xs text-foreground focus:ring-1 focus:ring-primary outline-none transition-all"
+                                                            value={formatTimeInput(preferences.reminder_time_cena || '21:00:00')}
+                                                            onChange={(e) => handlePreferenceChange('reminder_time_cena', e.target.value + ':00')}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <p className="text-[10px] text-muted-foreground leading-tight pt-1">
+                                                    Las notificaciones solo te llegarán para las comidas que tengas asignadas en tu plan activo para hoy.
+                                                </p>
+                                            </div>
+                                        )}
                                     </div>
                                 </>
                             )}

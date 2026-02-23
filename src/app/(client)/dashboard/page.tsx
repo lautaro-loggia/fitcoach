@@ -93,6 +93,15 @@ export default async function ClientDashboard() {
         isCompleted = (logsResult.count || 0) > 0 || (sessionsResult.count || 0) > 0
     }
 
+    // Check last check-in to clear the pending check-in block
+    const { data: latestCheckin } = await adminClient
+        .from('checkins')
+        .select('date')
+        .eq('client_id', client.id)
+        .order('date', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
     // 3. Weekly Stats (Real)
     const today = getARTDate()
     const thirtyFiveDaysAgo = new Date(today)
@@ -210,15 +219,27 @@ export default async function ClientDashboard() {
                 {/* Check-in Card Logic */}
                 {(() => {
                     const todayDate = new Date(artNow)
+                    todayDate.setHours(0, 0, 0, 0)
                     let isCheckInDay = false
 
                     if (client.next_checkin_date) {
                         const nextDate = new Date(client.next_checkin_date + 'T00:00:00')
                         if (todayDate >= nextDate) {
                             isCheckInDay = true
+
+                            // If a check-in is already logged on or after the scheduled date (with a small margin), hide the button
+                            if (latestCheckin?.date) {
+                                const lastCheckinDate = new Date(latestCheckin.date + 'T00:00:00')
+
+                                const marginDate = new Date(nextDate)
+                                marginDate.setDate(marginDate.getDate() - 3)
+
+                                if (lastCheckinDate >= marginDate) {
+                                    isCheckInDay = false
+                                }
+                            }
                         }
                     }
-
 
                     if (!isCheckInDay) return null
 
