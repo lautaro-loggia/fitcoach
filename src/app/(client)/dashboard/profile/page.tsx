@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ClientLogoutButton } from '@/components/clients/client-logout-button'
 import { ClientAvatarUpload } from '@/components/clients/client-avatar-upload'
+import { NotificationsForm } from '@/components/settings/notifications-form'
 
 export default async function ProfilePage() {
     const supabase = await createClient()
@@ -18,6 +19,12 @@ export default async function ProfilePage() {
     const adminClient = createAdminClient()
     const { data: client } = await adminClient
         .from('clients')
+        .select('*')
+        .eq('user_id', user.id)
+        .single()
+
+    const { data: preferences } = await adminClient
+        .from('notification_preferences')
         .select('*')
         .eq('user_id', user.id)
         .single()
@@ -92,6 +99,16 @@ export default async function ProfilePage() {
                     </p>
                 </div>
             </Card >
+
+            {/* Notifications Configuration */}
+            <div className="pt-2">
+                <NotificationsForm
+                    userId={user.id}
+                    initialEnabled={true}
+                    initialPreferences={preferences || {}}
+                    role="client"
+                />
+            </div>
 
             <div className="pt-4">
                 <ClientLogoutButton variant="button" />

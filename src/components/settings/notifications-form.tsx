@@ -14,9 +14,10 @@ interface NotificationsFormProps {
     userId: string
     initialEnabled: boolean
     initialPreferences: any
+    role?: 'coach' | 'client'
 }
 
-export function NotificationsForm({ userId, initialEnabled, initialPreferences }: NotificationsFormProps) {
+export function NotificationsForm({ userId, initialEnabled, initialPreferences, role = 'coach' }: NotificationsFormProps) {
     const supabase = createClient()
     const { isSupported, permission, subscription, subscribe, unsubscribe, isLoading } = usePushNotifications()
     const [preferences, setPreferences] = useState(initialPreferences || {
@@ -122,53 +123,107 @@ export function NotificationsForm({ userId, initialEnabled, initialPreferences }
                         </div>
 
                         <div className="grid gap-4">
-                            <div className="flex items-center justify-between">
-                                <Label htmlFor="checkin_completed" className="flex-1 cursor-pointer">
-                                    <span className="block font-medium">Check-ins completados</span>
-                                    <span className="text-xs text-muted-foreground">Cuando un cliente envía su reporte semanal</span>
-                                </Label>
-                                <Switch
-                                    id="checkin_completed"
-                                    checked={preferences.checkin_completed ?? true}
-                                    onCheckedChange={(c) => handlePreferenceChange('checkin_completed', c)}
-                                />
-                            </div>
+                            {role === 'coach' ? (
+                                <>
+                                    <div className="flex items-center justify-between">
+                                        <Label htmlFor="checkin_completed" className="flex-1 cursor-pointer">
+                                            <span className="block font-medium">Check-ins completados</span>
+                                            <span className="text-xs text-muted-foreground">Cuando un cliente envía su reporte semanal</span>
+                                        </Label>
+                                        <Switch
+                                            id="checkin_completed"
+                                            checked={preferences.checkin_completed ?? true}
+                                            onCheckedChange={(c) => handlePreferenceChange('checkin_completed', c)}
+                                        />
+                                    </div>
 
-                            <div className="flex items-center justify-between">
-                                <Label htmlFor="workout_completed" className="flex-1 cursor-pointer">
-                                    <span className="block font-medium">Entrenamientos completados</span>
-                                    <span className="text-xs text-muted-foreground">Cuando un cliente finaliza su rutina</span>
-                                </Label>
-                                <Switch
-                                    id="workout_completed"
-                                    checked={preferences.workout_completed ?? true}
-                                    onCheckedChange={(c) => handlePreferenceChange('workout_completed', c)}
-                                />
-                            </div>
+                                    <div className="flex items-center justify-between">
+                                        <Label htmlFor="workout_completed" className="flex-1 cursor-pointer">
+                                            <span className="block font-medium">Entrenamientos completados</span>
+                                            <span className="text-xs text-muted-foreground">Cuando un cliente finaliza su rutina</span>
+                                        </Label>
+                                        <Switch
+                                            id="workout_completed"
+                                            checked={preferences.workout_completed ?? true}
+                                            onCheckedChange={(c) => handlePreferenceChange('workout_completed', c)}
+                                        />
+                                    </div>
 
-                            <div className="flex items-center justify-between">
-                                <Label htmlFor="payment_registered" className="flex-1 cursor-pointer">
-                                    <span className="block font-medium">Pagos</span>
-                                    <span className="text-xs text-muted-foreground">Avisos de pagos recibidos o vencidos</span>
-                                </Label>
-                                <Switch
-                                    id="payment_registered"
-                                    checked={preferences.payment_registered ?? true}
-                                    onCheckedChange={(c) => handlePreferenceChange('payment_registered', c)}
-                                />
-                            </div>
+                                    <div className="flex items-center justify-between">
+                                        <Label htmlFor="payment_registered" className="flex-1 cursor-pointer">
+                                            <span className="block font-medium">Pagos</span>
+                                            <span className="text-xs text-muted-foreground">Avisos de pagos recibidos o vencidos</span>
+                                        </Label>
+                                        <Switch
+                                            id="payment_registered"
+                                            checked={preferences.payment_registered ?? true}
+                                            onCheckedChange={(c) => handlePreferenceChange('payment_registered', c)}
+                                        />
+                                    </div>
 
-                            <div className="flex items-center justify-between">
-                                <Label htmlFor="new_client" className="flex-1 cursor-pointer">
-                                    <span className="block font-medium">Nuevos clientes</span>
-                                    <span className="text-xs text-muted-foreground">Cuando alguien acepta tu invitación</span>
-                                </Label>
-                                <Switch
-                                    id="new_client"
-                                    checked={preferences.new_client ?? true}
-                                    onCheckedChange={(c) => handlePreferenceChange('new_client', c)}
-                                />
-                            </div>
+                                    <div className="flex items-center justify-between">
+                                        <Label htmlFor="new_client" className="flex-1 cursor-pointer">
+                                            <span className="block font-medium">Nuevos clientes</span>
+                                            <span className="text-xs text-muted-foreground">Cuando alguien acepta tu invitación</span>
+                                        </Label>
+                                        <Switch
+                                            id="new_client"
+                                            checked={preferences.new_client ?? true}
+                                            onCheckedChange={(c) => handlePreferenceChange('new_client', c)}
+                                        />
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="flex items-center justify-between">
+                                        <Label htmlFor="checkin_reminder" className="flex-1 cursor-pointer">
+                                            <span className="block font-medium">Recordatorios de Check-in</span>
+                                            <span className="text-xs text-muted-foreground">Avisos para enviar tu reporte semanal</span>
+                                        </Label>
+                                        <Switch
+                                            id="checkin_reminder"
+                                            checked={preferences.checkin_reminder ?? true}
+                                            onCheckedChange={(c) => handlePreferenceChange('checkin_reminder', c)}
+                                        />
+                                    </div>
+
+                                    <div className="flex items-center justify-between">
+                                        <Label htmlFor="workout_assigned" className="flex-1 cursor-pointer">
+                                            <span className="block font-medium">Nuevas Rutinas</span>
+                                            <span className="text-xs text-muted-foreground">Cuando tu coach asigne o actualice tu rutina</span>
+                                        </Label>
+                                        <Switch
+                                            id="workout_assigned"
+                                            checked={preferences.workout_assigned ?? true}
+                                            onCheckedChange={(c) => handlePreferenceChange('workout_assigned', c)}
+                                        />
+                                    </div>
+
+                                    <div className="flex items-center justify-between">
+                                        <Label htmlFor="coach_feedback" className="flex-1 cursor-pointer">
+                                            <span className="block font-medium">Feedback del Coach</span>
+                                            <span className="text-xs text-muted-foreground">Respuestas a tus check-ins o comentarios</span>
+                                        </Label>
+                                        <Switch
+                                            id="coach_feedback"
+                                            checked={preferences.coach_feedback ?? true}
+                                            onCheckedChange={(c) => handlePreferenceChange('coach_feedback', c)}
+                                        />
+                                    </div>
+
+                                    <div className="flex items-center justify-between">
+                                        <Label htmlFor="meal_photo_reminder" className="flex-1 cursor-pointer">
+                                            <span className="block font-medium">Registro de Comidas</span>
+                                            <span className="text-xs text-muted-foreground">Desarrollo sobre tu plan alimenticio</span>
+                                        </Label>
+                                        <Switch
+                                            id="meal_photo_reminder"
+                                            checked={preferences.meal_photo_reminder ?? true}
+                                            onCheckedChange={(c) => handlePreferenceChange('meal_photo_reminder', c)}
+                                        />
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
                 )}
