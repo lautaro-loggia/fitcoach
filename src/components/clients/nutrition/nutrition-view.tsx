@@ -24,21 +24,29 @@ export function NutritionView({ client, mealPlan, dailyLogs }: NutritionViewProp
             const regularLog = dailyLogs.find((l: any) => l.meal_type === meal.name && !l.metadata?.is_out_of_plan)
 
             if (regularLog) {
-                // Add its macros
-                meal.items?.forEach((item: any) => {
-                    const recipe = item.recipe
-                    let portions = item.portions || 1
+                // If it's a logged meal, prioritize the metadata macros from AI (or manual editing)
+                if (regularLog.metadata?.macros) {
+                    k += Number(regularLog.metadata.macros.kcal || 0)
+                    p += Number(regularLog.metadata.macros.protein || 0)
+                    c += Number(regularLog.metadata.macros.carbs || 0)
+                    f += Number(regularLog.metadata.macros.fats || 0)
+                } else {
+                    // Fallback to planned recipe macros
+                    meal.items?.forEach((item: any) => {
+                        const recipe = item.recipe
+                        let portions = item.portions || 1
 
-                    if (recipe) {
-                        if (recipe.macros_calories) {
-                            const s = recipe.servings || 1
-                            k += (recipe.macros_calories / s) * portions
-                            p += ((recipe.macros_protein_g || 0) / s) * portions
-                            c += ((recipe.macros_carbs_g || 0) / s) * portions
-                            f += ((recipe.macros_fat_g || 0) / s) * portions
+                        if (recipe) {
+                            if (recipe.macros_calories) {
+                                const s = recipe.servings || 1
+                                k += (recipe.macros_calories / s) * portions
+                                p += ((recipe.macros_protein_g || 0) / s) * portions
+                                c += ((recipe.macros_carbs_g || 0) / s) * portions
+                                f += ((recipe.macros_fat_g || 0) / s) * portions
+                            }
                         }
-                    }
-                })
+                    })
+                }
             }
 
             // Check if an out-of-plan meal was logged for this block

@@ -76,11 +76,16 @@ export async function createCheckinAction(data: {
 
 export async function deleteCheckinAction(id: string, clientId: string) {
     const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+        return { error: 'No autorizado' }
+    }
 
     const { error } = await supabase
         .from('checkins')
         .delete()
         .eq('id', id)
+        .eq('trainer_id', user.id)
 
     if (error) {
         return { error: 'Error al eliminar' }
@@ -92,11 +97,16 @@ export async function deleteCheckinAction(id: string, clientId: string) {
 
 export async function updateNextCheckinDateAction(clientId: string, date: string) {
     const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+        return { error: 'No autorizado' }
+    }
 
     const { error } = await supabase
         .from('clients')
         .update({ next_checkin_date: date })
         .eq('id', clientId)
+        .eq('trainer_id', user.id)
 
     if (error) {
         return { error: 'Error al actualizar la fecha' }

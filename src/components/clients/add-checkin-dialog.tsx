@@ -11,6 +11,7 @@ import { createCheckinAction } from "@/app/(dashboard)/clients/[id]/checkin-acti
 import { createClient } from "@/lib/supabase/client"
 import { dateOnlyToLocalNoon, getTodayString } from "@/lib/utils"
 import Image from "next/image"
+import { toast } from "sonner"
 
 interface AddCheckinDialogProps {
     clientId: string
@@ -95,7 +96,7 @@ export function AddCheckinDialog({ clientId, autoOpen, trigger }: AddCheckinDial
 
                 if (uploadError) {
                     console.error('Upload error:', uploadError)
-                    alert('Error al subir la imagen')
+                    toast.error('Error al subir la imagen')
                     setLoading(false)
                     return
                 }
@@ -108,7 +109,7 @@ export function AddCheckinDialog({ clientId, autoOpen, trigger }: AddCheckinDial
 
             } catch (error) {
                 console.error('Error handling photo:', error)
-                alert('Error al procesar la imagen')
+                toast.error('Error al procesar la imagen')
                 setLoading(false)
                 return
             }
@@ -134,7 +135,7 @@ export function AddCheckinDialog({ clientId, autoOpen, trigger }: AddCheckinDial
         })
 
         if (result.error) {
-            alert(result.error)
+            toast.error(result.error)
         } else {
             setOpen(false)
             setWeight("")

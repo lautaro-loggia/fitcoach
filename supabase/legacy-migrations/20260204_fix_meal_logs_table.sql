@@ -31,7 +31,7 @@ DROP POLICY IF EXISTS "Trainers can view their clients' meal logs" ON public.mea
 CREATE POLICY "Trainers can view their clients' meal logs"
     ON public.meal_logs FOR SELECT
     USING (auth.uid() IN (
-        SELECT user_id FROM public.profiles
+        SELECT id FROM public.profiles
         JOIN public.clients ON clients.trainer_id = profiles.id
         WHERE clients.id = meal_logs.client_id
     ));

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { DeleteAccountDialog } from './delete-account-dialog'
 import { Loader2, AlertTriangle } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface AccountFormProps {
     userId: string
@@ -78,10 +79,10 @@ export function AccountForm({ userId }: AccountFormProps) {
 
             if (error) throw error
 
-            alert('Cambios guardados correctamente')
+            toast.success('Cambios guardados correctamente')
         } catch (error) {
             console.error('Error saving data:', error)
-            alert('Error al guardar los cambios')
+            toast.error('Error al guardar los cambios')
         } finally {
             setSaving(false)
         }

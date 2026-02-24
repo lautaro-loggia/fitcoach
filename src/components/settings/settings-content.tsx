@@ -53,7 +53,6 @@ export function SettingsContent({ user, profile, preferences }: SettingsContentP
                             initialPreferences={preferences}
                         />
                         <WhatsAppSettingsForm
-                            userId={user.id}
                             initialTemplate={profile?.whatsapp_message_template || 'Hola {nombre}, recuerda que tenemos entrenamiento {hora}'}
                         />
                     </TabsContent>

@@ -22,6 +22,7 @@ import { cn, normalizeText } from '@/lib/utils'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerClose } from '@/components/ui/drawer'
 import { ExerciseInfoDialog } from '@/components/workout-session/exercise-info-dialog'
+import { toast } from 'sonner'
 
 
 
@@ -159,7 +160,7 @@ export function WorkoutDialog({
         }
 
         if (result?.error) {
-            alert(result.error)
+            toast.error(result.error)
         } else {
             setOpen(false)
             resetForm()
@@ -693,7 +694,7 @@ function ExerciseForm({
             if (isMobile) {
                 // Validation: Ensure all sets have reps
                 if (sets.some(s => !s.reps)) {
-                    alert('Por favor, completa las repeticiones en todas las series.')
+                    toast.error('Por favor, completa las repeticiones en todas las series.')
                     return
                 }
 

@@ -10,6 +10,7 @@ import { Loading03Icon, Calendar03Icon } from "hugeicons-react"
 import { assignWorkoutToClientsAction } from "@/app/(dashboard)/workouts/actions"
 import { ClientAvatar } from "@/components/clients/client-avatar"
 import { cn } from "@/lib/utils"
+import { toast } from "sonner"
 
 interface WorkoutSummary {
     id: string
@@ -119,9 +120,9 @@ export function AssignWorkoutToClientsDialog({ open, onOpenChange, workout }: As
         )
 
         if (res.error) {
-            alert(res.error)
+            toast.error(res.error)
         } else {
-            alert("Rutina asignada correctamente a los clientes seleccionados.")
+            toast.success("Rutina asignada correctamente a los clientes seleccionados.")
             onOpenChange(false)
         }
         setAssigning(false)

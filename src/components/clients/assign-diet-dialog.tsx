@@ -9,6 +9,7 @@ import { Plus, AlertTriangle, Loader2 } from "lucide-react"
 import { assignDietAction } from "@/app/(dashboard)/clients/[id]/diet-actions"
 import { checkRecipeAllergens } from "@/lib/allergen-utils"
 import { RecipeCard } from "@/components/recipes/recipe-card"
+import { toast } from "sonner"
 
 interface AssignDietDialogProps {
     client: any
@@ -92,7 +93,7 @@ export function AssignDietDialog({ client }: AssignDietDialogProps) {
 
         if (selectedRecipeId === 'custom') {
             if (!customName) {
-                alert("Ingresa un nombre para el plan")
+                toast.error("Ingresa un nombre para el plan")
                 setLoading(false)
                 return
             }
@@ -118,7 +119,7 @@ export function AssignDietDialog({ client }: AssignDietDialogProps) {
         })
 
         if (res.error) {
-            alert(res.error)
+            toast.error(res.error)
         } else {
             setOpen(false)
             setCustomName("")

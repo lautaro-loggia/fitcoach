@@ -567,3 +567,150 @@ AuthApiError: Request rate limit reached
 ✓ Compiled in 358ms
 ✓ Compiled in 131ms
 ✓ Compiled in 303ms
+✓ Compiled in 342ms
+✓ Compiled in 97ms
+✓ Compiled in 98ms
+✓ Compiled in 53ms
+ GET /clients 200 in 5.9s (compile: 410ms, proxy.ts: 1978ms, render: 3.5s)
+ GET /recipes 200 in 1293ms (compile: 894ms, proxy.ts: 311ms, render: 87ms)
+✓ Compiled in 3s
+✓ Compiled in 413ms
+ GET /recipes 200 in 1580ms (compile: 231ms, proxy.ts: 836ms, render: 513ms)
+ GET /dashboard/diet 200 in 1865ms (compile: 528ms, proxy.ts: 744ms, render: 593ms)
+ GET /recipes 200 in 390ms (compile: 53ms, proxy.ts: 316ms, render: 21ms)
+ GET /recipes 200 in 357ms (compile: 5ms, proxy.ts: 293ms, render: 59ms)
+ GET /dashboard/diet 200 in 744ms (compile: 4ms, proxy.ts: 703ms, render: 37ms)
+ GET /recipes 200 in 370ms (compile: 13ms, proxy.ts: 286ms, render: 71ms)
+ GET /dashboard/diet 200 in 334ms (compile: 32ms, proxy.ts: 250ms, render: 52ms)
+ GET /dashboard/diet 200 in 437ms (compile: 5ms, proxy.ts: 333ms, render: 99ms)
+ GET /manifest.webmanifest 200 in 9ms (compile: 4ms, render: 4ms)
+✓ Compiled in 81ms
+ GET /recipes 200 in 634ms (compile: 47ms, proxy.ts: 481ms, render: 106ms)
+ GET /dashboard/diet 200 in 694ms (compile: 112ms, proxy.ts: 332ms, render: 249ms)
+ GET /dashboard/diet 200 in 442ms (compile: 6ms, proxy.ts: 399ms, render: 37ms)
+ GET /dashboard/diet 200 in 341ms (compile: 11ms, proxy.ts: 285ms, render: 45ms)
+ GET /recipes 200 in 664ms (compile: 2ms, proxy.ts: 643ms, render: 19ms)
+ GET /recipes 200 in 272ms (compile: 1584µs, proxy.ts: 256ms, render: 14ms)
+ GET /dashboard/diet 200 in 302ms (compile: 6ms, proxy.ts: 246ms, render: 51ms)
+ GET /manifest.webmanifest 200 in 31ms (compile: 16ms, render: 15ms)
+ GET /recipes 200 in 266ms (compile: 3ms, proxy.ts: 242ms, render: 21ms)
+✓ Compiled in 343ms
+ GET /recipes 200 in 416ms (compile: 6ms, proxy.ts: 364ms, render: 46ms)
+ GET /dashboard/diet 200 in 420ms (compile: 13ms, proxy.ts: 289ms, render: 118ms)
+ GET /manifest.webmanifest 200 in 12ms (compile: 6ms, render: 6ms)
+✓ Compiled in 122ms
+ GET /recipes 200 in 717ms (compile: 7ms, proxy.ts: 478ms, render: 231ms)
+ GET /dashboard/diet 200 in 805ms (compile: 130ms, proxy.ts: 565ms, render: 111ms)
+ GET /manifest.webmanifest 200 in 7ms (compile: 4ms, render: 3ms)
+✓ Compiled in 196ms
+ GET /recipes 200 in 563ms (compile: 5ms, proxy.ts: 443ms, render: 114ms)
+ GET /dashboard/diet 200 in 564ms (compile: 16ms, proxy.ts: 490ms, render: 58ms)
+ GET /manifest.webmanifest 200 in 17ms (compile: 6ms, render: 11ms)
+✓ Compiled in 194ms
+✓ Compiled in 73ms
+ GET /recipes 200 in 1079ms (compile: 137ms, proxy.ts: 621ms, render: 321ms)
+ GET /dashboard/diet 200 in 1060ms (compile: 320ms, proxy.ts: 560ms, render: 180ms)
+ GET /recipes 200 in 452ms (compile: 10ms, proxy.ts: 344ms, render: 98ms)
+ GET /dashboard/diet 200 in 433ms (compile: 62ms, proxy.ts: 324ms, render: 47ms)
+ GET /recipes 200 in 272ms (compile: 3ms, proxy.ts: 234ms, render: 35ms)
+ GET /dashboard/diet 200 in 295ms (compile: 5ms, proxy.ts: 240ms, render: 50ms)
+ GET /recipes 200 in 264ms (compile: 3ms, proxy.ts: 234ms, render: 26ms)
+ GET /dashboard/diet 200 in 286ms (compile: 3ms, proxy.ts: 237ms, render: 46ms)
+ GET /manifest.webmanifest 200 in 21ms (compile: 10ms, render: 11ms)
+✓ Compiled in 89ms
+ GET /recipes 200 in 629ms (compile: 9ms, proxy.ts: 354ms, render: 266ms)
+ GET /dashboard/diet 200 in 638ms (compile: 192ms, proxy.ts: 352ms, render: 95ms)
+ GET /manifest.webmanifest 200 in 24ms (compile: 10ms, render: 14ms)
+✓ Compiled in 135ms
+ GET /recipes 200 in 566ms (compile: 9ms, proxy.ts: 392ms, render: 166ms)
+ GET /dashboard/diet 200 in 561ms (compile: 65ms, proxy.ts: 382ms, render: 114ms)
+ GET /manifest.webmanifest 200 in 21ms (compile: 9ms, render: 12ms)
+✓ Compiled in 54ms
+ GET /recipes 200 in 767ms (compile: 8ms, proxy.ts: 486ms, render: 274ms)
+ GET /dashboard/diet 200 in 742ms (compile: 182ms, proxy.ts: 458ms, render: 102ms)
+ GET /manifest.webmanifest 200 in 22ms (compile: 7ms, render: 15ms)
+✓ Compiled in 54ms
+ GET /recipes 200 in 342ms (compile: 1924µs, proxy.ts: 322ms, render: 18ms)
+ GET /dashboard/diet 200 in 345ms (compile: 6ms, proxy.ts: 274ms, render: 64ms)
+ GET /manifest.webmanifest 200 in 29ms (compile: 26ms, render: 2ms)
+✓ Compiled in 59ms
+ GET /recipes 200 in 820ms (compile: 6ms, proxy.ts: 575ms, render: 239ms)
+ GET /dashboard/diet 200 in 801ms (compile: 173ms, proxy.ts: 554ms, render: 74ms)
+ GET /manifest.webmanifest 200 in 16ms (compile: 3ms, render: 13ms)
+ GET /recipes 200 in 1811ms (compile: 76ms, proxy.ts: 833ms, render: 902ms)
+✓ Compiled in 557ms
+ GET /recipes 200 in 1202ms (compile: 16ms, proxy.ts: 694ms, render: 492ms)
+ GET /dashboard/diet 200 in 1470ms (compile: 395ms, proxy.ts: 602ms, render: 474ms)
+ GET /manifest.webmanifest 200 in 44ms (compile: 15ms, render: 30ms)
+✓ Compiled in 87ms
+ GET /recipes 200 in 305ms (compile: 7ms, proxy.ts: 257ms, render: 41ms)
+ GET /dashboard/diet 200 in 498ms (compile: 4ms, proxy.ts: 305ms, render: 189ms)
+ GET /manifest.webmanifest 200 in 6ms (compile: 3ms, render: 2ms)
+✓ Compiled in 373ms
+ GET /recipes 200 in 1339ms (compile: 696ms, proxy.ts: 337ms, render: 306ms)
+ GET /dashboard/diet 200 in 1367ms (compile: 577ms, proxy.ts: 360ms, render: 431ms)
+ GET /manifest.webmanifest 200 in 14ms (compile: 5ms, render: 9ms)
+✓ Compiled in 786ms
+ GET /recipes 200 in 995ms (compile: 133ms, proxy.ts: 437ms, render: 424ms)
+ GET /dashboard/diet 200 in 1018ms (compile: 12ms, proxy.ts: 301ms, render: 706ms)
+ GET /manifest.webmanifest 200 in 16ms (compile: 7ms, render: 8ms)
+✓ Compiled in 526ms
+ GET /recipes 200 in 421ms (compile: 5ms, proxy.ts: 281ms, render: 135ms)
+ GET /dashboard/diet 200 in 445ms (compile: 93ms, proxy.ts: 300ms, render: 53ms)
+ GET /recipes 200 in 368ms (compile: 4ms, proxy.ts: 294ms, render: 69ms)
+ GET /dashboard/diet 200 in 320ms (compile: 3ms, proxy.ts: 272ms, render: 44ms)
+ GET /manifest.webmanifest 200 in 12ms (compile: 6ms, render: 6ms)
+✓ Compiled in 635ms
+ GET /recipes 200 in 1071ms (compile: 8ms, proxy.ts: 676ms, render: 387ms)
+ GET /dashboard/diet 200 in 971ms (compile: 277ms, proxy.ts: 570ms, render: 124ms)
+ GET /recipes 200 in 359ms (compile: 13ms, proxy.ts: 253ms, render: 93ms)
+ GET /dashboard/diet 200 in 367ms (compile: 30ms, proxy.ts: 263ms, render: 74ms)
+ GET /manifest.webmanifest 200 in 17ms (compile: 10ms, render: 7ms)
+✓ Compiled in 752ms
+ GET /recipes 200 in 1061ms (compile: 6ms, proxy.ts: 969ms, render: 86ms)
+ GET /recipes 200 in 339ms (compile: 3ms, proxy.ts: 305ms, render: 31ms)
+ GET /dashboard/diet 200 in 795ms (compile: 5ms, proxy.ts: 254ms, render: 536ms)
+ GET /dashboard/diet 200 in 1646ms (compile: 266ms, proxy.ts: 309ms, render: 1071ms)
+ GET /manifest.webmanifest 200 in 22ms (compile: 12ms, render: 10ms)
+✓ Compiled in 820ms
+ GET /recipes 200 in 653ms (compile: 128ms, proxy.ts: 404ms, render: 121ms)
+ GET /dashboard/diet 200 in 698ms (compile: 22ms, proxy.ts: 428ms, render: 248ms)
+ GET /manifest.webmanifest 200 in 63ms (compile: 16ms, render: 46ms)
+✓ Compiled in 98ms
+ GET /recipes 200 in 870ms (compile: 82ms, proxy.ts: 726ms, render: 62ms)
+ GET /dashboard/diet 200 in 856ms (compile: 15ms, proxy.ts: 707ms, render: 134ms)
+ GET /manifest.webmanifest 200 in 77ms (compile: 7ms, render: 70ms)
+✓ Compiled in 778ms
+✓ Compiled in 256ms
+ GET /manifest.webmanifest 200 in 16ms (compile: 5ms, render: 11ms)
+ GET /dashboard/diet 200 in 7.1s (compile: 1040ms, proxy.ts: 1733ms, render: 4.4s)
+ GET /dashboard 200 in 3.1s (compile: 95ms, proxy.ts: 356ms, render: 2.7s)
+✓ Compiled in 1869ms
+ GET /recipes 200 in 4.6s (compile: 128ms, proxy.ts: 934ms, render: 3.6s)
+ GET /dashboard/diet 200 in 6.1s (compile: 1338ms, proxy.ts: 2.4s, render: 2.4s)
+ GET /manifest.webmanifest 200 in 17ms (compile: 10ms, render: 7ms)
+✓ Compiled in 1609ms
+ GET /recipes 200 in 1327ms (compile: 37ms, proxy.ts: 394ms, render: 896ms)
+ GET /dashboard/diet 200 in 1406ms (compile: 657ms, proxy.ts: 464ms, render: 286ms)
+ GET /recipes 200 in 682ms (compile: 15ms, proxy.ts: 569ms, render: 99ms)
+ GET /dashboard/diet 200 in 696ms (compile: 6ms, proxy.ts: 258ms, render: 432ms)
+ GET /manifest.webmanifest 200 in 41ms (compile: 33ms, render: 9ms)
+✓ Finished filesystem cache database compaction in 10.7s
+✓ Compiled in 40ms
+✓ Compiled in 52ms
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ GET /dashboard/diet 200 in 3.2s (compile: 117ms, proxy.ts: 625ms, render: 2.5s)
+ GET /manifest.webmanifest 200 in 45ms (compile: 14ms, render: 31ms)
+ GET /clients 200 in 6.4s (compile: 1848ms, proxy.ts: 1221ms, render: 3.3s)
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ GET /clients/06aa2e58-d57b-4fd1-9588-ed51aaa8d2b6 200 in 928ms (compile: 272ms, proxy.ts: 11ms, render: 646ms)
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ POST /clients/06aa2e58-d57b-4fd1-9588-ed51aaa8d2b6 200 in 2.2s (compile: 18ms, proxy.ts: 14ms, render: 2.1s)
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ POST /clients/06aa2e58-d57b-4fd1-9588-ed51aaa8d2b6 200 in 1787ms (compile: 6ms, proxy.ts: 5ms, render: 1776ms)
+ GET /clients/06aa2e58-d57b-4fd1-9588-ed51aaa8d2b6?tab=training 200 in 929ms (compile: 5ms, proxy.ts: 4ms, render: 920ms)
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ POST /clients/06aa2e58-d57b-4fd1-9588-ed51aaa8d2b6?tab=training 200 in 591ms (compile: 12ms, proxy.ts: 19ms, render: 560ms)
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ POST /clients/06aa2e58-d57b-4fd1-9588-ed51aaa8d2b6?tab=training 200 in 738ms (compile: 5ms, proxy.ts: 7ms, render: 727ms)

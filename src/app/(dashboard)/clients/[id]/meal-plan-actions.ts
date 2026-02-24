@@ -5,10 +5,46 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { getTodayString } from '@/lib/utils'
 import { createNotification } from '@/lib/notifications'
+import { consumeRateLimit } from '@/lib/security/rate-limit'
 
 export type MealConfig = {
     name: string
     included: boolean
+}
+
+async function authorizeClientAccess(
+    clientId: string,
+    options?: { allowClientSelf?: boolean }
+): Promise<{ ok: true; userId: string } | { ok: false; error: string }> {
+    const supabase = await createClient()
+    const {
+        data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { ok: false, error: 'No autorizado' }
+    }
+
+    const adminSupabase = createAdminClient()
+    const { data: client } = await adminSupabase
+        .from('clients')
+        .select('id, trainer_id, user_id')
+        .eq('id', clientId)
+        .maybeSingle()
+
+    if (!client) {
+        return { ok: false, error: 'Cliente no encontrado' }
+    }
+
+    if (client.trainer_id === user.id) {
+        return { ok: true, userId: user.id }
+    }
+
+    if (options?.allowClientSelf && client.user_id === user.id) {
+        return { ok: true, userId: user.id }
+    }
+
+    return { ok: false, error: 'No autorizado' }
 }
 
 export async function getWeeklyPlan(clientId: string) {
@@ -467,12 +503,21 @@ export async function deleteMealFromDay(mealId: string, clientId: string) {
 export async function registerMealLog(clientId: string, mealType: string, formData: FormData) {
     console.log('registerMealLog: Start', { clientId, mealType })
 
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const access = await authorizeClientAccess(clientId, { allowClientSelf: true })
+    if (!access.ok) {
+        console.error('registerMealLog: unauthorized', access.error)
+        return { error: access.error }
+    }
 
-    if (!user) {
-        console.error('registerMealLog: No user session')
-        return { error: 'No tienes una sesión activa' }
+    const rate = consumeRateLimit({
+        scope: 'meal-log-upload',
+        key: access.userId,
+        maxRequests: 40,
+        windowMs: 15 * 60 * 1000,
+    })
+    if (!rate.allowed) {
+        const retryMinutes = Math.max(1, Math.ceil(rate.retryAfterMs / 60000))
+        return { error: `Demasiadas cargas en poco tiempo. Reintenta en ${retryMinutes} min.` }
     }
 
     const file = formData.get('file') as File | null
@@ -569,15 +614,11 @@ export async function registerMealLog(clientId: string, mealType: string, formDa
 
 // 7. Get Daily Meal Logs
 export async function getDailyMealLogs(clientId: string, date: string) {
-    const supabase = await createClient()
+    const access = await authorizeClientAccess(clientId, { allowClientSelf: true })
+    if (!access.ok) {
+        return { logs: [], error: access.error }
+    }
 
-    // date format YYYY-MM-DD
-    // Filter logs created on that date (using created_at)
-    // created_at is timestamptz. 
-    const startOfDay = `${date} 00:00:00`
-    const endOfDay = `${date} 23:59:59`
-
-    // Generate public URLs for images
     const adminSupabase = createAdminClient()
 
     const { data: logs } = await adminSupabase
@@ -609,6 +650,21 @@ export async function getDailyMealLogs(clientId: string, date: string) {
 // 8. Review Meal Log
 export async function reviewMealLog(logId: string, status: 'pending' | 'reviewed', comment?: string) {
     const adminSupabase = createAdminClient()
+    const { data: mealLog } = await adminSupabase
+        .from('meal_logs')
+        .select('id, client_id')
+        .eq('id', logId)
+        .maybeSingle()
+
+    if (!mealLog) {
+        return { error: 'Registro no encontrado' }
+    }
+
+    const access = await authorizeClientAccess(mealLog.client_id, { allowClientSelf: false })
+    if (!access.ok) {
+        return { error: access.error }
+    }
+
 
     const { error } = await adminSupabase
         .from('meal_logs')
@@ -623,6 +679,20 @@ export async function reviewMealLog(logId: string, status: 'pending' | 'reviewed
 // 9. Delete Meal Log
 export async function deleteMealLog(logId: string, imagePath: string) {
     const adminSupabase = createAdminClient()
+    const { data: mealLog } = await adminSupabase
+        .from('meal_logs')
+        .select('id, client_id, image_path')
+        .eq('id', logId)
+        .maybeSingle()
+
+    if (!mealLog) {
+        return { error: 'Registro no encontrado' }
+    }
+
+    const access = await authorizeClientAccess(mealLog.client_id, { allowClientSelf: true })
+    if (!access.ok) {
+        return { error: access.error }
+    }
 
     // 1. Delete from DB
     const { error: dbError } = await adminSupabase
@@ -638,7 +708,7 @@ export async function deleteMealLog(logId: string, imagePath: string) {
     // 2. Delete from Storage
     const { error: storageError } = await adminSupabase.storage
         .from('meal-logs')
-        .remove([imagePath])
+        .remove([mealLog.image_path || imagePath])
 
     if (storageError) {
         console.error('deleteMealLog: Storage error:', storageError)
@@ -651,6 +721,11 @@ export async function deleteMealLog(logId: string, imagePath: string) {
 
 // 10. Check pending meal logs for a client
 export async function getPendingMealLogsCount(clientId: string): Promise<{ count: number | null }> {
+    const access = await authorizeClientAccess(clientId, { allowClientSelf: false })
+    if (!access.ok) {
+        return { count: 0 }
+    }
+
     const adminSupabase = createAdminClient()
     const { count, error } = await adminSupabase
         .from('meal_logs')

@@ -15,6 +15,7 @@ import { WorkoutDetailDialog } from '../workout-detail-dialog'
 import { generateWorkoutPDF } from '@/lib/pdf-utils'
 import { TrainingSummarySidebar } from '../training-summary-sidebar'
 import { Badge } from '@/components/ui/badge'
+import { useConfirm } from '@/hooks/use-confirm'
 
 interface TrainingTabProps {
     client: any
@@ -26,6 +27,7 @@ export function TrainingTab({ client }: TrainingTabProps) {
     const [editingWorkout, setEditingWorkout] = useState<any>(null)
     const [viewingWorkout, setViewingWorkout] = useState<any>(null)
     const [todaySessions, setTodaySessions] = useState<any[]>([])
+    const { confirm, ConfirmDialog } = useConfirm()
 
     const fetchAssignedWorkouts = useCallback(async () => {
         const supabase = createClient()
@@ -68,7 +70,8 @@ export function TrainingTab({ client }: TrainingTabProps) {
     }, [fetchAssignedWorkouts])
 
     const handleDelete = async (id: string) => {
-        if (confirm('¿Estás seguro de eliminar esta rutina asignada?')) {
+        const isConfirmed = await confirm('¿Eliminar rutina asignada?', '¿Estás seguro de eliminar esta rutina asignada?')
+        if (isConfirmed) {
             await deleteAssignedWorkoutAction(id, client.id)
             fetchAssignedWorkouts()
         }
@@ -253,6 +256,7 @@ export function TrainingTab({ client }: TrainingTabProps) {
                     }}
                 />
             )}
+            <ConfirmDialog />
         </div>
     )
 }

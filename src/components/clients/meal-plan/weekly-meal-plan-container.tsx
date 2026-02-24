@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { DietaryCard } from '../cards/dietary-card'
+import { toast } from 'sonner'
 
 interface WeeklyMealPlanContainerProps {
     client: any
@@ -43,13 +44,13 @@ export function WeeklyMealPlanContainer({ client }: WeeklyMealPlanContainerProps
         try {
             const result = await createWeeklyPlan(client.id, config)
             if (result.error) {
-                alert(result.error)
+                toast.error(result.error)
                 return
             }
             setWizardOpen(false)
             setRefreshKey(prev => prev + 1)
         } catch (error) {
-            alert('Error inesperado al crear el plan')
+            toast.error('Error inesperado al crear el plan')
         }
     }
 

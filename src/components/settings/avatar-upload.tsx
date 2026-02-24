@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Upload, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { compressImage } from '@/lib/image-utils'
+import { toast } from 'sonner'
 
 interface AvatarUploadProps {
     userId: string
@@ -27,14 +28,14 @@ export function AvatarUpload({ userId, currentAvatarUrl, userInitials, onUploadC
 
             // Validate file size (5MB)
             if (file.size > 5242880) {
-                alert('La imagen no debe superar 5MB')
+                toast.error('La imagen no debe superar 5MB')
                 return
             }
 
             // Validate file type
             const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
             if (!validTypes.includes(file.type)) {
-                alert('Formato de imagen no válido. Usa JPG, PNG, WEBP o GIF.')
+                toast.error('Formato de imagen no válido. Usa JPG, PNG, WEBP o GIF.')
                 return
             }
 
@@ -74,7 +75,7 @@ export function AvatarUpload({ userId, currentAvatarUrl, userInitials, onUploadC
 
         } catch (error) {
             console.error('Error uploading avatar:', error)
-            alert('Error al subir la imagen. Intenta nuevamente.')
+            toast.error('Error al subir la imagen. Intenta nuevamente.')
         } finally {
             setUploading(false)
         }
@@ -90,7 +91,7 @@ export function AvatarUpload({ userId, currentAvatarUrl, userInitials, onUploadC
                 await uploadAvatar(compressedFile)
             } catch (error) {
                 console.error('Error compressing image:', error)
-                alert('Error al procesar la imagen.')
+                toast.error('Error al procesar la imagen.')
             }
         }
     }

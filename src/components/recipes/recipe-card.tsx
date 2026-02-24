@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Utensils, Copy, Clock, Users, Flame, Loader2 } from 'lucide-react'
 import { duplicateRecipeAction } from '@/app/(dashboard)/recipes/actions'
 import { AssignRecipeDialog } from './assign-recipe-dialog'
+import { toast } from 'sonner'
 
 interface RecipeIngredient {
     ingredient_code: string
@@ -128,7 +129,7 @@ export function RecipeCard({ recipe, isAdmin, onSelect, isSelected }: RecipeCard
         startDuplicating(async () => {
             const result = await duplicateRecipeAction(recipe.id)
             if (result.error) {
-                alert(result.error)
+                toast.error(result.error)
             } else if (result.recipe) {
                 router.push(`/recipes/${result.recipe.id}`)
             }
@@ -146,15 +147,14 @@ export function RecipeCard({ recipe, isAdmin, onSelect, isSelected }: RecipeCard
     return (
         <>
             <Card
-                className={`group overflow-hidden rounded-2xl border bg-card text-card-foreground transition-all cursor-pointer p-4 pb-4 ${isSelected
+                className={`group flex flex-col overflow-hidden rounded-2xl border bg-card text-card-foreground transition-all cursor-pointer p-0 ${isSelected
                     ? 'border-primary ring-2 ring-primary ring-offset-2'
                     : 'hover:border-border'
                     }`}
                 onClick={handleCardClick}
             >
                 {/* Image Section */}
-                {/* User wants the image rounded inside the card, with badge on top right */}
-                <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-muted/50 mb-4">
+                <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted/50 shrink-0">
                     {recipe.image_url ? (
                         <Image
                             src={recipe.image_url}
@@ -168,98 +168,85 @@ export function RecipeCard({ recipe, isAdmin, onSelect, isSelected }: RecipeCard
                         </div>
                     )}
 
-                    {/* Badge */}
+                    {/* Badge Overlay */}
                     {recipe.meal_type && (
                         <Badge
-                            className={`absolute top-3 right-3 border-0 px-3 py-1 font-medium ${mealTypeColors[recipe.meal_type] || 'bg-white/90 text-zinc-800'}`}
+                            className={`absolute top-3 left-3 border-0 px-2.5 py-0.5 text-xs font-semibold shadow-sm ${mealTypeColors[recipe.meal_type] || 'bg-white/90 text-zinc-800'}`}
                         >
                             {mealTypeLabels[recipe.meal_type] || recipe.meal_type}
                         </Badge>
                     )}
                 </div>
 
-                {/* Content */}
-                <div className="space-y-3 sm:space-y-4">
-                    {/* Title */}
-                    <div>
-                        <h3 className="line-clamp-2 text-base sm:text-xl font-bold leading-tight tracking-tight text-foreground">
+                {/* Content Container */}
+                <div className="flex flex-col flex-1 p-4 gap-3">
+                    {/* Info */}
+                    <div className="space-y-1">
+                        <h3 className="line-clamp-1 text-base font-semibold leading-tight tracking-tight text-foreground" title={recipe.name}>
                             {recipe.name}
                         </h3>
-                        {/* Meta: Time & Servings */}
-                        <div className="mt-1 sm:mt-2 flex items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground flex-wrap">
-                            {!!recipe.prep_time_min && (
-                                <div className="flex items-center gap-1.5">
-                                    <Clock className="h-4 w-4" />
-                                    <span>{recipe.prep_time_min} min</span>
-                                </div>
-                            )}
-                            {!!recipe.servings && (
-                                <div className="flex items-center gap-1.5">
-                                    {/* Icon like users or just text */}
-                                    {/* Screenshot just says "1 porcion" maybe without icon or simple dot? user icon works */}
-                                    <span>{recipe.servings} {recipe.servings === 1 ? 'porcion' : 'porciones'}</span>
-                                </div>
-                            )}
+                        <div className="text-[13px] text-muted-foreground">
+                            {recipe.servings ? `${recipe.servings} ${recipe.servings === 1 ? 'porción' : 'porciones'}` : '1 porción'}
                         </div>
                     </div>
 
-                    {/* Macros Grid */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
-                        <div className="flex flex-col items-center justify-center rounded-lg bg-zinc-50 p-1.5 sm:p-2 dark:bg-zinc-900">
-                            <span className="text-sm sm:text-lg font-bold text-zinc-900 dark:text-zinc-50">{Math.round(macros.kcal)}</span>
-                            <span className="text-[8px] sm:text-[10px] font-semibold uppercase text-zinc-500">KCAL</span>
+                    {/* Macros */}
+                    <div className="grid grid-cols-4 gap-2">
+                        <div className={`flex flex-col items-center justify-center rounded-xl bg-zinc-50 dark:bg-zinc-900 h-[44px] ${Math.round(macros.kcal) === 0 ? 'opacity-60' : ''}`}>
+                            <span className="text-[13px] font-bold leading-none mb-1 text-zinc-900 dark:text-zinc-50">{Math.round(macros.kcal)}</span>
+                            <span className="text-[10px] font-semibold leading-none uppercase text-zinc-500">Kcal</span>
                         </div>
-                        <div className="flex flex-col items-center justify-center rounded-lg bg-blue-50 p-1.5 sm:p-2 dark:bg-blue-900/20">
-                            <span className="text-sm sm:text-lg font-bold text-blue-600 dark:text-blue-400">{Math.round(macros.protein)}g</span>
-                            <span className="text-[8px] sm:text-[10px] font-semibold uppercase text-blue-600/70">PROT</span>
+                        <div className={`flex flex-col items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-900/20 h-[44px] ${Math.round(macros.protein) === 0 ? 'opacity-60' : ''}`}>
+                            <span className="text-[13px] font-bold leading-none mb-1 text-blue-600 dark:text-blue-400">{Math.round(macros.protein)}g</span>
+                            <span className="text-[10px] font-semibold leading-none uppercase text-blue-600/70">Prot</span>
                         </div>
-                        <div className="flex flex-col items-center justify-center rounded-lg bg-amber-50 p-1.5 sm:p-2 dark:bg-amber-900/20">
-                            <span className="text-sm sm:text-lg font-bold text-amber-600 dark:text-amber-400">{Math.round(macros.carbs)}g</span>
-                            <span className="text-[8px] sm:text-[10px] font-semibold uppercase text-amber-600/70">CARBS</span>
+                        <div className={`flex flex-col items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-900/20 h-[44px] ${Math.round(macros.carbs) === 0 ? 'opacity-60' : ''}`}>
+                            <span className="text-[13px] font-bold leading-none mb-1 text-amber-600 dark:text-amber-400">{Math.round(macros.carbs)}g</span>
+                            <span className="text-[10px] font-semibold leading-none uppercase text-amber-600/70">Carbs</span>
                         </div>
-                        <div className="flex flex-col items-center justify-center rounded-lg bg-rose-50 p-1.5 sm:p-2 dark:bg-rose-900/20">
-                            <span className="text-sm sm:text-lg font-bold text-rose-600 dark:text-rose-400">{Math.round(macros.fat)}g</span>
-                            <span className="text-[8px] sm:text-[10px] font-semibold uppercase text-rose-600/70">GRASAS</span>
+                        <div className={`flex flex-col items-center justify-center rounded-xl bg-rose-50 dark:bg-rose-900/20 h-[44px] ${Math.round(macros.fat) === 0 ? 'opacity-60' : ''}`}>
+                            <span className="text-[13px] font-bold leading-none mb-1 text-rose-600 dark:text-rose-400">{Math.round(macros.fat)}g</span>
+                            <span className="text-[10px] font-semibold leading-none uppercase text-rose-600/70">Grasas</span>
                         </div>
                     </div>
 
-                    {/* Actions - Only show if not in selection mode */}
+                    {/* Actions Footer */}
                     {!onSelect && (
-                        <div className="flex flex-wrap sm:flex-nowrap items-center gap-1.5 sm:gap-2 pt-1">
+                        <div className="flex items-center gap-2 mt-auto pt-1">
                             <Button
-                                variant="outline"
-                                className="flex-1 gap-1.5 sm:gap-2 rounded-lg sm:rounded-xl h-9 sm:h-11 border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-900 font-medium px-2 sm:px-4 text-xs sm:text-sm"
-                                onClick={handleDuplicate}
-                                disabled={isDuplicating}
-                            >
-                                {isDuplicating ? <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" /> : <Copy className="h-3 w-3 sm:h-4 sm:w-4 hidden sm:inline" />}
-                                Duplicar
-                            </Button>
-
-                            {/* Admin Edit Button */}
-                            {isAdmin && (
-                                <Button
-                                    variant="outline"
-                                    className="h-9 w-9 sm:h-11 sm:w-11 rounded-lg sm:rounded-xl border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-900 p-0 shrink-0"
-                                    onClick={(e) => {
-                                        e.stopPropagation()
-                                        router.push(`/recipes/${recipe.id}`)
-                                    }}
-                                    title="Editar Receta"
-                                >
-                                    <Utensils className="h-4 w-4 sm:h-5 sm:w-5" />
-                                </Button>
-                            )}
-
-                            <Button
-                                className="h-9 w-9 sm:h-11 sm:w-11 rounded-lg sm:rounded-xl bg-primary hover:bg-primary/90 text-white p-0 shrink-0"
+                                className="flex-1 h-[44px] rounded-xl bg-primary hover:bg-primary/90 text-white gap-2 font-medium"
                                 onClick={(e) => {
                                     e.stopPropagation()
                                     setShowAssignDialog(true)
                                 }}
                             >
-                                <Users className="h-4 w-4 sm:h-5 sm:w-5" />
+                                <Users className="h-4 w-4" />
+                                Asignar
                             </Button>
+
+                            <Button
+                                variant="outline"
+                                className="h-[44px] w-[44px] rounded-xl border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 p-0 shrink-0"
+                                onClick={handleDuplicate}
+                                disabled={isDuplicating}
+                                title="Duplicar"
+                            >
+                                {isDuplicating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Copy className="h-4 w-4" />}
+                            </Button>
+
+                            {isAdmin && (
+                                <Button
+                                    variant="outline"
+                                    className="h-[44px] w-[44px] rounded-xl border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 p-0 shrink-0"
+                                    onClick={(e) => {
+                                        e.stopPropagation()
+                                        router.push(`/recipes/${recipe.id}`)
+                                    }}
+                                    title="Configurar"
+                                >
+                                    <Utensils className="h-4 w-4" />
+                                </Button>
+                            )}
                         </div>
                     )}
                 </div>

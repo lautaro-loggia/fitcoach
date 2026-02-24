@@ -157,12 +157,13 @@ export function IngredientSelector({ onAdd }: IngredientSelectorProps) {
                             onChange={(e) => setQuantity(e.target.value)}
                             placeholder="Ej: 2"
                             min="0"
+                            className="h-10"
                         />
                     </div>
                     <div className="space-y-2 w-[100px] sm:w-[120px]">
                         <Label>Unidad</Label>
                         <Select value={unit} onValueChange={setUnit} disabled={!selectedIngredient}>
-                            <SelectTrigger>
+                            <SelectTrigger className="h-10">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>

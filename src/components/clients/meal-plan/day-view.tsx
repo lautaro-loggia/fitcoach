@@ -9,6 +9,7 @@ import { useState } from 'react'
 import { AddMealDialog } from './add-meal-dialog'
 import { Plus } from 'lucide-react'
 import { toast } from 'sonner'
+import { useConfirm } from '@/hooks/use-confirm'
 
 interface DayViewProps {
     day: any
@@ -36,13 +37,15 @@ const WEEKDAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado
 export function DayView({ day, allDays, clientId, clientAllergens, clientPreference, onUpdate, dailyStats }: DayViewProps) {
     const [loading, setLoading] = useState(false)
     const [addMealOpen, setAddMealOpen] = useState(false)
+    const { confirm, ConfirmDialog } = useConfirm()
 
     if (!day) return null
 
     const dayLabel = WEEKDAYS[day.day_of_week - 1]
 
     const handleCopyDay = async (targetDayId: string) => {
-        if (!confirm(`¿Copiar todo el contenido de ${dayLabel} al día seleccionado?`)) return
+        const isConfirmed = await confirm('¿Copiar día?', `¿Copiar todo el contenido de ${dayLabel} al día seleccionado?`)
+        if (!isConfirmed) return
         setLoading(true)
         try {
             await copyDay(day.id, targetDayId, clientId)
@@ -171,6 +174,7 @@ export function DayView({ day, allDays, clientId, clientAllergens, clientPrefere
                 dayName={dayLabel}
                 onConfirm={handleAddMeal}
             />
+            <ConfirmDialog />
         </div>
     )
 }

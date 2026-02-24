@@ -44,18 +44,27 @@ export async function updateSession(request: NextRequest) {
             }
         )
 
+        const pathname = request.nextUrl.pathname
+        const isLoginRoute = pathname.startsWith('/login')
+        const isRegisterRoute = pathname.startsWith('/register')
+        const isAuthUiRoute =
+            isLoginRoute ||
+            isRegisterRoute ||
+            pathname.startsWith('/forgot-password') ||
+            pathname.startsWith('/reset-password')
+        const isAuthCallbackRoute = pathname.startsWith('/auth/callback')
+        const isProtectedRoute = !isAuthUiRoute && !isAuthCallbackRoute
+
+        // Read session from cookies to avoid hitting Auth API on every request.
         const {
-            data: { user },
-        } = await supabase.auth.getUser()
+            data: { session },
+        } = await supabase.auth.getSession()
+        const user = session?.user ?? null
 
         // Redirect to login if not authenticated and trying to access protected routes
         if (
             !user &&
-            !request.nextUrl.pathname.startsWith('/login') &&
-            !request.nextUrl.pathname.startsWith('/register') &&
-            !request.nextUrl.pathname.startsWith('/forgot-password') &&
-            !request.nextUrl.pathname.startsWith('/reset-password') &&
-            !request.nextUrl.pathname.startsWith('/auth/callback')
+            isProtectedRoute
         ) {
             const url = request.nextUrl.clone()
             url.pathname = '/login'
@@ -69,8 +78,7 @@ export async function updateSession(request: NextRequest) {
         // Redirect to dashboard if authenticated and trying to access auth pages (except callback/signout)
         if (
             user &&
-            (request.nextUrl.pathname.startsWith('/login') ||
-                request.nextUrl.pathname.startsWith('/register'))
+            (isLoginRoute || isRegisterRoute)
         ) {
             const role = user.user_metadata?.role
             const url = request.nextUrl.clone()
@@ -79,13 +87,10 @@ export async function updateSession(request: NextRequest) {
         }
 
         // Redirect clients from coach routes to client dashboard
-        const isCoachRoute = !request.nextUrl.pathname.startsWith('/dashboard') &&
-            !request.nextUrl.pathname.startsWith('/onboarding') &&
-            !request.nextUrl.pathname.startsWith('/login') &&
-            !request.nextUrl.pathname.startsWith('/register') &&
-            !request.nextUrl.pathname.startsWith('/forgot-password') &&
-            !request.nextUrl.pathname.startsWith('/reset-password') &&
-            !request.nextUrl.pathname.startsWith('/auth')
+        const isCoachRoute = !pathname.startsWith('/dashboard') &&
+            !pathname.startsWith('/onboarding') &&
+            !isAuthUiRoute &&
+            !pathname.startsWith('/auth')
 
         if (user && user.user_metadata?.role === 'client' && isCoachRoute) {
             const url = request.nextUrl.clone()

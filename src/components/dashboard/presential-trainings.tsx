@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { PresentialTraining } from "@/lib/actions/dashboard"
 import { Message01Icon } from "hugeicons-react"
 import { Badge } from "@/components/ui/badge"
+import { toast } from "sonner"
 
 interface PresentialTrainingsProps {
     trainings: PresentialTraining[]
@@ -15,7 +16,7 @@ export function PresentialTrainings({ trainings }: PresentialTrainingsProps) {
 
     const handleWhatsAppClick = (training: PresentialTraining) => {
         if (!training.clientPhone) {
-            alert('El cliente no tiene un número de teléfono registrado.')
+            toast.error('El cliente no tiene un número de teléfono registrado.')
             return
         }
 

@@ -18,6 +18,7 @@ import { format, parse, addWeeks } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { cn, normalizeText } from '@/lib/utils'
 import { Switch } from '@/components/ui/switch'
+import { toast } from 'sonner'
 
 // Helper to convert string to Title Case
 const toTitleCase = (str: string) => {
@@ -219,12 +220,12 @@ export function AssignWorkoutDialog({
 
     const handleSave = async () => {
         if (!validUntil) {
-            alert('La fecha de revisión es obligatoria')
+            toast.error('La fecha de revisión es obligatoria')
             return
         }
 
         if (scheduledDays.length === 0) {
-            alert('Debes seleccionar al menos un día para asignar la rutina')
+            toast.error('Debes seleccionar al menos un día para asignar la rutina')
             return
         }
 
@@ -255,7 +256,7 @@ export function AssignWorkoutDialog({
         }
 
         if (result?.error) {
-            alert(result.error)
+            toast.error(result.error)
         } else {
             setOpen(false)
         }

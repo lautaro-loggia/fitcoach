@@ -260,6 +260,16 @@ export function MealAccordionItem({ meal, log, clientId }: MealAccordionItemProp
         ? meal.items.map((i: any) => i.custom_name || i.recipe?.name).filter(Boolean).join(" + ")
         : "Receta no asignada"
 
+    const hasLogMetadata = isComplete && log?.metadata
+    const displayTitle = (hasLogMetadata && log.metadata.description) ? log.metadata.description : cardTitle
+    const displayStats = (hasLogMetadata && log.metadata.macros) ? {
+        kcal: log.metadata.macros.kcal || 0,
+        protein: log.metadata.macros.protein || 0,
+        carbs: log.metadata.macros.carbs || 0,
+        fats: log.metadata.macros.fats || 0,
+    } : stats
+    const displayIngredients = (hasLogMetadata && log.metadata.ingredients) ? log.metadata.ingredients : null
+
     return (
         <div className="space-y-3">
             <div className="flex items-center gap-2 px-1">
@@ -282,8 +292,21 @@ export function MealAccordionItem({ meal, log, clientId }: MealAccordionItemProp
                     {/* Expandable Click Area */}
                     <DialogTrigger asChild>
                         <div className="flex-1 cursor-pointer">
-                            <h3 className="text-[17px] font-bold text-gray-900 leading-tight mb-1">{cardTitle}</h3>
-                            <p className="text-[14px] text-gray-500 font-medium">{stats.kcal} kcal</p>
+                            <h3 className="text-[17px] font-bold text-gray-900 leading-tight mb-1">{displayTitle}</h3>
+                            <div className="flex items-center gap-3">
+                                <span className={cn("text-[14px] font-bold", isComplete ? "text-[#4139CF]" : "text-gray-500")}>
+                                    {displayStats.kcal} kcal
+                                </span>
+                                {isComplete && (
+                                    <div className="flex items-center gap-1.5 text-[12px] text-gray-400 font-medium">
+                                        <span>P: {displayStats.protein}g</span>
+                                        <span className="w-1 h-1 bg-gray-300 rounded-full" />
+                                        <span>C: {displayStats.carbs}g</span>
+                                        <span className="w-1 h-1 bg-gray-300 rounded-full" />
+                                        <span>G: {displayStats.fats}g</span>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </DialogTrigger>
 
@@ -542,9 +565,9 @@ export function MealAccordionItem({ meal, log, clientId }: MealAccordionItemProp
                             <div className="flex justify-between items-start gap-4">
                                 <div>
                                     <DialogTitle className="text-2xl font-bold text-gray-900 leading-tight">
-                                        {cardTitle}
+                                        {displayTitle}
                                     </DialogTitle>
-                                    <p className="text-gray-500 font-medium mt-1">{stats.kcal} kcal</p>
+                                    <p className="text-gray-500 font-medium mt-1">{displayStats.kcal} kcal</p>
                                 </div>
                                 <DialogClose className="p-2 bg-gray-100/50 hover:bg-gray-100 rounded-full transition-colors">
                                     <X className="w-5 h-5 text-gray-400" />
@@ -556,7 +579,7 @@ export function MealAccordionItem({ meal, log, clientId }: MealAccordionItemProp
                                 <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden bg-gray-100 shadow-inner">
                                     <Image
                                         src={log?.signedUrl || meal.items[0].recipe.image_url}
-                                        alt={cardTitle}
+                                        alt={displayTitle}
                                         fill
                                         className="object-cover"
                                     />
@@ -567,43 +590,52 @@ export function MealAccordionItem({ meal, log, clientId }: MealAccordionItemProp
                             <div className="space-y-3">
                                 <h4 className="text-[11px] font-bold text-gray-400 tracking-wider uppercase">INGREDIENTES</h4>
                                 <div className="space-y-2">
-                                    {meal.items?.map((item: any, idx: number) => {
-                                        const recipe = item.recipe
-                                        const portions = item.portions || 1
-                                        let ingredientsList = recipe?.ingredients || recipe?.ingredients_data || []
-                                        if (typeof ingredientsList === 'string') {
-                                            try { ingredientsList = JSON.parse(ingredientsList) } catch (e) { ingredientsList = [] }
-                                        }
-                                        const hasIngredients = Array.isArray(ingredientsList) && ingredientsList.length > 0
-
-                                        if (hasIngredients) {
-                                            return ingredientsList.map((ing: any, i: number) => (
-                                                <div key={`${idx}-${i}`} className="flex justify-between items-center text-[14px]">
-                                                    <span className="font-semibold text-gray-900 capitalize">{ing.ingredient_name || ing.name}</span>
-                                                    <span className="text-gray-500 font-medium">
-                                                        {ing.quantity && ing.unit && ing.unit.toLowerCase() !== 'g'
-                                                            ? `${ing.quantity} ${ing.unit}`
-                                                            : `${Math.round((ing.grams || 0) * portions)}g`
-                                                        }
-                                                    </span>
-                                                </div>
-                                            ))
-                                        }
-                                        return (
+                                    {displayIngredients ? (
+                                        displayIngredients.map((ing: any, idx: number) => (
                                             <div key={idx} className="flex justify-between items-center text-[14px]">
-                                                <span className="font-semibold text-gray-900">{item.custom_name || recipe?.name || "Item"}</span>
-                                                <span className="text-gray-500 font-medium">{portions > 1 ? `${portions} porciones` : '1 porción'}</span>
+                                                <span className="font-semibold text-gray-900 capitalize">{ing.name}</span>
+                                                <span className="text-gray-500 font-medium">{ing.grams}g</span>
                                             </div>
-                                        )
-                                    })}
+                                        ))
+                                    ) : (
+                                        meal.items?.map((item: any, idx: number) => {
+                                            const recipe = item.recipe
+                                            const portions = item.portions || 1
+                                            let ingredientsList = recipe?.ingredients || recipe?.ingredients_data || []
+                                            if (typeof ingredientsList === 'string') {
+                                                try { ingredientsList = JSON.parse(ingredientsList) } catch (e) { ingredientsList = [] }
+                                            }
+                                            const hasIngredients = Array.isArray(ingredientsList) && ingredientsList.length > 0
+
+                                            if (hasIngredients) {
+                                                return ingredientsList.map((ing: any, i: number) => (
+                                                    <div key={`${idx}-${i}`} className="flex justify-between items-center text-[14px]">
+                                                        <span className="font-semibold text-gray-900 capitalize">{ing.ingredient_name || ing.name}</span>
+                                                        <span className="text-gray-500 font-medium">
+                                                            {ing.quantity && ing.unit && ing.unit.toLowerCase() !== 'g'
+                                                                ? `${ing.quantity} ${ing.unit}`
+                                                                : `${Math.round((ing.grams || 0) * portions)}g`
+                                                            }
+                                                        </span>
+                                                    </div>
+                                                ))
+                                            }
+                                            return (
+                                                <div key={idx} className="flex justify-between items-center text-[14px]">
+                                                    <span className="font-semibold text-gray-900">{item.custom_name || recipe?.name || "Item"}</span>
+                                                    <span className="text-gray-500 font-medium">{portions > 1 ? `${portions} porciones` : '1 porción'}</span>
+                                                </div>
+                                            )
+                                        })
+                                    )}
                                 </div>
                             </div>
 
                             {/* Macros Row - NEW COLORS */}
                             <div className="grid grid-cols-3 gap-3">
-                                <MacroChip label="PROTEINA" value={stats.protein} unit="g" textColor="text-[#C50D00]" />
-                                <MacroChip label="CARBOS" value={stats.carbs} unit="g" textColor="text-[#E7A202]" />
-                                <MacroChip label="GRASAS" value={stats.fats} unit="g" textColor="text-[#009B27]" />
+                                <MacroChip label="PROTEINA" value={displayStats.protein} unit="g" textColor="text-[#C50D00]" />
+                                <MacroChip label="CARBOS" value={displayStats.carbs} unit="g" textColor="text-[#E7A202]" />
+                                <MacroChip label="GRASAS" value={displayStats.fats} unit="g" textColor="text-[#009B27]" />
                             </div>
 
                             {/* Action */}

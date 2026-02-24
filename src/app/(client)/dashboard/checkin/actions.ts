@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { addDaysToDateString, getTodayString } from '@/lib/utils'
 import { createNotification } from '@/lib/notifications'
+import { consumeRateLimit } from '@/lib/security/rate-limit'
 
 export async function createCheckin(data: {
     weight: number
@@ -114,6 +115,17 @@ export async function uploadCheckinPhoto(formData: FormData) {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return { error: 'No autorizado' }
 
+        const rate = consumeRateLimit({
+            scope: 'checkin-photo-upload',
+            key: user.id,
+            maxRequests: 30,
+            windowMs: 15 * 60 * 1000,
+        })
+        if (!rate.allowed) {
+            const retryMinutes = Math.max(1, Math.ceil(rate.retryAfterMs / 60000))
+            return { error: `Demasiadas cargas en poco tiempo. Reintenta en ${retryMinutes} min.` }
+        }
+
         const timestamp = Date.now()
         // Sanitize filename
         const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
@@ -166,6 +178,27 @@ export async function markNoteAsSeenAction(checkinId: string) {
     if (!user) return { error: 'No autorizado' }
 
     const adminClient = createAdminClient()
+
+    const { data: checkin } = await adminClient
+        .from('checkins')
+        .select('id, client_id')
+        .eq('id', checkinId)
+        .maybeSingle()
+
+    if (!checkin) {
+        return { error: 'Check-in no encontrado' }
+    }
+
+    const { data: client } = await adminClient
+        .from('clients')
+        .select('id')
+        .eq('id', checkin.client_id)
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+    if (!client) {
+        return { error: 'No autorizado' }
+    }
 
     const { error } = await adminClient
         .from('checkins')

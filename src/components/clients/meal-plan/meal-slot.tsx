@@ -10,6 +10,7 @@ import { addDishToMeal, removeDish, toggleMealSkip, deleteMealFromDay } from '@/
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { useState } from 'react'
+import { useConfirm } from '@/hooks/use-confirm'
 
 interface MealSlotProps {
     meal: any
@@ -23,6 +24,7 @@ interface MealSlotProps {
 export function MealSlot({ meal, dayName, clientId, clientAllergens, clientPreference, onUpdate }: MealSlotProps) {
     const isSkipped = meal.is_skipped
     const [addDialogOpen, setAddDialogOpen] = useState(false)
+    const { confirm, ConfirmDialog } = useConfirm()
 
     const handleAddDish = async (data: any) => {
         const result = await addDishToMeal(meal.id, clientId, data)
@@ -36,7 +38,8 @@ export function MealSlot({ meal, dayName, clientId, clientAllergens, clientPrefe
     }
 
     const handleDeleteDish = async (itemId: string) => {
-        if (confirm('¿Eliminar receta?')) {
+        const isConfirmed = await confirm('¿Eliminar receta?', '¿Seguro que deseas eliminar esta receta?')
+        if (isConfirmed) {
             await removeDish(itemId, clientId)
             onUpdate()
             toast.success('Receta eliminada')
@@ -49,7 +52,8 @@ export function MealSlot({ meal, dayName, clientId, clientAllergens, clientPrefe
     }
 
     const handleDeleteMeal = async () => {
-        if (confirm(`¿Estás seguro que deseas eliminar toda la comida "${meal.name}"?`)) {
+        const isConfirmed = await confirm('¿Eliminar comida?', `¿Estás seguro que deseas eliminar toda la comida "${meal.name}"?`)
+        if (isConfirmed) {
             const result = await deleteMealFromDay(meal.id, clientId)
             if (result?.error) {
                 toast.error('Error al eliminar comida')
@@ -115,6 +119,7 @@ export function MealSlot({ meal, dayName, clientId, clientAllergens, clientPrefe
                     onConfirm={handleAddDish}
                 />
             </CardContent>
+            <ConfirmDialog />
         </Card >
     )
 }

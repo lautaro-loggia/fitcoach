@@ -1,5 +1,6 @@
 'use server'
 
+import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -14,10 +15,30 @@ export type ActivityEvent = {
 }
 
 export async function getClientActivity(clientId: string): Promise<ActivityEvent[]> {
-    const supabase = createAdminClient()
+    const supabase = await createClient()
+    const {
+        data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+        return []
+    }
+
+    const { data: clientAuth } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('id', clientId)
+        .eq('trainer_id', user.id)
+        .maybeSingle()
+
+    if (!clientAuth) {
+        return []
+    }
+
+    const adminSupabase = createAdminClient()
 
     // 1. Fetch Meal Logs
-    const { data: meals } = await supabase
+    const { data: meals } = await adminSupabase
         .from('meal_logs')
         .select('id, meal_type, created_at, status, coach_comment')
         .eq('client_id', clientId)
@@ -25,7 +46,7 @@ export async function getClientActivity(clientId: string): Promise<ActivityEvent
         .limit(10)
 
     // 2. Fetch Workout Logs (Unified with Sessions later)
-    const { data: workoutLogs } = await supabase
+    const { data: workoutLogs } = await adminSupabase
         .from('workout_logs')
         .select('id, completed_at, workout_id, feedback')
         .eq('client_id', clientId)
@@ -33,7 +54,7 @@ export async function getClientActivity(clientId: string): Promise<ActivityEvent
         .limit(10)
 
     // 2b. Fetch Workout Sessions (The more detailed system)
-    const { data: workoutSessions } = await supabase
+    const { data: workoutSessions } = await adminSupabase
         .from('workout_sessions')
         .select('id, ended_at, feedback, assigned_workouts(name)')
         .eq('client_id', clientId)
@@ -42,7 +63,7 @@ export async function getClientActivity(clientId: string): Promise<ActivityEvent
         .limit(10)
 
     // 3. Fetch Checkins
-    const { data: checkins } = await supabase
+    const { data: checkins } = await adminSupabase
         .from('checkins')
         .select('id, date, weight, observations, created_at')
         .eq('client_id', clientId)
@@ -50,7 +71,7 @@ export async function getClientActivity(clientId: string): Promise<ActivityEvent
         .limit(10)
 
     // 4. Fetch Payments
-    const { data: payments } = await supabase
+    const { data: payments } = await adminSupabase
         .from('payments')
         .select('id, amount, paid_at, note, created_at')
         .eq('client_id', clientId)

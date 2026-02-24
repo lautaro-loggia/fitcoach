@@ -1,11 +1,43 @@
 'use server'
 
 import { GoogleGenAI } from '@google/genai'
+import { createClient } from '@/lib/supabase/server'
+import { consumeRateLimit } from '@/lib/security/rate-limit'
 
 export async function analyzeMealWithAI(base64Image: string, mimeType: string) {
-    const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY
+    const supabase = await createClient()
+    const {
+        data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { error: 'No autorizado' }
+    }
+
+    const allowedMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp'])
+    if (!allowedMimeTypes.has(mimeType)) {
+        return { error: 'Formato de imagen no soportado' }
+    }
+
+    // ~8MB payload cap in base64 to reduce abuse/cost and avoid oversized requests.
+    if (!base64Image || base64Image.length > 8 * 1024 * 1024) {
+        return { error: 'La imagen es demasiado grande' }
+    }
+
+    const rate = consumeRateLimit({
+        scope: 'ai-meal-analysis',
+        key: user.id,
+        maxRequests: 20,
+        windowMs: 60 * 60 * 1000,
+    })
+    if (!rate.allowed) {
+        const retryMinutes = Math.max(1, Math.ceil(rate.retryAfterMs / 60000))
+        return { error: `Demasiadas solicitudes. Reintenta en ${retryMinutes} min.` }
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY
     if (!apiKey) {
-        return { error: 'Gemini API Key no configurada en Vercel' }
+        return { error: 'Gemini API Key no configurada' }
     }
 
     const ai = new GoogleGenAI({ apiKey })

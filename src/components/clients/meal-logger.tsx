@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { InlineIngredientAdder } from './nutrition/inline-ingredient-adder'
+import { useConfirm } from '@/hooks/use-confirm'
 
 interface MealLoggerProps {
     clientId: string
@@ -45,6 +46,7 @@ export function MealLogger({ clientId, mealName, existingLogs }: MealLoggerProps
         ingredients?: Array<{ name: string, category: string, grams: number }>
     } | null>(null)
     const [baseAiData, setBaseAiData] = useState<{ macros: { kcal: number, protein: number, carbs: number, fats: number }, totalGrams: number } | null>(null)
+    const { confirm, ConfirmDialog } = useConfirm()
 
     const loadingTexts = [
         "Detectando ingredientes...",
@@ -188,7 +190,8 @@ export function MealLogger({ clientId, mealName, existingLogs }: MealLoggerProps
     }
 
     const handleDeleteLog = async (logId: string, imagePath: string) => {
-        if (!confirm('¿Estás seguro de que quieres eliminar esta foto?')) return
+        const isConfirmed = await confirm('¿Eliminar foto?', '¿Seguro que deseas eliminar esta foto?')
+        if (!isConfirmed) return
 
         try {
             const result = await deleteMealLog(logId, imagePath)
@@ -498,6 +501,7 @@ export function MealLogger({ clientId, mealName, existingLogs }: MealLoggerProps
                     )}
                 </DialogContent>
             </Dialog>
+            <ConfirmDialog />
         </div>
     )
 }

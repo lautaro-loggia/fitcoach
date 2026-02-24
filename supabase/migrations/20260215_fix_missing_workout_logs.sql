@@ -34,7 +34,7 @@ drop policy if exists "Trainers can view their clients' workout logs" on public.
 create policy "Trainers can view their clients' workout logs"
     on public.workout_logs for select
     using (auth.uid() in (
-        select user_id from public.profiles
+        select id from public.profiles
         join public.clients on clients.trainer_id = profiles.id
         where clients.id = workout_logs.client_id
     ));

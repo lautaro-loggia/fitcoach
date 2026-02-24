@@ -170,6 +170,26 @@ export async function createClientAction(formData: FormData) {
 }
 
 export async function updateClientAction(clientId: string, data: any) {
+    const supabase = await createClient()
+    const {
+        data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { error: 'No autorizado' }
+    }
+
+    const { data: ownedClient } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('id', clientId)
+        .eq('trainer_id', user.id)
+        .maybeSingle()
+
+    if (!ownedClient) {
+        return { error: 'No autorizado para editar este cliente' }
+    }
+
     const adminSupabase = createAdminClient()
 
     // Filter out undefined values and convert empty strings to null

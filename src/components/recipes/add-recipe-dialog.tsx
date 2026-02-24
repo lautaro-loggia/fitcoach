@@ -160,7 +160,7 @@ export function AddRecipeDialog({ open: controlledOpen, onOpenChange, onSuccess,
             setImageUrl(publicUrl)
         } catch (error: any) {
             console.error('Upload error:', error)
-            alert(`Error al subir la imagen: ${error.message}`)
+            toast.error(`Error al subir la imagen: ${error.message}`)
         } finally {
             setIsUploading(false)
         }

@@ -37,6 +37,55 @@ export interface SetLog {
     completed_at: string | null
 }
 
+type ClientContext = {
+    clientId: string
+}
+
+async function getAuthenticatedClientContext(): Promise<{ error?: string; context?: ClientContext }> {
+    const supabase = await createClient()
+    const {
+        data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { error: 'No autorizado' }
+    }
+
+    const { data: client } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+    if (!client) {
+        return { error: 'Cliente no encontrado' }
+    }
+
+    return {
+        context: {
+            clientId: client.id,
+        },
+    }
+}
+
+async function getOwnedSession(
+    adminSupabase: ReturnType<typeof createAdminClient>,
+    sessionId: string,
+    clientId: string
+) {
+    const { data: session } = await adminSupabase
+        .from('workout_sessions')
+        .select('id, client_id, trainer_id, assigned_workout_id, status')
+        .eq('id', sessionId)
+        .maybeSingle()
+
+    if (!session || session.client_id !== clientId) {
+        return null
+    }
+
+    return session
+}
+
 // Get or create a session for today for the CLIENT
 export async function getOrCreateSession(assignedWorkoutId: string) {
     const supabase = await createClient()
@@ -185,7 +234,16 @@ export async function getOrCreateExerciseCheckin(
     exerciseName: string,
     defaultRestSeconds: number = 90
 ) {
+    const auth = await getAuthenticatedClientContext()
+    if (!auth.context) {
+        return { error: auth.error || 'No autorizado' }
+    }
+
     const adminSupabase = createAdminClient()
+    const ownedSession = await getOwnedSession(adminSupabase, sessionId, auth.context.clientId)
+    if (!ownedSession) {
+        return { error: 'No autorizado' }
+    }
 
     // Try to get existing
     const { data: existing } = await adminSupabase
@@ -222,7 +280,16 @@ export async function getOrCreateExerciseCheckin(
 
 // Get all exercise checkins for the session with sets
 export async function getSessionCheckins(sessionId: string) {
+    const auth = await getAuthenticatedClientContext()
+    if (!auth.context) {
+        return []
+    }
+
     const adminSupabase = createAdminClient()
+    const ownedSession = await getOwnedSession(adminSupabase, sessionId, auth.context.clientId)
+    if (!ownedSession) {
+        return []
+    }
 
     const { data: checkins, error } = await adminSupabase
         .from('exercise_checkins')
@@ -243,7 +310,16 @@ export async function getSessionCheckins(sessionId: string) {
 
 // Get exercise checkin with set logs (Legacy single fetch, keeping for compatibility if needed or specific refreshes)
 export async function getExerciseCheckinWithSets(sessionId: string, exerciseIndex: number) {
+    const auth = await getAuthenticatedClientContext()
+    if (!auth.context) {
+        return { error: auth.error || 'No autorizado' }
+    }
+
     const adminSupabase = createAdminClient()
+    const ownedSession = await getOwnedSession(adminSupabase, sessionId, auth.context.clientId)
+    if (!ownedSession) {
+        return { error: 'No autorizado' }
+    }
 
     const { data: checkin, error } = await adminSupabase
         .from('exercise_checkins')
@@ -274,7 +350,17 @@ export async function saveSetLog(
     weight: number,
     isCompleted: boolean
 ) {
+    const auth = await getAuthenticatedClientContext()
+    if (!auth.context) {
+        return { error: auth.error || 'No autorizado' }
+    }
+
     const adminSupabase = createAdminClient()
+    const ownedSession = await getOwnedSession(adminSupabase, sessionId, auth.context.clientId)
+    if (!ownedSession) {
+        return { error: 'No autorizado' }
+    }
+
     let finalCheckinId = checkinId
 
     // 1. If no checkinId, create the checkin first
@@ -338,7 +424,36 @@ export async function saveSetLog(
 
 // Delete a set log
 export async function deleteSetLog(setLogId: string) {
+    const auth = await getAuthenticatedClientContext()
+    if (!auth.context) {
+        return { error: auth.error || 'No autorizado' }
+    }
+
     const adminSupabase = createAdminClient()
+    const { data: setLog } = await adminSupabase
+        .from('set_logs')
+        .select('id, exercise_checkin_id')
+        .eq('id', setLogId)
+        .maybeSingle()
+
+    if (!setLog) {
+        return { error: 'Serie no encontrada' }
+    }
+
+    const { data: checkin } = await adminSupabase
+        .from('exercise_checkins')
+        .select('session_id')
+        .eq('id', setLog.exercise_checkin_id)
+        .maybeSingle()
+
+    if (!checkin) {
+        return { error: 'Serie no encontrada' }
+    }
+
+    const ownedSession = await getOwnedSession(adminSupabase, checkin.session_id, auth.context.clientId)
+    if (!ownedSession) {
+        return { error: 'No autorizado' }
+    }
 
     const { error } = await adminSupabase
         .from('set_logs')
@@ -355,7 +470,26 @@ export async function deleteSetLog(setLogId: string) {
 
 // Update exercise notes
 export async function updateExerciseNotes(checkinId: string, notes: string) {
+    const auth = await getAuthenticatedClientContext()
+    if (!auth.context) {
+        return { error: auth.error || 'No autorizado' }
+    }
+
     const adminSupabase = createAdminClient()
+    const { data: checkin } = await adminSupabase
+        .from('exercise_checkins')
+        .select('session_id')
+        .eq('id', checkinId)
+        .maybeSingle()
+
+    if (!checkin) {
+        return { error: 'Ejercicio no encontrado' }
+    }
+
+    const ownedSession = await getOwnedSession(adminSupabase, checkin.session_id, auth.context.clientId)
+    if (!ownedSession) {
+        return { error: 'No autorizado' }
+    }
 
     const { error } = await adminSupabase
         .from('exercise_checkins')
@@ -372,7 +506,26 @@ export async function updateExerciseNotes(checkinId: string, notes: string) {
 
 // Update rest settings
 export async function updateRestSettings(checkinId: string, enabled: boolean, seconds: number) {
+    const auth = await getAuthenticatedClientContext()
+    if (!auth.context) {
+        return { error: auth.error || 'No autorizado' }
+    }
+
     const adminSupabase = createAdminClient()
+    const { data: checkin } = await adminSupabase
+        .from('exercise_checkins')
+        .select('session_id')
+        .eq('id', checkinId)
+        .maybeSingle()
+
+    if (!checkin) {
+        return { error: 'Ejercicio no encontrado' }
+    }
+
+    const ownedSession = await getOwnedSession(adminSupabase, checkin.session_id, auth.context.clientId)
+    if (!ownedSession) {
+        return { error: 'No autorizado' }
+    }
 
     const { error } = await adminSupabase
         .from('exercise_checkins')
@@ -393,17 +546,18 @@ export async function updateRestSettings(checkinId: string, enabled: boolean, se
 // Complete session
 // Complete session and log it to history
 export async function completeSession(sessionId: string, feedback?: any) {
+    const auth = await getAuthenticatedClientContext()
+    if (!auth.context) {
+        return { error: auth.error || 'No autorizado' }
+    }
+
     const adminSupabase = createAdminClient()
 
     // 1. Fetch session details first
-    const { data: session } = await adminSupabase
-        .from('workout_sessions')
-        .select('*')
-        .eq('id', sessionId)
-        .single()
+    const session = await getOwnedSession(adminSupabase, sessionId, auth.context.clientId)
 
     if (!session) {
-        return { error: 'Sesión no encontrada' }
+        return { error: 'Sesión no encontrada o no autorizada' }
     }
 
     // 2. Log to workout_logs (Vital for Dashboard stats)
@@ -516,6 +670,11 @@ export async function getTodaysWorkouts() {
 
 // Validate if session is ready to be completed
 export async function validateSessionCompletionStatus(sessionId: string) {
+    const auth = await getAuthenticatedClientContext()
+    if (!auth.context) {
+        return { valid: false, message: auth.error || 'No autorizado' }
+    }
+
     const adminSupabase = createAdminClient()
 
     // 1. Get session and structure
@@ -530,7 +689,9 @@ export async function validateSessionCompletionStatus(sessionId: string) {
         .eq('id', sessionId)
         .single()
 
-    if (!session) return { valid: false, message: 'Sesión no encontrada' }
+    if (!session || session.client_id !== auth.context.clientId) {
+        return { valid: false, message: 'Sesión no encontrada o no autorizada' }
+    }
 
     const exercises = session.assigned_workouts?.structure || []
     if (exercises.length === 0) return { valid: true } // Empty workout is trivially complete
