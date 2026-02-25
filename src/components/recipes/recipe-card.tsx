@@ -146,9 +146,9 @@ export function RecipeCard({ recipe, isAdmin, onSelect, isSelected }: RecipeCard
     return (
         <>
             <Card
-                className={`group overflow-hidden rounded-2xl border bg-card text-card-foreground transition-all cursor-pointer p-4 pb-4 ${isSelected
+                className={`group flex flex-col justify-between overflow-hidden rounded-[20px] border bg-card text-card-foreground transition-all cursor-pointer p-4 pb-4 ${isSelected
                     ? 'border-primary ring-2 ring-primary ring-offset-2'
-                    : 'hover:border-border'
+                    : 'hover:border-zinc-300 hover:shadow-md'
                     }`}
                 onClick={handleCardClick}
             >
@@ -178,88 +178,88 @@ export function RecipeCard({ recipe, isAdmin, onSelect, isSelected }: RecipeCard
                     )}
                 </div>
 
-                {/* Content */}
-                <div className="space-y-4">
-                    {/* Title */}
-                    <div>
-                        <h3 className="text-xl font-bold leading-tight tracking-tight text-foreground">
-                            {recipe.name}
-                        </h3>
-                        {/* Meta: Time & Servings */}
-                        <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
-                            {!!recipe.prep_time_min && (
-                                <div className="flex items-center gap-1.5">
-                                    <Clock className="h-4 w-4" />
-                                    <span>{recipe.prep_time_min} min</span>
-                                </div>
-                            )}
-                            {!!recipe.servings && (
-                                <div className="flex items-center gap-1.5">
-                                    {/* Icon like users or just text */}
-                                    {/* Screenshot just says "1 porcion" maybe without icon or simple dot? user icon works */}
-                                    <span>{recipe.servings} {recipe.servings === 1 ? 'porcion' : 'porciones'}</span>
-                                </div>
-                            )}
+                <div className="flex flex-col flex-1 justify-between space-y-4">
+                    <div className="space-y-4">
+                        {/* Title */}
+                        <div className="flex flex-col min-h-[4rem] justify-start">
+                            <h3 className="text-lg font-bold leading-tight tracking-tight text-foreground line-clamp-2">
+                                {recipe.name}
+                            </h3>
+                            {/* Meta: Time & Servings */}
+                            <div className="mt-1.5 flex items-center gap-3 text-[13px] font-medium text-muted-foreground">
+                                {!!recipe.prep_time_min && (
+                                    <div className="flex items-center gap-1">
+                                        <Clock className="h-3.5 w-3.5" />
+                                        <span>{recipe.prep_time_min} min</span>
+                                    </div>
+                                )}
+                                {!!recipe.servings && (
+                                    <div className="flex items-center gap-1">
+                                        <span>{recipe.servings} {recipe.servings === 1 ? 'porción' : 'porciones'}</span>
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    </div>
 
-                    {/* Macros Grid */}
-                    <div className="grid grid-cols-4 gap-2">
-                        <div className="flex flex-col items-center justify-center rounded-lg bg-zinc-50 p-2 dark:bg-zinc-900">
-                            <span className="text-lg font-bold text-zinc-900 dark:text-zinc-50">{Math.round(macros.kcal)}</span>
-                            <span className="text-[10px] font-semibold uppercase text-zinc-500">KCAL</span>
-                        </div>
-                        <div className="flex flex-col items-center justify-center rounded-lg bg-blue-50 p-2 dark:bg-blue-900/20">
-                            <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{Math.round(macros.protein)}g</span>
-                            <span className="text-[10px] font-semibold uppercase text-blue-600/70">PROT</span>
-                        </div>
-                        <div className="flex flex-col items-center justify-center rounded-lg bg-amber-50 p-2 dark:bg-amber-900/20">
-                            <span className="text-lg font-bold text-amber-600 dark:text-amber-400">{Math.round(macros.carbs)}g</span>
-                            <span className="text-[10px] font-semibold uppercase text-amber-600/70">CARBS</span>
-                        </div>
-                        <div className="flex flex-col items-center justify-center rounded-lg bg-rose-50 p-2 dark:bg-rose-900/20">
-                            <span className="text-lg font-bold text-rose-600 dark:text-rose-400">{Math.round(macros.fat)}g</span>
-                            <span className="text-[10px] font-semibold uppercase text-rose-600/70">GRASAS</span>
+                        {/* Macros Grid */}
+                        <div className="grid grid-cols-4 gap-1.5">
+                            <div className="flex flex-col items-center justify-center rounded-xl bg-zinc-50 py-2 px-1 border border-zinc-100 dark:bg-zinc-900 dark:border-zinc-800">
+                                <span className="text-[15px] font-bold text-zinc-900 dark:text-zinc-50">{Math.round(macros.kcal)}</span>
+                                <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-500 mt-0.5">Kcal</span>
+                            </div>
+                            <div className="flex flex-col items-center justify-center rounded-xl bg-blue-50 py-2 px-1 border border-blue-100/50 dark:bg-blue-900/20">
+                                <span className="text-[15px] font-bold text-blue-600 dark:text-blue-400">{Math.round(macros.protein)}g</span>
+                                <span className="text-[9px] font-bold uppercase tracking-wider text-blue-600/70 mt-0.5">Prot</span>
+                            </div>
+                            <div className="flex flex-col items-center justify-center rounded-xl bg-amber-50 py-2 px-1 border border-amber-100/50 dark:bg-amber-900/20">
+                                <span className="text-[15px] font-bold text-amber-600 dark:text-amber-400">{Math.round(macros.carbs)}g</span>
+                                <span className="text-[9px] font-bold uppercase tracking-wider text-amber-600/70 mt-0.5">Carbs</span>
+                            </div>
+                            <div className="flex flex-col items-center justify-center rounded-xl bg-rose-50 py-2 px-1 border border-rose-100/50 dark:bg-rose-900/20">
+                                <span className="text-[15px] font-bold text-rose-600 dark:text-rose-400">{Math.round(macros.fat)}g</span>
+                                <span className="text-[9px] font-bold uppercase tracking-wider text-rose-600/70 mt-0.5">Grasas</span>
+                            </div>
                         </div>
                     </div>
 
                     {/* Actions - Only show if not in selection mode */}
                     {!onSelect && (
-                        <div className="flex items-center gap-2 pt-1">
+                        <div className="flex items-center gap-2 pt-1 mt-auto">
+                            <Button
+                                className="flex-1 gap-2 rounded-xl h-11 bg-zinc-900 hover:bg-zinc-800 text-white font-medium shadow-sm transition-all"
+                                onClick={(e) => {
+                                    e.stopPropagation()
+                                    setShowAssignDialog(true)
+                                }}
+                            >
+                                <Users className="h-4 w-4" />
+                                Asignar
+                            </Button>
+
                             <Button
                                 variant="outline"
-                                className="flex-1 gap-2 rounded-xl h-11 border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-900 font-medium"
+                                className="h-11 w-11 rounded-xl border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-900 p-0 shrink-0 shadow-sm transition-all"
                                 onClick={handleDuplicate}
                                 disabled={isDuplicating}
+                                title="Duplicar receta"
                             >
                                 {isDuplicating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Copy className="h-4 w-4" />}
-                                Duplicar receta
                             </Button>
 
                             {/* Admin Edit Button */}
                             {isAdmin && (
                                 <Button
                                     variant="outline"
-                                    className="h-11 w-11 rounded-xl border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-900 p-0 shrink-0"
+                                    className="h-11 w-11 rounded-xl border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-900 p-0 shrink-0 shadow-sm transition-all"
                                     onClick={(e) => {
                                         e.stopPropagation()
                                         router.push(`/recipes/${recipe.id}`)
                                     }}
                                     title="Editar Receta"
                                 >
-                                    <Utensils className="h-5 w-5" />
+                                    <Utensils className="h-4 w-4" />
                                 </Button>
                             )}
-
-                            <Button
-                                className="h-11 w-11 rounded-xl bg-primary hover:bg-primary/90 text-white p-0 shrink-0"
-                                onClick={(e) => {
-                                    e.stopPropagation()
-                                    setShowAssignDialog(true)
-                                }}
-                            >
-                                <Users className="h-5 w-5" />
-                            </Button>
                         </div>
                     )}
                 </div>
