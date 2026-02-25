@@ -34,6 +34,7 @@ add column if not exists training_availability jsonb default '{}'::jsonb;
 
 -- 8. RLS Policies
 -- Clients can VIEW their own record
+drop policy if exists "Clients can view own profile" on public.clients;
 create policy "Clients can view own profile" 
 on public.clients for select 
 using (auth.uid() = user_id);

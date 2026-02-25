@@ -1,5 +1,5 @@
 -- Create the exercises table
-create table public.exercises (
+create table if not exists public.exercises (
   id text primary key, -- Original API ID
   name text not null, -- Spanish translated name
   english_name text, -- Original name for reference
@@ -15,6 +15,7 @@ create table public.exercises (
 alter table public.exercises enable row level security;
 
 -- Policy: Everyone can read
+drop policy if exists "Allow public read access" on public.exercises;
 create policy "Allow public read access"
   on public.exercises
   for select
@@ -22,6 +23,7 @@ create policy "Allow public read access"
   using (true);
 
 -- Policy: Only service role can insert/update/delete (for seeding)
+drop policy if exists "Allow service role full access" on public.exercises;
 create policy "Allow service role full access"
   on public.exercises
   for all
@@ -30,4 +32,4 @@ create policy "Allow service role full access"
   with check (true);
 
 -- Create search index for fast autocompletion
-create index exercises_name_search_idx on public.exercises using gin(to_tsvector('spanish', name));
+create index if not exists exercises_name_search_idx on public.exercises using gin(to_tsvector('spanish', name));

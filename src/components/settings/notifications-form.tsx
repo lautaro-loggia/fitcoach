@@ -14,26 +14,37 @@ interface NotificationsFormProps {
     userId: string
     initialEnabled: boolean
     initialPreferences: any
+    role?: 'coach' | 'client'
 }
 
-export function NotificationsForm({ userId, initialEnabled, initialPreferences }: NotificationsFormProps) {
+export function NotificationsForm({ userId, initialEnabled, initialPreferences, role = 'coach' }: NotificationsFormProps) {
     const supabase = createClient()
-    const { isSupported, permission, subscribe, unsubscribe, isLoading } = usePushNotifications()
-    const [preferences, setPreferences] = useState(initialPreferences || {
+    const { isSupported, permission, subscription, subscribe, unsubscribe, isLoading } = usePushNotifications()
+    const [preferences, setPreferences] = useState({
         checkin_completed: true,
         workout_completed: true,
         payment_registered: true,
-        new_client: true
+        new_client: true,
+        checkin_reminder: true,
+        workout_assigned: true,
+        coach_feedback: true,
+        meal_photo_reminder: true,
+        reminder_time_desayuno: '09:00:00',
+        reminder_time_almuerzo: '12:00:00',
+        reminder_time_merienda: '17:00:00',
+        reminder_time_cena: '21:00:00',
+        ...initialPreferences // Override defaults with DB row
     })
 
-    const isPushEnabled = permission === 'granted'
+    const formatTimeInput = (timeStr?: string) => {
+        if (!timeStr) return '00:00'
+        return timeStr.substring(0, 5) // "09:00:00" -> "09:00"
+    }
+
+    const isPushEnabled = permission === 'granted' && !!subscription
 
     const handlePushToggle = async () => {
         if (isPushEnabled) {
-            // We don't really 'unsubscribe' from browser usually in UI as it clears everything, 
-            // but for this MVP let's allow it if user wants to kill all notifs.
-            // Or better: just updating the profile 'notifications_enabled' flag is softer.
-            // But let's use the hook logic.
             await unsubscribe()
             toast.success('Notificaciones desactivadas en este dispositivo')
         } else {
@@ -53,16 +64,16 @@ export function NotificationsForm({ userId, initialEnabled, initialPreferences }
         }
     }
 
-    const handlePreferenceChange = async (key: string, checked: boolean) => {
+    const handlePreferenceChange = async (key: string, value: boolean | string) => {
         // Optimistic update
-        setPreferences((prev: any) => ({ ...prev, [key]: checked }))
+        setPreferences((prev: any) => ({ ...prev, [key]: value }))
 
         const { error } = await supabase
             .from('notification_preferences')
             .upsert({
                 user_id: userId,
                 ...preferences,
-                [key]: checked,
+                [key]: value,
                 updated_at: new Date().toISOString()
             }, { onConflict: 'user_id' })
 
@@ -70,7 +81,7 @@ export function NotificationsForm({ userId, initialEnabled, initialPreferences }
             console.error('Error updating preferences:', error)
             toast.error('Error al guardar preferencia')
             // Revert
-            setPreferences((prev: any) => ({ ...prev, [key]: !checked }))
+            setPreferences((prev: any) => ({ ...prev, [key]: preferences[key as keyof typeof preferences] }))
         }
     }
 
@@ -126,53 +137,160 @@ export function NotificationsForm({ userId, initialEnabled, initialPreferences }
                         </div>
 
                         <div className="grid gap-4">
-                            <div className="flex items-center justify-between">
-                                <Label htmlFor="checkin_completed" className="flex-1 cursor-pointer">
-                                    <span className="block font-medium">Check-ins completados</span>
-                                    <span className="text-xs text-muted-foreground">Cuando un cliente envía su reporte semanal</span>
-                                </Label>
-                                <Switch
-                                    id="checkin_completed"
-                                    checked={preferences.checkin_completed ?? true}
-                                    onCheckedChange={(c) => handlePreferenceChange('checkin_completed', c)}
-                                />
-                            </div>
+                            {role === 'coach' ? (
+                                <>
+                                    <div className="flex items-center justify-between">
+                                        <Label htmlFor="checkin_completed" className="flex-1 cursor-pointer">
+                                            <span className="block font-medium">Check-ins completados</span>
+                                            <span className="text-xs text-muted-foreground">Cuando un cliente envía su reporte semanal</span>
+                                        </Label>
+                                        <Switch
+                                            id="checkin_completed"
+                                            checked={preferences.checkin_completed ?? true}
+                                            onCheckedChange={(c) => handlePreferenceChange('checkin_completed', c)}
+                                        />
+                                    </div>
 
-                            <div className="flex items-center justify-between">
-                                <Label htmlFor="workout_completed" className="flex-1 cursor-pointer">
-                                    <span className="block font-medium">Entrenamientos completados</span>
-                                    <span className="text-xs text-muted-foreground">Cuando un cliente finaliza su rutina</span>
-                                </Label>
-                                <Switch
-                                    id="workout_completed"
-                                    checked={preferences.workout_completed ?? true}
-                                    onCheckedChange={(c) => handlePreferenceChange('workout_completed', c)}
-                                />
-                            </div>
+                                    <div className="flex items-center justify-between">
+                                        <Label htmlFor="workout_completed" className="flex-1 cursor-pointer">
+                                            <span className="block font-medium">Entrenamientos completados</span>
+                                            <span className="text-xs text-muted-foreground">Cuando un cliente finaliza su rutina</span>
+                                        </Label>
+                                        <Switch
+                                            id="workout_completed"
+                                            checked={preferences.workout_completed ?? true}
+                                            onCheckedChange={(c) => handlePreferenceChange('workout_completed', c)}
+                                        />
+                                    </div>
 
-                            <div className="flex items-center justify-between">
-                                <Label htmlFor="payment_registered" className="flex-1 cursor-pointer">
-                                    <span className="block font-medium">Pagos</span>
-                                    <span className="text-xs text-muted-foreground">Avisos de pagos recibidos o vencidos</span>
-                                </Label>
-                                <Switch
-                                    id="payment_registered"
-                                    checked={preferences.payment_registered ?? true}
-                                    onCheckedChange={(c) => handlePreferenceChange('payment_registered', c)}
-                                />
-                            </div>
+                                    <div className="flex items-center justify-between">
+                                        <Label htmlFor="payment_registered" className="flex-1 cursor-pointer">
+                                            <span className="block font-medium">Pagos</span>
+                                            <span className="text-xs text-muted-foreground">Avisos de pagos recibidos o vencidos</span>
+                                        </Label>
+                                        <Switch
+                                            id="payment_registered"
+                                            checked={preferences.payment_registered ?? true}
+                                            onCheckedChange={(c) => handlePreferenceChange('payment_registered', c)}
+                                        />
+                                    </div>
 
-                            <div className="flex items-center justify-between">
-                                <Label htmlFor="new_client" className="flex-1 cursor-pointer">
-                                    <span className="block font-medium">Nuevos clientes</span>
-                                    <span className="text-xs text-muted-foreground">Cuando alguien acepta tu invitación</span>
-                                </Label>
-                                <Switch
-                                    id="new_client"
-                                    checked={preferences.new_client ?? true}
-                                    onCheckedChange={(c) => handlePreferenceChange('new_client', c)}
-                                />
-                            </div>
+                                    <div className="flex items-center justify-between">
+                                        <Label htmlFor="new_client" className="flex-1 cursor-pointer">
+                                            <span className="block font-medium">Nuevos clientes</span>
+                                            <span className="text-xs text-muted-foreground">Cuando alguien acepta tu invitación</span>
+                                        </Label>
+                                        <Switch
+                                            id="new_client"
+                                            checked={preferences.new_client ?? true}
+                                            onCheckedChange={(c) => handlePreferenceChange('new_client', c)}
+                                        />
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="flex items-center justify-between">
+                                        <Label htmlFor="checkin_reminder" className="flex-1 cursor-pointer">
+                                            <span className="block font-medium">Recordatorios de Check-in</span>
+                                            <span className="text-xs text-muted-foreground">Avisos para enviar tu reporte semanal</span>
+                                        </Label>
+                                        <Switch
+                                            id="checkin_reminder"
+                                            checked={preferences.checkin_reminder ?? true}
+                                            onCheckedChange={(c) => handlePreferenceChange('checkin_reminder', c)}
+                                        />
+                                    </div>
+
+                                    <div className="flex items-center justify-between">
+                                        <Label htmlFor="workout_assigned" className="flex-1 cursor-pointer">
+                                            <span className="block font-medium">Nuevas Rutinas</span>
+                                            <span className="text-xs text-muted-foreground">Cuando tu coach asigne o actualice tu rutina</span>
+                                        </Label>
+                                        <Switch
+                                            id="workout_assigned"
+                                            checked={preferences.workout_assigned ?? true}
+                                            onCheckedChange={(c) => handlePreferenceChange('workout_assigned', c)}
+                                        />
+                                    </div>
+
+                                    <div className="flex items-center justify-between">
+                                        <Label htmlFor="coach_feedback" className="flex-1 cursor-pointer">
+                                            <span className="block font-medium">Feedback del Coach</span>
+                                            <span className="text-xs text-muted-foreground">Respuestas a tus check-ins o comentarios</span>
+                                        </Label>
+                                        <Switch
+                                            id="coach_feedback"
+                                            checked={preferences.coach_feedback ?? true}
+                                            onCheckedChange={(c) => handlePreferenceChange('coach_feedback', c)}
+                                        />
+                                    </div>
+
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex items-center justify-between">
+                                            <Label htmlFor="meal_photo_reminder" className="flex-1 cursor-pointer">
+                                                <span className="block font-medium">Registro de Comidas</span>
+                                                <span className="text-xs text-muted-foreground">Recordatorios en los horarios de tus comidas</span>
+                                            </Label>
+                                            <Switch
+                                                id="meal_photo_reminder"
+                                                checked={preferences.meal_photo_reminder ?? true}
+                                                onCheckedChange={(c) => handlePreferenceChange('meal_photo_reminder', c)}
+                                            />
+                                        </div>
+
+                                        {(preferences.meal_photo_reminder ?? true) && (
+                                            <div className="pl-4 border-l-2 ml-1 space-y-3 mt-2 animate-in fade-in slide-in-from-top-2">
+                                                <h4 className="font-medium text-xs text-muted-foreground uppercase">Horarios de Notificación</h4>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-1">
+                                                        <Label htmlFor="reminder_time_desayuno" className="text-[11px] uppercase text-muted-foreground">Desayuno</Label>
+                                                        <input
+                                                            type="time"
+                                                            id="reminder_time_desayuno"
+                                                            className="w-full bg-transparent border rounded-[8px] px-2 py-1.5 text-xs text-foreground focus:ring-1 focus:ring-primary outline-none transition-all"
+                                                            value={formatTimeInput(preferences.reminder_time_desayuno || '09:00:00')}
+                                                            onChange={(e) => handlePreferenceChange('reminder_time_desayuno', e.target.value + ':00')}
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <Label htmlFor="reminder_time_almuerzo" className="text-[11px] uppercase text-muted-foreground">Almuerzo</Label>
+                                                        <input
+                                                            type="time"
+                                                            id="reminder_time_almuerzo"
+                                                            className="w-full bg-transparent border rounded-[8px] px-2 py-1.5 text-xs text-foreground focus:ring-1 focus:ring-primary outline-none transition-all"
+                                                            value={formatTimeInput(preferences.reminder_time_almuerzo || '12:00:00')}
+                                                            onChange={(e) => handlePreferenceChange('reminder_time_almuerzo', e.target.value + ':00')}
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <Label htmlFor="reminder_time_merienda" className="text-[11px] uppercase text-muted-foreground">Merienda</Label>
+                                                        <input
+                                                            type="time"
+                                                            id="reminder_time_merienda"
+                                                            className="w-full bg-transparent border rounded-[8px] px-2 py-1.5 text-xs text-foreground focus:ring-1 focus:ring-primary outline-none transition-all"
+                                                            value={formatTimeInput(preferences.reminder_time_merienda || '17:00:00')}
+                                                            onChange={(e) => handlePreferenceChange('reminder_time_merienda', e.target.value + ':00')}
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <Label htmlFor="reminder_time_cena" className="text-[11px] uppercase text-muted-foreground">Cena</Label>
+                                                        <input
+                                                            type="time"
+                                                            id="reminder_time_cena"
+                                                            className="w-full bg-transparent border rounded-[8px] px-2 py-1.5 text-xs text-foreground focus:ring-1 focus:ring-primary outline-none transition-all"
+                                                            value={formatTimeInput(preferences.reminder_time_cena || '21:00:00')}
+                                                            onChange={(e) => handlePreferenceChange('reminder_time_cena', e.target.value + ':00')}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <p className="text-[10px] text-muted-foreground leading-tight pt-1">
+                                                    Las notificaciones solo te llegarán para las comidas que tengas asignadas en tu plan activo para hoy.
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
                 )}

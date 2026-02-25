@@ -22,12 +22,14 @@ alter table public.meal_logs enable row level security;
 alter table public.workout_logs enable row level security;
 
 -- RLS Policies for meal_logs
+drop policy if exists "Clients can view own meal logs" on public.meal_logs;
 create policy "Clients can view own meal logs"
     on public.meal_logs for select
     using (auth.uid() in (
         select user_id from public.clients where id = meal_logs.client_id
     ));
 
+drop policy if exists "Clients can insert own meal logs" on public.meal_logs;
 create policy "Clients can insert own meal logs"
     on public.meal_logs for insert
     with check (auth.uid() in (
@@ -35,12 +37,14 @@ create policy "Clients can insert own meal logs"
     ));
 
 -- RLS Policies for workout_logs
+drop policy if exists "Clients can view own workout logs" on public.workout_logs;
 create policy "Clients can view own workout logs"
     on public.workout_logs for select
     using (auth.uid() in (
         select user_id from public.clients where id = workout_logs.client_id
     ));
 
+drop policy if exists "Clients can insert own workout logs" on public.workout_logs;
 create policy "Clients can insert own workout logs"
     on public.workout_logs for insert
     with check (auth.uid() in (
@@ -51,18 +55,20 @@ create policy "Clients can insert own workout logs"
 -- If using RLS for coaches, we'd add policies here. For now, assuming Admin Client use or specific Trainer policies.
 -- Adding Trainer visibility policies just in case:
 
+drop policy if exists "Trainers can view their clients' meal logs" on public.meal_logs;
 create policy "Trainers can view their clients' meal logs"
     on public.meal_logs for select
     using (auth.uid() in (
-        select user_id from public.profiles
+        select id from public.profiles
         join public.clients on clients.trainer_id = profiles.id
         where clients.id = meal_logs.client_id
     ));
 
+drop policy if exists "Trainers can view their clients' workout logs" on public.workout_logs;
 create policy "Trainers can view their clients' workout logs"
     on public.workout_logs for select
     using (auth.uid() in (
-        select user_id from public.profiles
+        select id from public.profiles
         join public.clients on clients.trainer_id = profiles.id
         where clients.id = workout_logs.client_id
     ));

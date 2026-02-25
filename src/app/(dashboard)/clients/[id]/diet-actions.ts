@@ -10,9 +10,16 @@ export async function createDietAction(data: {
     ingredients: any[]
 }) {
     const supabase = await createClient()
+    const {
+        data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { error: 'No autorizado' }
+    }
 
     const { error } = await supabase.from('recipes').insert({
-        trainer_id: data.trainerId,
+        trainer_id: user.id,
         name: data.name,
         description: data.description,
         ingredients: data.ingredients,
@@ -34,6 +41,17 @@ export async function assignDietAction(data: {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { error: 'No autorizado' }
+
+    const { data: client } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('id', data.clientId)
+        .eq('trainer_id', user.id)
+        .maybeSingle()
+
+    if (!client) {
+        return { error: 'No autorizado para este cliente' }
+    }
 
     // Simple macro calculation helper
     const calculateMacros = (ingredients: any[]) => {
@@ -92,6 +110,13 @@ export async function updateAssignedDietAction(data: {
     ingredients: any[]
 }) {
     const supabase = await createClient()
+    const {
+        data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { error: 'No autorizado' }
+    }
 
     // Recalculate macros
     const calculateMacros = (ingredients: any[]) => {
@@ -122,6 +147,7 @@ export async function updateAssignedDietAction(data: {
             is_customized: true // By default, any update implies customization if likely separate from template sync
         })
         .eq('id', data.id)
+        .eq('trainer_id', user.id)
 
     if (error) return { error: 'Error actualizando dieta' }
     revalidatePath(`/clients/${data.clientId}`)
@@ -131,7 +157,19 @@ export async function updateAssignedDietAction(data: {
 
 export async function deleteAssignedDietAction(id: string, clientId: string) {
     const supabase = await createClient()
-    const { error } = await supabase.from('assigned_diets').delete().eq('id', id)
+    const {
+        data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { error: 'No autorizado' }
+    }
+
+    const { error } = await supabase
+        .from('assigned_diets')
+        .delete()
+        .eq('id', id)
+        .eq('trainer_id', user.id)
     if (error) return { error: 'Error eliminando' }
     revalidatePath(`/clients/${clientId}`)
     revalidatePath('/dashboard', 'layout')

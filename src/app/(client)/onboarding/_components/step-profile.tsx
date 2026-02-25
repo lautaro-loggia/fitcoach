@@ -8,13 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { updateBasicProfile } from '@/actions/client-onboarding'
 import { toast } from 'sonner'
 import { ArrowRight, Loader2 } from 'lucide-react'
+import { dateOnlyToLocalNoon, getTodayString } from '@/lib/utils'
 
 export function StepProfile({ client, onNext, isNextTo, isPreview, onUpdate }: { client: any, onNext: () => void, isNextTo?: string, isPreview?: boolean, onUpdate?: (data: any) => void }) {
     const [loading, setLoading] = useState(false)
 
     // Pre-fill if exists
     const [formData, setFormData] = useState({
-        birth_date: client.birth_date ? new Date(client.birth_date).toISOString().split('T')[0] : '',
+        birth_date: client.birth_date ? String(client.birth_date).split('T')[0] : '',
         height: client.height || '',
         weight: client.current_weight || client.initial_weight || '',
         gender: client.gender || ''
@@ -22,8 +23,8 @@ export function StepProfile({ client, onNext, isNextTo, isPreview, onUpdate }: {
 
     const calculateAge = (dob: string) => {
         if (!dob) return null
-        const birthDate = new Date(dob)
-        const today = new Date()
+        const birthDate = dateOnlyToLocalNoon(dob)
+        const today = dateOnlyToLocalNoon(getTodayString())
         const age = today.getFullYear() - birthDate.getFullYear()
         const m = today.getMonth() - birthDate.getMonth()
         if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {

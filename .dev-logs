@@ -1,0 +1,716 @@
+
+> orbit-app@0.1.0 dev
+> next dev
+
+▲ Next.js 16.1.0 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.1.82:3000
+- Environments: .env.local
+- Experiments (use with caution):
+  · serverActions
+
+✓ Starting...
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+✓ Ready in 536ms
+○ Compiling /clients/[id] ...
+ GET /login 200 in 459ms (compile: 381ms, proxy.ts: 3ms, render: 75ms)
+ GET /login 200 in 646ms (compile: 515ms, proxy.ts: 66ms, render: 65ms)
+ GET /login 200 in 205ms (compile: 38ms, proxy.ts: 6ms, render: 161ms)
+ GET /manifest.webmanifest 200 in 361ms (compile: 350ms, render: 10ms)
+ GET /manifest.webmanifest 200 in 379ms (compile: 377ms, render: 2ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 5.1s (compile: 3.5s, proxy.ts: 384ms, render: 1198ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 597ms (compile: 15ms, proxy.ts: 265ms, render: 318ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1238ms (compile: 16ms, proxy.ts: 296ms, render: 926ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1138ms (compile: 15ms, proxy.ts: 277ms, render: 846ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 556ms (compile: 8ms, proxy.ts: 265ms, render: 283ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1197ms (compile: 11ms, proxy.ts: 296ms, render: 889ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1092ms (compile: 8ms, proxy.ts: 286ms, render: 798ms)
+ GET /login 200 in 104ms (compile: 20ms, proxy.ts: 32ms, render: 52ms)
+ GET /manifest.webmanifest 200 in 9ms (compile: 5ms, render: 4ms)
+ GET /login 200 in 48ms (compile: 5ms, proxy.ts: 3ms, render: 41ms)
+ GET /manifest.webmanifest 200 in 4ms (compile: 1844µs, render: 1788µs)
+ POST /login 200 in 30ms (compile: 1941µs, proxy.ts: 4ms, render: 24ms)
+ POST /login 200 in 49ms (compile: 8ms, proxy.ts: 3ms, render: 38ms)
+ GET /login 200 in 33ms (compile: 3ms, proxy.ts: 1569µs, render: 29ms)
+ GET /manifest.webmanifest 200 in 4ms (compile: 1893µs, render: 2ms)
+ POST /login 200 in 37ms (compile: 5ms, proxy.ts: 2ms, render: 30ms)
+ GET /login 200 in 46ms (compile: 3ms, proxy.ts: 4ms, render: 39ms)
+ GET /manifest.webmanifest 200 in 4ms (compile: 1896µs, render: 1995µs)
+ POST /login 200 in 43ms (compile: 7ms, proxy.ts: 3ms, render: 33ms)
+ GET /login 200 in 34ms (compile: 1680µs, proxy.ts: 2ms, render: 30ms)
+ GET /manifest.webmanifest 200 in 15ms (compile: 13ms, render: 1722µs)
+ POST /login 200 in 114ms (compile: 18ms, proxy.ts: 3ms, render: 93ms)
+ GET /login 200 in 43ms (compile: 2ms, proxy.ts: 1772µs, render: 38ms)
+ GET /manifest.webmanifest 200 in 4ms (compile: 2ms, render: 1622µs)
+ POST /login 200 in 65ms (compile: 12ms, proxy.ts: 1673µs, render: 51ms)
+ GET /login 200 in 76ms (compile: 22ms, proxy.ts: 7ms, render: 47ms)
+ GET /manifest.webmanifest 200 in 5ms (compile: 3ms, render: 3ms)
+ GET /login 200 in 38ms (compile: 4ms, proxy.ts: 1216µs, render: 33ms)
+ GET /manifest.webmanifest 200 in 11ms (compile: 2ms, render: 9ms)
+ POST /login 200 in 67ms (compile: 5ms, proxy.ts: 1326µs, render: 61ms)
+ GET /login 200 in 27ms (compile: 1508µs, proxy.ts: 1010µs, render: 24ms)
+ POST /login 200 in 47ms (compile: 7ms, proxy.ts: 3ms, render: 38ms)
+ GET /manifest.webmanifest 200 in 5ms (compile: 3ms, render: 1635µs)
+ GET /login 200 in 136ms (compile: 4ms, proxy.ts: 1585µs, render: 131ms)
+ GET /login 200 in 43ms (compile: 4ms, proxy.ts: 1206µs, render: 38ms)
+ GET /manifest.webmanifest 200 in 7ms (compile: 4ms, render: 3ms)
+ POST /login 200 in 35ms (compile: 4ms, proxy.ts: 1802µs, render: 29ms)
+ GET /login 200 in 40ms (compile: 1869µs, proxy.ts: 3ms, render: 36ms)
+ GET /manifest.webmanifest 200 in 5ms (compile: 3ms, render: 2ms)
+ POST /login 200 in 106ms (compile: 5ms, proxy.ts: 3ms, render: 98ms)
+ GET /login 200 in 42ms (compile: 2ms, proxy.ts: 4ms, render: 36ms)
+ GET /manifest.webmanifest 200 in 6ms (compile: 2ms, render: 4ms)
+✓ Compiled in 403ms
+ GET /login 200 in 225ms (compile: 134ms, proxy.ts: 19ms, render: 72ms)
+ GET /login 200 in 163ms (compile: 46ms, proxy.ts: 79ms, render: 38ms)
+ GET /login 200 in 43ms (compile: 14ms, proxy.ts: 17ms, render: 11ms)
+ GET /manifest.webmanifest 200 in 8ms (compile: 4ms, render: 3ms)
+ GET /manifest.webmanifest 200 in 6ms (compile: 1073µs, render: 5ms)
+ GET /manifest.webmanifest 200 in 3ms (compile: 1398µs, render: 1232µs)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1661ms (compile: 135ms, proxy.ts: 854ms, render: 673ms)
+✓ Compiled in 172ms
+ GET /login 200 in 112ms (compile: 26ms, proxy.ts: 16ms, render: 71ms)
+ GET /login 200 in 96ms (compile: 33ms, proxy.ts: 9ms, render: 54ms)
+ GET /login 200 in 39ms (compile: 4ms, proxy.ts: 3ms, render: 32ms)
+ GET /manifest.webmanifest 200 in 7ms (compile: 4ms, render: 2ms)
+ GET /manifest.webmanifest 200 in 6ms (compile: 3ms, render: 3ms)
+ GET /manifest.webmanifest 200 in 6ms (compile: 4ms, render: 2ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 438ms (compile: 71ms, proxy.ts: 334ms, render: 32ms)
+✓ Compiled in 321ms
+ GET /login 200 in 209ms (compile: 65ms, proxy.ts: 8ms, render: 136ms)
+ GET /login 200 in 208ms (compile: 161ms, proxy.ts: 8ms, render: 38ms)
+ GET /login 200 in 23ms (compile: 2ms, proxy.ts: 2ms, render: 19ms)
+ GET /manifest.webmanifest 200 in 9ms (compile: 5ms, render: 3ms)
+ GET /manifest.webmanifest 200 in 5ms (compile: 1486µs, render: 3ms)
+ GET /manifest.webmanifest 200 in 12ms (compile: 7ms, render: 5ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 2.0s (compile: 80ms, proxy.ts: 824ms, render: 1114ms)
+✓ Compiled in 206ms
+ GET /login 200 in 136ms (compile: 21ms, proxy.ts: 5ms, render: 109ms)
+ GET /login 200 in 123ms (compile: 63ms, proxy.ts: 3ms, render: 57ms)
+ GET /login 200 in 43ms (compile: 3ms, proxy.ts: 1905µs, render: 39ms)
+ GET /manifest.webmanifest 200 in 6ms (compile: 4ms, render: 1850µs)
+ GET /manifest.webmanifest 200 in 10ms (compile: 6ms, render: 5ms)
+ GET /manifest.webmanifest 200 in 8ms (compile: 6ms, render: 2ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 591ms (compile: 86ms, proxy.ts: 464ms, render: 41ms)
+✓ Compiled in 200ms
+ GET /login 200 in 123ms (compile: 25ms, proxy.ts: 2ms, render: 96ms)
+ GET /login 200 in 125ms (compile: 76ms, proxy.ts: 12ms, render: 37ms)
+ GET /login 200 in 26ms (compile: 4ms, proxy.ts: 2ms, render: 20ms)
+ GET /manifest.webmanifest 200 in 15ms (compile: 6ms, render: 9ms)
+ GET /manifest.webmanifest 200 in 7ms (compile: 1737µs, render: 5ms)
+ GET /manifest.webmanifest 200 in 29ms (compile: 17ms, render: 12ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 553ms (compile: 85ms, proxy.ts: 400ms, render: 69ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 2.3s (compile: 14ms, proxy.ts: 453ms, render: 1804ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 666ms (compile: 18ms, proxy.ts: 291ms, render: 357ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1332ms (compile: 9ms, proxy.ts: 321ms, render: 1002ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1312ms (compile: 11ms, proxy.ts: 288ms, render: 1013ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 577ms (compile: 5ms, proxy.ts: 271ms, render: 300ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1359ms (compile: 7ms, proxy.ts: 287ms, render: 1065ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1288ms (compile: 13ms, proxy.ts: 300ms, render: 974ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 2.9s (compile: 23ms, proxy.ts: 596ms, render: 2.3s)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1957ms (compile: 8ms, proxy.ts: 845ms, render: 1104ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1959ms (compile: 16ms, proxy.ts: 317ms, render: 1627ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1265ms (compile: 8ms, proxy.ts: 364ms, render: 893ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 2.0s (compile: 11ms, proxy.ts: 380ms, render: 1626ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1271ms (compile: 10ms, proxy.ts: 393ms, render: 867ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1983ms (compile: 11ms, proxy.ts: 261ms, render: 1712ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1282ms (compile: 8ms, proxy.ts: 369ms, render: 906ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1965ms (compile: 21ms, proxy.ts: 309ms, render: 1634ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1279ms (compile: 9ms, proxy.ts: 305ms, render: 965ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1888ms (compile: 15ms, proxy.ts: 267ms, render: 1605ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1275ms (compile: 8ms, proxy.ts: 375ms, render: 892ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1752ms (compile: 12ms, proxy.ts: 307ms, render: 1432ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1163ms (compile: 11ms, proxy.ts: 303ms, render: 850ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1949ms (compile: 12ms, proxy.ts: 276ms, render: 1661ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1279ms (compile: 9ms, proxy.ts: 371ms, render: 899ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1919ms (compile: 11ms, proxy.ts: 333ms, render: 1575ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1273ms (compile: 7ms, proxy.ts: 283ms, render: 983ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 2.2s (compile: 12ms, proxy.ts: 375ms, render: 1852ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1236ms (compile: 10ms, proxy.ts: 331ms, render: 895ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 2.0s (compile: 10ms, proxy.ts: 327ms, render: 1667ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1270ms (compile: 8ms, proxy.ts: 360ms, render: 902ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1884ms (compile: 15ms, proxy.ts: 271ms, render: 1597ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1172ms (compile: 7ms, proxy.ts: 374ms, render: 791ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 2.0s (compile: 11ms, proxy.ts: 287ms, render: 1734ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1270ms (compile: 5ms, proxy.ts: 277ms, render: 988ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1979ms (compile: 20ms, proxy.ts: 261ms, render: 1699ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1152ms (compile: 9ms, proxy.ts: 342ms, render: 801ms)
+✓ Compiled in 87ms
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 3.5s (compile: 114ms, proxy.ts: 586ms, render: 2.8s)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1255ms (compile: 5ms, proxy.ts: 331ms, render: 919ms)
+✓ Compiled in 58ms
+✓ Compiled in 37ms
+ GET /manifest.webmanifest 200 in 7ms (compile: 3ms, render: 4ms)
+ GET /dashboard 200 in 2.7s (compile: 702ms, proxy.ts: 305ms, render: 1685ms)
+ POST /login 303 in 3.8s (compile: 8ms, proxy.ts: 15ms, render: 3.8s)
+ GET /dashboard 200 in 2.0s (compile: 2ms, proxy.ts: 391ms, render: 1627ms)
+ GET /manifest.webmanifest 200 in 2ms (compile: 1005µs, render: 1296µs)
+ GET /dashboard/diet 200 in 2.0s (compile: 604ms, proxy.ts: 339ms, render: 1096ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1533ms (compile: 140ms, proxy.ts: 756ms, render: 638ms)
+ POST /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1610ms (compile: 14ms, proxy.ts: 338ms, render: 1257ms)
+ POST /dashboard/diet 200 in 11.7s (compile: 17ms, proxy.ts: 408ms, render: 11.3s)
+✓ Compiled in 223ms
+ GET /login 200 in 98ms (compile: 23ms, proxy.ts: 11ms, render: 64ms)
+ GET /login 200 in 16ms (compile: 2ms, proxy.ts: 1619µs, render: 13ms)
+ GET /manifest.webmanifest 200 in 6ms (compile: 1996µs, render: 4ms)
+ GET /manifest.webmanifest 200 in 3ms (compile: 1272µs, render: 2ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1631ms (compile: 220ms, proxy.ts: 1383ms, render: 29ms)
+ GET /dashboard/diet 200 in 1566ms (compile: 105ms, proxy.ts: 1318ms, render: 144ms)
+ GET /manifest.webmanifest 200 in 16ms (compile: 9ms, render: 7ms)
+✓ Compiled in 163ms
+ GET /manifest.webmanifest 200 in 8ms (compile: 4ms, render: 4ms)
+ GET /dashboard 200 in 4.1s (compile: 45ms, proxy.ts: 1468ms, render: 2.6s)
+ GET /manifest.webmanifest 200 in 20ms (compile: 4ms, render: 16ms)
+ GET /dashboard/diet 200 in 3.8s (compile: 76ms, proxy.ts: 2.0s, render: 1715ms)
+ POST /dashboard/diet 200 in 14.2s (compile: 14ms, proxy.ts: 744ms, render: 13.5s)
+ GET /manifest.webmanifest 200 in 4ms (compile: 1873µs, render: 1969µs)
+ GET /dashboard/diet 200 in 1694ms (compile: 14ms, proxy.ts: 307ms, render: 1373ms)
+ GET /dashboard 200 in 1966ms (compile: 7ms, proxy.ts: 257ms, render: 1702ms)
+ POST /dashboard/diet 200 in 12.3s (compile: 10ms, proxy.ts: 283ms, render: 12.0s)
+✓ Compiled in 147ms
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+✓ Compiled in 96ms
+ GET /manifest.webmanifest 200 in 36ms (compile: 21ms, render: 14ms)
+ GET /manifest.webmanifest 200 in 9ms (compile: 6ms, render: 3ms)
+ GET /dashboard/diet 200 in 2.1s (compile: 101ms, proxy.ts: 695ms, render: 1291ms)
+ GET /dashboard 200 in 1925ms (compile: 86ms, proxy.ts: 266ms, render: 1573ms)
+✓ Compiled in 336ms
+ POST /dashboard/diet 200 in 9.4s (compile: 129ms, proxy.ts: 695ms, render: 8.5s)
+✓ Compiled in 67ms
+ GET /manifest.webmanifest 200 in 17ms (compile: 13ms, render: 4ms)
+ GET /dashboard/diet 200 in 3.9s (compile: 238ms, proxy.ts: 1546ms, render: 2.2s)
+ GET /dashboard 200 in 2.1s (compile: 13ms, proxy.ts: 267ms, render: 1790ms)
+ POST /dashboard/diet 200 in 11.1s (compile: 15ms, proxy.ts: 490ms, render: 10.6s)
+✓ Compiled in 206ms
+✓ Compiled in 68ms
+ POST /dashboard/diet 200 in 14.7s (compile: 237ms, proxy.ts: 756ms, render: 13.7s)
+✓ Compiled in 478ms
+✓ Compiled in 133ms
+ POST /dashboard/diet 200 in 9.6s (compile: 114ms, proxy.ts: 660ms, render: 8.8s)
+ GET /manifest.webmanifest 200 in 33ms (compile: 15ms, render: 18ms)
+ GET /dashboard/diet 200 in 2.3s (compile: 30ms, proxy.ts: 413ms, render: 1844ms)
+ GET /dashboard 200 in 2.4s (compile: 6ms, proxy.ts: 258ms, render: 2.1s)
+✓ Compiled in 384ms
+✓ Compiled in 963ms
+ GET /dashboard/diet 200 in 749ms (compile: 220ms, proxy.ts: 413ms, render: 116ms)
+ GET /manifest.webmanifest 200 in 35ms (compile: 30ms, render: 4ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1821ms (compile: 37ms, proxy.ts: 1003ms, render: 781ms)
+✓ Compiled in 98ms
+✓ Compiled in 61ms
+ POST /dashboard/diet 200 in 8.4s (compile: 141ms, proxy.ts: 629ms, render: 7.6s)
+✓ Compiled in 158ms
+ POST /dashboard/diet 200 in 10.9s (compile: 133ms, proxy.ts: 852ms, render: 9.9s)
+✓ Compiled in 668ms
+ POST /dashboard/diet 200 in 14.1s (compile: 199ms, proxy.ts: 1546ms, render: 12.4s)
+✓ Compiled in 691ms
+ GET /dashboard/diet 200 in 1065ms (compile: 118ms, proxy.ts: 539ms, render: 408ms)
+ GET /manifest.webmanifest 200 in 18ms (compile: 5ms, render: 13ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 2.3s (compile: 70ms, proxy.ts: 1349ms, render: 846ms)
+✓ Compiled in 57ms
+✓ Compiled in 1857ms
+ GET /dashboard/diet 200 in 2.0s (compile: 576ms, proxy.ts: 982ms, render: 442ms)
+ GET /manifest.webmanifest 200 in 12ms (compile: 6ms, render: 6ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 3.8s (compile: 415ms, proxy.ts: 2.0s, render: 1399ms)
+✓ Compiled in 319ms
+ GET /dashboard/diet 200 in 564ms (compile: 7ms, proxy.ts: 504ms, render: 53ms)
+ GET /manifest.webmanifest 200 in 6ms (compile: 3ms, render: 3ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1066ms (compile: 89ms, proxy.ts: 930ms, render: 48ms)
+✓ Compiled in 700ms
+✓ Compiled in 517ms
+✓ Compiled in 347ms
+✓ Compiled in 515ms
+ GET /dashboard/diet 200 in 2.1s (compile: 527ms, proxy.ts: 669ms, render: 855ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 2.2s (compile: 282ms, proxy.ts: 1170ms, render: 778ms)
+ GET /dashboard/diet 200 in 1204ms (compile: 4ms, proxy.ts: 412ms, render: 788ms)
+ GET /dashboard/diet 200 in 723ms (compile: 2ms, proxy.ts: 679ms, render: 42ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 991ms (compile: 6ms, proxy.ts: 494ms, render: 492ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 593ms (compile: 9ms, proxy.ts: 518ms, render: 66ms)
+ GET /dashboard/diet 200 in 310ms (compile: 8ms, proxy.ts: 268ms, render: 33ms)
+ GET /dashboard/diet 200 in 275ms (compile: 3ms, proxy.ts: 238ms, render: 34ms)
+ GET /dashboard/diet 200 in 278ms (compile: 2ms, proxy.ts: 246ms, render: 30ms)
+ GET /dashboard/diet 200 in 277ms (compile: 3ms, proxy.ts: 240ms, render: 35ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1009ms (compile: 8ms, proxy.ts: 493ms, render: 508ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 524ms (compile: 6ms, proxy.ts: 491ms, render: 26ms)
+ GET /dashboard/diet 200 in 265ms (compile: 1865µs, proxy.ts: 237ms, render: 26ms)
+ GET /dashboard/diet 200 in 316ms (compile: 4ms, proxy.ts: 274ms, render: 38ms)
+ GET /dashboard/diet 200 in 270ms (compile: 2ms, proxy.ts: 242ms, render: 26ms)
+ GET /dashboard/diet 200 in 296ms (compile: 3ms, proxy.ts: 255ms, render: 38ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1003ms (compile: 5ms, proxy.ts: 487ms, render: 511ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 531ms (compile: 4ms, proxy.ts: 502ms, render: 25ms)
+ GET /dashboard/diet 200 in 277ms (compile: 2ms, proxy.ts: 244ms, render: 31ms)
+ GET /dashboard/diet 200 in 291ms (compile: 5ms, proxy.ts: 249ms, render: 37ms)
+ GET /dashboard/diet 200 in 266ms (compile: 1834µs, proxy.ts: 239ms, render: 25ms)
+ GET /dashboard/diet 200 in 288ms (compile: 4ms, proxy.ts: 242ms, render: 41ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1011ms (compile: 5ms, proxy.ts: 491ms, render: 515ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 503ms (compile: 4ms, proxy.ts: 478ms, render: 22ms)
+ GET /dashboard/diet 200 in 279ms (compile: 2ms, proxy.ts: 248ms, render: 28ms)
+ GET /dashboard/diet 200 in 316ms (compile: 7ms, proxy.ts: 247ms, render: 62ms)
+ GET /dashboard/diet 200 in 269ms (compile: 2ms, proxy.ts: 240ms, render: 26ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1090ms (compile: 47ms, proxy.ts: 480ms, render: 563ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 550ms (compile: 4ms, proxy.ts: 522ms, render: 23ms)
+ GET /dashboard/diet 200 in 313ms (compile: 4ms, proxy.ts: 243ms, render: 65ms)
+ GET /dashboard/diet 200 in 273ms (compile: 2ms, proxy.ts: 240ms, render: 30ms)
+ GET /dashboard/diet 200 in 302ms (compile: 3ms, proxy.ts: 243ms, render: 55ms)
+ GET /dashboard/diet 200 in 272ms (compile: 2ms, proxy.ts: 236ms, render: 34ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1075ms (compile: 6ms, proxy.ts: 515ms, render: 554ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 545ms (compile: 3ms, proxy.ts: 511ms, render: 31ms)
+ GET /dashboard/diet 200 in 308ms (compile: 2ms, proxy.ts: 239ms, render: 67ms)
+ GET /dashboard/diet 200 in 281ms (compile: 2ms, proxy.ts: 251ms, render: 27ms)
+ GET /dashboard/diet 200 in 308ms (compile: 4ms, proxy.ts: 239ms, render: 65ms)
+ GET /dashboard/diet 200 in 280ms (compile: 2ms, proxy.ts: 243ms, render: 35ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1106ms (compile: 6ms, proxy.ts: 520ms, render: 580ms)
+ GET /dashboard/diet 200 in 329ms (compile: 24ms, proxy.ts: 254ms, render: 51ms)
+ GET /dashboard/diet 200 in 292ms (compile: 3ms, proxy.ts: 262ms, render: 27ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1079ms (compile: 15ms, proxy.ts: 487ms, render: 576ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 561ms (compile: 5ms, proxy.ts: 502ms, render: 53ms)
+ GET /dashboard/diet 200 in 274ms (compile: 4ms, proxy.ts: 241ms, render: 29ms)
+ GET /dashboard/diet 200 in 351ms (compile: 4ms, proxy.ts: 316ms, render: 32ms)
+ GET /dashboard/diet 200 in 335ms (compile: 4ms, proxy.ts: 279ms, render: 52ms)
+ GET /dashboard/diet 200 in 271ms (compile: 2ms, proxy.ts: 236ms, render: 33ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1254ms (compile: 39ms, proxy.ts: 650ms, render: 566ms)
+ GET /dashboard/diet 200 in 314ms (compile: 25ms, proxy.ts: 243ms, render: 46ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 768ms (compile: 13ms, proxy.ts: 479ms, render: 276ms)
+ GET /dashboard/diet 200 in 269ms (compile: 2ms, proxy.ts: 238ms, render: 29ms)
+ GET /dashboard/diet 200 in 328ms (compile: 6ms, proxy.ts: 243ms, render: 78ms)
+ GET /dashboard/diet 200 in 276ms (compile: 2ms, proxy.ts: 239ms, render: 34ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1092ms (compile: 50ms, proxy.ts: 509ms, render: 533ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 538ms (compile: 3ms, proxy.ts: 515ms, render: 19ms)
+ GET /dashboard/diet 200 in 297ms (compile: 6ms, proxy.ts: 235ms, render: 55ms)
+ GET /dashboard/diet 200 in 407ms (compile: 6ms, proxy.ts: 363ms, render: 38ms)
+ GET /dashboard/diet 200 in 305ms (compile: 6ms, proxy.ts: 270ms, render: 29ms)
+ GET /dashboard/diet 200 in 268ms (compile: 2ms, proxy.ts: 239ms, render: 27ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1132ms (compile: 11ms, proxy.ts: 611ms, render: 510ms)
+ GET /dashboard/diet 200 in 272ms (compile: 2ms, proxy.ts: 243ms, render: 26ms)
+ GET /dashboard/diet 200 in 259ms (compile: 2ms, proxy.ts: 231ms, render: 26ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1040ms (compile: 6ms, proxy.ts: 502ms, render: 532ms)
+ GET /dashboard/diet 200 in 269ms (compile: 2ms, proxy.ts: 233ms, render: 34ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 834ms (compile: 4ms, proxy.ts: 476ms, render: 354ms)
+ GET /dashboard/diet 200 in 292ms (compile: 5ms, proxy.ts: 259ms, render: 29ms)
+ GET /dashboard/diet 200 in 281ms (compile: 5ms, proxy.ts: 248ms, render: 28ms)
+ GET /dashboard/diet 200 in 264ms (compile: 2ms, proxy.ts: 231ms, render: 32ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1194ms (compile: 8ms, proxy.ts: 546ms, render: 640ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 619ms (compile: 45ms, proxy.ts: 553ms, render: 21ms)
+ GET /dashboard/diet 200 in 332ms (compile: 6ms, proxy.ts: 267ms, render: 59ms)
+ GET /dashboard/diet 200 in 271ms (compile: 2ms, proxy.ts: 241ms, render: 27ms)
+ GET /dashboard/diet 200 in 319ms (compile: 7ms, proxy.ts: 241ms, render: 71ms)
+ GET /dashboard/diet 200 in 279ms (compile: 2ms, proxy.ts: 242ms, render: 35ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1344ms (compile: 54ms, proxy.ts: 485ms, render: 805ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 792ms (compile: 54ms, proxy.ts: 710ms, render: 27ms)
+ GET /dashboard/diet 200 in 548ms (compile: 9ms, proxy.ts: 469ms, render: 70ms)
+ GET /dashboard/diet 200 in 264ms (compile: 2ms, proxy.ts: 235ms, render: 27ms)
+ GET /dashboard/diet 200 in 367ms (compile: 5ms, proxy.ts: 301ms, render: 62ms)
+ GET /dashboard/diet 200 in 306ms (compile: 3ms, proxy.ts: 266ms, render: 38ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1116ms (compile: 3ms, proxy.ts: 575ms, render: 538ms)
+ GET /dashboard/diet 200 in 304ms (compile: 2ms, proxy.ts: 275ms, render: 27ms)
+ GET /dashboard/diet 200 in 332ms (compile: 4ms, proxy.ts: 299ms, render: 29ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1237ms (compile: 4ms, proxy.ts: 521ms, render: 712ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 696ms (compile: 43ms, proxy.ts: 633ms, render: 21ms)
+ GET /dashboard/diet 200 in 341ms (compile: 6ms, proxy.ts: 278ms, render: 57ms)
+ GET /dashboard/diet 200 in 274ms (compile: 3ms, proxy.ts: 239ms, render: 32ms)
+ GET /dashboard/diet 200 in 312ms (compile: 5ms, proxy.ts: 272ms, render: 35ms)
+ GET /dashboard/diet 200 in 351ms (compile: 3ms, proxy.ts: 317ms, render: 30ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1215ms (compile: 7ms, proxy.ts: 485ms, render: 724ms)
+ GET /dashboard/diet 200 in 323ms (compile: 6ms, proxy.ts: 260ms, render: 57ms)
+ GET /dashboard/diet 200 in 321ms (compile: 12ms, proxy.ts: 283ms, render: 26ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1199ms (compile: 43ms, proxy.ts: 639ms, render: 517ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 589ms (compile: 42ms, proxy.ts: 526ms, render: 21ms)
+ GET /dashboard/diet 200 in 296ms (compile: 5ms, proxy.ts: 232ms, render: 59ms)
+ GET /dashboard/diet 200 in 350ms (compile: 4ms, proxy.ts: 309ms, render: 37ms)
+ GET /dashboard/diet 200 in 266ms (compile: 2ms, proxy.ts: 237ms, render: 27ms)
+ GET /manifest.webmanifest 200 in 35ms (compile: 31ms, render: 4ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1190ms (compile: 7ms, proxy.ts: 522ms, render: 661ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 641ms (compile: 13ms, proxy.ts: 597ms, render: 31ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1045ms (compile: 19ms, proxy.ts: 505ms, render: 520ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1121ms (compile: 10ms, proxy.ts: 483ms, render: 628ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 640ms (compile: 14ms, proxy.ts: 596ms, render: 30ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1069ms (compile: 6ms, proxy.ts: 525ms, render: 539ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 533ms (compile: 11ms, proxy.ts: 480ms, render: 42ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 1038ms (compile: 3ms, proxy.ts: 511ms, render: 524ms)
+ GET /clients/e26bad99-a003-497b-8973-642eeb373f29?tab=diet 200 in 542ms (compile: 8ms, proxy.ts: 504ms, render: 31ms)
+AuthApiError: Request rate limit reached
+    at ignore-listed frames {
+  __isAuthError: true,
+  status: 429,
+  code: 'over_request_rate_limit'
+}
+AuthApiError: Request rate limit reached
+    at ignore-listed frames {
+  __isAuthError: true,
+  status: 429,
+  code: 'over_request_rate_limit'
+}
+AuthApiError: Request rate limit reached
+    at ignore-listed frames {
+  __isAuthError: true,
+  status: 429,
+  code: 'over_request_rate_limit'
+}
+AuthApiError: Request rate limit reached
+    at ignore-listed frames {
+  __isAuthError: true,
+  status: 429,
+  code: 'over_request_rate_limit'
+}
+ GET /login?tab=diet 200 in 545ms (compile: 198ms, proxy.ts: 1808µs, render: 345ms)
+ GET /login?tab=diet 200 in 157ms (compile: 8ms, proxy.ts: 3ms, render: 146ms)
+ GET /login?tab=diet 200 in 47ms (compile: 4ms, proxy.ts: 5ms, render: 39ms)
+AuthApiError: Request rate limit reached
+    at ignore-listed frames {
+  __isAuthError: true,
+  status: 429,
+  code: 'over_request_rate_limit'
+}
+AuthApiError: Request rate limit reached
+    at ignore-listed frames {
+  __isAuthError: true,
+  status: 429,
+  code: 'over_request_rate_limit'
+}
+ GET /login?tab=diet 200 in 362ms (compile: 5ms, proxy.ts: 4ms, render: 354ms)
+AuthApiError: Request rate limit reached
+    at ignore-listed frames {
+  __isAuthError: true,
+  status: 429,
+  code: 'over_request_rate_limit'
+}
+AuthApiError: Request rate limit reached
+    at ignore-listed frames {
+  __isAuthError: true,
+  status: 429,
+  code: 'over_request_rate_limit'
+}
+AuthApiError: Request rate limit reached
+    at ignore-listed frames {
+  __isAuthError: true,
+  status: 429,
+  code: 'over_request_rate_limit'
+}
+AuthApiError: Request rate limit reached
+    at ignore-listed frames {
+  __isAuthError: true,
+  status: 429,
+  code: 'over_request_rate_limit'
+}
+ GET / 200 in 9.6s (compile: 1704ms, proxy.ts: 341ms, render: 7.5s)
+ POST /login?tab=diet 303 in 10.2s (compile: 21ms, proxy.ts: 16ms, render: 10.2s)
+ GET /settings 200 in 2.1s (compile: 419ms, proxy.ts: 666ms, render: 1043ms)
+ GET / 200 in 9.9s (compile: 1939µs, proxy.ts: 282ms, render: 9.6s)
+ POST /api/push/test 200 in 2.2s (compile: 212ms, proxy.ts: 384ms, render: 1563ms)
+ POST /api/push/test 200 in 1422ms (compile: 3ms, proxy.ts: 411ms, render: 1007ms)
+ POST /api/push/test 200 in 1415ms (compile: 10ms, proxy.ts: 565ms, render: 840ms)
+ GET /settings 200 in 2.2s (compile: 11ms, proxy.ts: 1324ms, render: 905ms)
+ POST /api/push/test 200 in 1964ms (compile: 6ms, proxy.ts: 298ms, render: 1661ms)
+ GET /settings 200 in 1103ms (compile: 15ms, proxy.ts: 401ms, render: 687ms)
+ POST /api/push/test 200 in 2.0s (compile: 5ms, proxy.ts: 272ms, render: 1734ms)
+ GET /settings 200 in 927ms (compile: 5ms, proxy.ts: 338ms, render: 583ms)
+ POST /api/push/test 200 in 1137ms (compile: 5ms, proxy.ts: 309ms, render: 823ms)
+ GET /settings 200 in 1021ms (compile: 8ms, proxy.ts: 448ms, render: 565ms)
+ POST /api/push/test 200 in 1289ms (compile: 5ms, proxy.ts: 329ms, render: 955ms)
+ GET /settings 200 in 920ms (compile: 21ms, proxy.ts: 299ms, render: 600ms)
+ POST /api/push/test 200 in 1140ms (compile: 5ms, proxy.ts: 328ms, render: 808ms)
+✓ Compiled in 101ms
+✓ Compiled in 57ms
+ GET /dashboard/diet 200 in 1158ms (compile: 471ms, proxy.ts: 553ms, render: 134ms)
+ GET /settings 200 in 1464ms (compile: 349ms, proxy.ts: 650ms, render: 464ms)
+ GET /settings 200 in 557ms (compile: 5ms, proxy.ts: 266ms, render: 286ms)
+ GET /dashboard/diet 200 in 616ms (compile: 2ms, proxy.ts: 316ms, render: 297ms)
+ GET /dashboard/diet 200 in 301ms (compile: 3ms, proxy.ts: 263ms, render: 36ms)
+ GET /settings 200 in 576ms (compile: 10ms, proxy.ts: 266ms, render: 300ms)
+ GET /dashboard/diet 200 in 294ms (compile: 4ms, proxy.ts: 254ms, render: 36ms)
+ GET /settings 200 in 540ms (compile: 1772µs, proxy.ts: 258ms, render: 281ms)
+ GET /settings 200 in 540ms (compile: 2ms, proxy.ts: 239ms, render: 299ms)
+ GET /dashboard/diet 200 in 386ms (compile: 4ms, proxy.ts: 313ms, render: 69ms)
+ GET /settings 200 in 577ms (compile: 1908µs, proxy.ts: 277ms, render: 297ms)
+ GET /dashboard/diet 200 in 332ms (compile: 5ms, proxy.ts: 260ms, render: 67ms)
+ GET /settings 200 in 584ms (compile: 1950µs, proxy.ts: 276ms, render: 306ms)
+ GET /dashboard/diet 200 in 335ms (compile: 5ms, proxy.ts: 258ms, render: 73ms)
+ GET /settings 200 in 594ms (compile: 2ms, proxy.ts: 287ms, render: 305ms)
+ GET /dashboard/diet 200 in 332ms (compile: 3ms, proxy.ts: 275ms, render: 55ms)
+ GET /settings 200 in 753ms (compile: 1575µs, proxy.ts: 289ms, render: 463ms)
+ GET /dashboard/diet 200 in 481ms (compile: 8ms, proxy.ts: 388ms, render: 84ms)
+ GET /settings 200 in 848ms (compile: 30ms, proxy.ts: 369ms, render: 449ms)
+ GET /dashboard/diet 200 in 407ms (compile: 8ms, proxy.ts: 332ms, render: 67ms)
+ GET /settings 200 in 813ms (compile: 30ms, proxy.ts: 332ms, render: 450ms)
+ GET /dashboard/diet 200 in 425ms (compile: 6ms, proxy.ts: 338ms, render: 81ms)
+ GET /settings 200 in 653ms (compile: 30ms, proxy.ts: 338ms, render: 286ms)
+ GET /dashboard/diet 200 in 304ms (compile: 3ms, proxy.ts: 248ms, render: 53ms)
+ GET /settings 200 in 620ms (compile: 1509µs, proxy.ts: 282ms, render: 336ms)
+ GET /dashboard/diet 200 in 363ms (compile: 7ms, proxy.ts: 280ms, render: 75ms)
+ GET /settings 200 in 597ms (compile: 1733µs, proxy.ts: 321ms, render: 274ms)
+ GET /dashboard/diet 200 in 306ms (compile: 4ms, proxy.ts: 241ms, render: 62ms)
+ GET /settings 200 in 558ms (compile: 1914µs, proxy.ts: 259ms, render: 297ms)
+ GET /dashboard/diet 200 in 333ms (compile: 3ms, proxy.ts: 245ms, render: 85ms)
+ GET /settings 200 in 567ms (compile: 7ms, proxy.ts: 275ms, render: 284ms)
+ GET /dashboard/diet 200 in 305ms (compile: 4ms, proxy.ts: 243ms, render: 59ms)
+ GET /settings 200 in 519ms (compile: 3ms, proxy.ts: 243ms, render: 273ms)
+ GET /dashboard/diet 200 in 313ms (compile: 4ms, proxy.ts: 239ms, render: 70ms)
+ GET /settings 200 in 549ms (compile: 2ms, proxy.ts: 257ms, render: 289ms)
+ GET /dashboard/diet 200 in 320ms (compile: 5ms, proxy.ts: 254ms, render: 61ms)
+ GET /settings 200 in 689ms (compile: 4ms, proxy.ts: 260ms, render: 424ms)
+ GET /dashboard/diet 200 in 433ms (compile: 8ms, proxy.ts: 357ms, render: 69ms)
+ GET /settings 200 in 793ms (compile: 27ms, proxy.ts: 336ms, render: 430ms)
+ GET /dashboard/diet 200 in 398ms (compile: 12ms, proxy.ts: 343ms, render: 43ms)
+ GET /settings 200 in 714ms (compile: 3ms, proxy.ts: 342ms, render: 370ms)
+ GET /dashboard/diet 200 in 332ms (compile: 6ms, proxy.ts: 263ms, render: 63ms)
+ GET /settings 200 in 753ms (compile: 25ms, proxy.ts: 264ms, render: 464ms)
+ GET /dashboard/diet 200 in 431ms (compile: 9ms, proxy.ts: 346ms, render: 76ms)
+ GET /settings 200 in 663ms (compile: 32ms, proxy.ts: 347ms, render: 284ms)
+ GET /dashboard/diet 200 in 306ms (compile: 5ms, proxy.ts: 272ms, render: 28ms)
+ GET /settings 200 in 548ms (compile: 2ms, proxy.ts: 247ms, render: 299ms)
+ GET /dashboard/diet 200 in 329ms (compile: 2ms, proxy.ts: 281ms, render: 46ms)
+ GET /settings 200 in 728ms (compile: 5ms, proxy.ts: 276ms, render: 448ms)
+ GET /dashboard/diet 200 in 385ms (compile: 13ms, proxy.ts: 334ms, render: 39ms)
+ GET /settings 200 in 749ms (compile: 3ms, proxy.ts: 372ms, render: 373ms)
+ GET /dashboard/diet 200 in 334ms (compile: 4ms, proxy.ts: 265ms, render: 66ms)
+ GET /settings 200 in 558ms (compile: 20ms, proxy.ts: 266ms, render: 273ms)
+ GET /dashboard/diet 200 in 333ms (compile: 21ms, proxy.ts: 256ms, render: 56ms)
+ GET /settings 200 in 542ms (compile: 6ms, proxy.ts: 255ms, render: 282ms)
+ GET /dashboard/diet 200 in 298ms (compile: 4ms, proxy.ts: 269ms, render: 26ms)
+ GET /settings 200 in 510ms (compile: 2ms, proxy.ts: 251ms, render: 258ms)
+ GET /dashboard/diet 200 in 305ms (compile: 2ms, proxy.ts: 271ms, render: 31ms)
+ GET /settings 200 in 537ms (compile: 1779µs, proxy.ts: 256ms, render: 279ms)
+ GET /dashboard/diet 200 in 317ms (compile: 2ms, proxy.ts: 248ms, render: 68ms)
+ GET /settings 200 in 526ms (compile: 3ms, proxy.ts: 262ms, render: 262ms)
+ GET /dashboard/diet 200 in 305ms (compile: 3ms, proxy.ts: 269ms, render: 32ms)
+ GET /settings 200 in 566ms (compile: 3ms, proxy.ts: 259ms, render: 304ms)
+ GET /dashboard/diet 200 in 272ms (compile: 2ms, proxy.ts: 242ms, render: 29ms)
+ GET /settings 200 in 503ms (compile: 3ms, proxy.ts: 243ms, render: 257ms)
+ GET /dashboard/diet 200 in 274ms (compile: 1923µs, proxy.ts: 241ms, render: 32ms)
+ GET /settings 200 in 507ms (compile: 1999µs, proxy.ts: 251ms, render: 254ms)
+ GET /dashboard/diet 200 in 315ms (compile: 3ms, proxy.ts: 265ms, render: 46ms)
+ GET /settings 200 in 753ms (compile: 1525µs, proxy.ts: 330ms, render: 421ms)
+ GET /dashboard/diet 200 in 429ms (compile: 6ms, proxy.ts: 358ms, render: 65ms)
+ GET /settings 200 in 706ms (compile: 24ms, proxy.ts: 339ms, render: 342ms)
+ GET /dashboard/diet 200 in 307ms (compile: 5ms, proxy.ts: 245ms, render: 57ms)
+ GET /settings 200 in 539ms (compile: 20ms, proxy.ts: 245ms, render: 274ms)
+ GET /dashboard/diet 200 in 298ms (compile: 3ms, proxy.ts: 241ms, render: 54ms)
+ GET /settings 200 in 644ms (compile: 1439µs, proxy.ts: 277ms, render: 366ms)
+ GET /dashboard/diet 200 in 374ms (compile: 7ms, proxy.ts: 311ms, render: 56ms)
+ GET /settings 200 in 577ms (compile: 24ms, proxy.ts: 291ms, render: 262ms)
+ GET /dashboard/diet 200 in 314ms (compile: 3ms, proxy.ts: 256ms, render: 55ms)
+ GET /settings 200 in 611ms (compile: 19ms, proxy.ts: 256ms, render: 335ms)
+ GET /dashboard/diet 200 in 327ms (compile: 10ms, proxy.ts: 253ms, render: 63ms)
+ GET /settings 200 in 713ms (compile: 49ms, proxy.ts: 259ms, render: 405ms)
+ GET /dashboard/diet 200 in 416ms (compile: 11ms, proxy.ts: 344ms, render: 61ms)
+ GET /settings 200 in 797ms (compile: 30ms, proxy.ts: 326ms, render: 440ms)
+ GET /dashboard/diet 200 in 410ms (compile: 4ms, proxy.ts: 338ms, render: 67ms)
+ GET /settings 200 in 812ms (compile: 24ms, proxy.ts: 338ms, render: 449ms)
+ GET /dashboard/diet 200 in 412ms (compile: 5ms, proxy.ts: 349ms, render: 58ms)
+ GET /settings 200 in 813ms (compile: 23ms, proxy.ts: 349ms, render: 442ms)
+ GET /dashboard/diet 200 in 411ms (compile: 3ms, proxy.ts: 351ms, render: 57ms)
+ GET /settings 200 in 710ms (compile: 18ms, proxy.ts: 351ms, render: 342ms)
+ GET /dashboard/diet 200 in 317ms (compile: 29ms, proxy.ts: 255ms, render: 33ms)
+ GET /settings 200 in 614ms (compile: 7ms, proxy.ts: 250ms, render: 357ms)
+ GET /dashboard/diet 200 in 308ms (compile: 21ms, proxy.ts: 257ms, render: 29ms)
+ GET /settings 200 in 653ms (compile: 3ms, proxy.ts: 271ms, render: 378ms)
+ GET /dashboard/diet 200 in 337ms (compile: 19ms, proxy.ts: 265ms, render: 53ms)
+ GET /settings 200 in 745ms (compile: 5ms, proxy.ts: 278ms, render: 462ms)
+ GET /dashboard/diet 200 in 410ms (compile: 27ms, proxy.ts: 336ms, render: 47ms)
+ GET /settings 200 in 779ms (compile: 10ms, proxy.ts: 335ms, render: 434ms)
+ GET /dashboard/diet 200 in 379ms (compile: 12ms, proxy.ts: 316ms, render: 50ms)
+ GET /settings 200 in 1060ms (compile: 3ms, proxy.ts: 316ms, render: 741ms)
+ GET /dashboard/diet 200 in 703ms (compile: 77ms, proxy.ts: 312ms, render: 314ms)
+ GET /settings 200 in 763ms (compile: 18ms, proxy.ts: 306ms, render: 439ms)
+ GET /dashboard/diet 200 in 327ms (compile: 4ms, proxy.ts: 276ms, render: 47ms)
+ GET /settings 200 in 565ms (compile: 1869µs, proxy.ts: 257ms, render: 306ms)
+ GET /dashboard/diet 200 in 291ms (compile: 2ms, proxy.ts: 261ms, render: 28ms)
+ GET /settings 200 in 633ms (compile: 1883µs, proxy.ts: 270ms, render: 361ms)
+ GET /dashboard/diet 200 in 319ms (compile: 14ms, proxy.ts: 261ms, render: 44ms)
+ GET /settings 200 in 560ms (compile: 4ms, proxy.ts: 289ms, render: 267ms)
+ GET /dashboard/diet 200 in 302ms (compile: 2ms, proxy.ts: 272ms, render: 29ms)
+ GET /settings 200 in 642ms (compile: 1724µs, proxy.ts: 242ms, render: 398ms)
+ GET /dashboard/diet 200 in 347ms (compile: 20ms, proxy.ts: 279ms, render: 49ms)
+ GET /settings 200 in 676ms (compile: 5ms, proxy.ts: 308ms, render: 364ms)
+ GET /dashboard/diet 200 in 343ms (compile: 43ms, proxy.ts: 270ms, render: 29ms)
+ GET /settings 200 in 720ms (compile: 11ms, proxy.ts: 262ms, render: 448ms)
+ GET /dashboard/diet 200 in 390ms (compile: 8ms, proxy.ts: 322ms, render: 61ms)
+ GET /settings 200 in 669ms (compile: 45ms, proxy.ts: 352ms, render: 273ms)
+ GET /dashboard/diet 200 in 335ms (compile: 5ms, proxy.ts: 263ms, render: 67ms)
+ GET /settings 200 in 735ms (compile: 1644µs, proxy.ts: 302ms, render: 431ms)
+ GET /dashboard/diet 200 in 445ms (compile: 10ms, proxy.ts: 353ms, render: 82ms)
+ GET /settings 200 in 816ms (compile: 45ms, proxy.ts: 333ms, render: 438ms)
+ GET /dashboard/diet 200 in 408ms (compile: 26ms, proxy.ts: 327ms, render: 54ms)
+ GET /settings 200 in 805ms (compile: 9ms, proxy.ts: 325ms, render: 471ms)
+ GET /dashboard/diet 200 in 408ms (compile: 8ms, proxy.ts: 336ms, render: 63ms)
+ GET /settings 200 in 649ms (compile: 30ms, proxy.ts: 338ms, render: 282ms)
+ GET /dashboard/diet 200 in 318ms (compile: 5ms, proxy.ts: 280ms, render: 33ms)
+ GET /settings 200 in 524ms (compile: 5ms, proxy.ts: 247ms, render: 272ms)
+ GET /dashboard/diet 200 in 284ms (compile: 1923µs, proxy.ts: 246ms, render: 36ms)
+ GET /settings 200 in 511ms (compile: 4ms, proxy.ts: 244ms, render: 262ms)
+ GET /dashboard/diet 200 in 295ms (compile: 2ms, proxy.ts: 262ms, render: 31ms)
+ GET /settings 200 in 515ms (compile: 4ms, proxy.ts: 246ms, render: 265ms)
+ GET /dashboard/diet 200 in 316ms (compile: 5ms, proxy.ts: 240ms, render: 70ms)
+ GET /manifest.webmanifest 200 in 54ms (compile: 46ms, render: 8ms)
+✓ Compiled in 115ms
+✓ Compiled in 362ms
+ GET /dashboard/diet 200 in 2.3s (compile: 77ms, proxy.ts: 422ms, render: 1756ms)
+ GET /manifest.webmanifest 200 in 29ms (compile: 13ms, render: 15ms)
+ GET /settings 200 in 3.0s (compile: 1471ms, proxy.ts: 870ms, render: 631ms)
+✓ Compiled in 136ms
+ GET /dashboard/diet 200 in 776ms (compile: 283ms, proxy.ts: 363ms, render: 129ms)
+ GET /settings 200 in 1021ms (compile: 7ms, proxy.ts: 411ms, render: 602ms)
+ GET /dashboard/diet 200 in 343ms (compile: 3ms, proxy.ts: 293ms, render: 47ms)
+ GET /manifest.webmanifest 200 in 6ms (compile: 2ms, render: 4ms)
+ GET /settings 200 in 688ms (compile: 5ms, proxy.ts: 243ms, render: 440ms)
+ GET /clients 200 in 5.6s (compile: 2.6s, proxy.ts: 1038ms, render: 1937ms)
+ GET /manifest.webmanifest 200 in 13ms (compile: 3ms, render: 9ms)
+ GET /clients 200 in 1354ms (compile: 9ms, proxy.ts: 238ms, render: 1108ms)
+ GET /recipes 200 in 1109ms (compile: 841ms, proxy.ts: 245ms, render: 23ms)
+ GET /recipes/2a636d8c-f2c7-4eea-8485-faa5fd5a6c32 200 in 3.4s (compile: 1182ms, proxy.ts: 1623ms, render: 624ms)
+ GET /recipes/2a636d8c-f2c7-4eea-8485-faa5fd5a6c32 200 in 816ms (compile: 7ms, proxy.ts: 278ms, render: 532ms)
+ POST /recipes/2a636d8c-f2c7-4eea-8485-faa5fd5a6c32 200 in 1041ms (compile: 8ms, proxy.ts: 240ms, render: 793ms)
+ POST /recipes/2a636d8c-f2c7-4eea-8485-faa5fd5a6c32 200 in 860ms (compile: 11ms, proxy.ts: 314ms, render: 535ms)
+ GET /recipes 200 in 366ms (compile: 26ms, proxy.ts: 300ms, render: 40ms)
+✓ Compiled in 409ms
+✓ Compiled in 266ms
+✓ Compiled in 352ms
+✓ Compiled in 358ms
+✓ Compiled in 131ms
+✓ Compiled in 303ms
+✓ Compiled in 342ms
+✓ Compiled in 97ms
+✓ Compiled in 98ms
+✓ Compiled in 53ms
+ GET /clients 200 in 5.9s (compile: 410ms, proxy.ts: 1978ms, render: 3.5s)
+ GET /recipes 200 in 1293ms (compile: 894ms, proxy.ts: 311ms, render: 87ms)
+✓ Compiled in 3s
+✓ Compiled in 413ms
+ GET /recipes 200 in 1580ms (compile: 231ms, proxy.ts: 836ms, render: 513ms)
+ GET /dashboard/diet 200 in 1865ms (compile: 528ms, proxy.ts: 744ms, render: 593ms)
+ GET /recipes 200 in 390ms (compile: 53ms, proxy.ts: 316ms, render: 21ms)
+ GET /recipes 200 in 357ms (compile: 5ms, proxy.ts: 293ms, render: 59ms)
+ GET /dashboard/diet 200 in 744ms (compile: 4ms, proxy.ts: 703ms, render: 37ms)
+ GET /recipes 200 in 370ms (compile: 13ms, proxy.ts: 286ms, render: 71ms)
+ GET /dashboard/diet 200 in 334ms (compile: 32ms, proxy.ts: 250ms, render: 52ms)
+ GET /dashboard/diet 200 in 437ms (compile: 5ms, proxy.ts: 333ms, render: 99ms)
+ GET /manifest.webmanifest 200 in 9ms (compile: 4ms, render: 4ms)
+✓ Compiled in 81ms
+ GET /recipes 200 in 634ms (compile: 47ms, proxy.ts: 481ms, render: 106ms)
+ GET /dashboard/diet 200 in 694ms (compile: 112ms, proxy.ts: 332ms, render: 249ms)
+ GET /dashboard/diet 200 in 442ms (compile: 6ms, proxy.ts: 399ms, render: 37ms)
+ GET /dashboard/diet 200 in 341ms (compile: 11ms, proxy.ts: 285ms, render: 45ms)
+ GET /recipes 200 in 664ms (compile: 2ms, proxy.ts: 643ms, render: 19ms)
+ GET /recipes 200 in 272ms (compile: 1584µs, proxy.ts: 256ms, render: 14ms)
+ GET /dashboard/diet 200 in 302ms (compile: 6ms, proxy.ts: 246ms, render: 51ms)
+ GET /manifest.webmanifest 200 in 31ms (compile: 16ms, render: 15ms)
+ GET /recipes 200 in 266ms (compile: 3ms, proxy.ts: 242ms, render: 21ms)
+✓ Compiled in 343ms
+ GET /recipes 200 in 416ms (compile: 6ms, proxy.ts: 364ms, render: 46ms)
+ GET /dashboard/diet 200 in 420ms (compile: 13ms, proxy.ts: 289ms, render: 118ms)
+ GET /manifest.webmanifest 200 in 12ms (compile: 6ms, render: 6ms)
+✓ Compiled in 122ms
+ GET /recipes 200 in 717ms (compile: 7ms, proxy.ts: 478ms, render: 231ms)
+ GET /dashboard/diet 200 in 805ms (compile: 130ms, proxy.ts: 565ms, render: 111ms)
+ GET /manifest.webmanifest 200 in 7ms (compile: 4ms, render: 3ms)
+✓ Compiled in 196ms
+ GET /recipes 200 in 563ms (compile: 5ms, proxy.ts: 443ms, render: 114ms)
+ GET /dashboard/diet 200 in 564ms (compile: 16ms, proxy.ts: 490ms, render: 58ms)
+ GET /manifest.webmanifest 200 in 17ms (compile: 6ms, render: 11ms)
+✓ Compiled in 194ms
+✓ Compiled in 73ms
+ GET /recipes 200 in 1079ms (compile: 137ms, proxy.ts: 621ms, render: 321ms)
+ GET /dashboard/diet 200 in 1060ms (compile: 320ms, proxy.ts: 560ms, render: 180ms)
+ GET /recipes 200 in 452ms (compile: 10ms, proxy.ts: 344ms, render: 98ms)
+ GET /dashboard/diet 200 in 433ms (compile: 62ms, proxy.ts: 324ms, render: 47ms)
+ GET /recipes 200 in 272ms (compile: 3ms, proxy.ts: 234ms, render: 35ms)
+ GET /dashboard/diet 200 in 295ms (compile: 5ms, proxy.ts: 240ms, render: 50ms)
+ GET /recipes 200 in 264ms (compile: 3ms, proxy.ts: 234ms, render: 26ms)
+ GET /dashboard/diet 200 in 286ms (compile: 3ms, proxy.ts: 237ms, render: 46ms)
+ GET /manifest.webmanifest 200 in 21ms (compile: 10ms, render: 11ms)
+✓ Compiled in 89ms
+ GET /recipes 200 in 629ms (compile: 9ms, proxy.ts: 354ms, render: 266ms)
+ GET /dashboard/diet 200 in 638ms (compile: 192ms, proxy.ts: 352ms, render: 95ms)
+ GET /manifest.webmanifest 200 in 24ms (compile: 10ms, render: 14ms)
+✓ Compiled in 135ms
+ GET /recipes 200 in 566ms (compile: 9ms, proxy.ts: 392ms, render: 166ms)
+ GET /dashboard/diet 200 in 561ms (compile: 65ms, proxy.ts: 382ms, render: 114ms)
+ GET /manifest.webmanifest 200 in 21ms (compile: 9ms, render: 12ms)
+✓ Compiled in 54ms
+ GET /recipes 200 in 767ms (compile: 8ms, proxy.ts: 486ms, render: 274ms)
+ GET /dashboard/diet 200 in 742ms (compile: 182ms, proxy.ts: 458ms, render: 102ms)
+ GET /manifest.webmanifest 200 in 22ms (compile: 7ms, render: 15ms)
+✓ Compiled in 54ms
+ GET /recipes 200 in 342ms (compile: 1924µs, proxy.ts: 322ms, render: 18ms)
+ GET /dashboard/diet 200 in 345ms (compile: 6ms, proxy.ts: 274ms, render: 64ms)
+ GET /manifest.webmanifest 200 in 29ms (compile: 26ms, render: 2ms)
+✓ Compiled in 59ms
+ GET /recipes 200 in 820ms (compile: 6ms, proxy.ts: 575ms, render: 239ms)
+ GET /dashboard/diet 200 in 801ms (compile: 173ms, proxy.ts: 554ms, render: 74ms)
+ GET /manifest.webmanifest 200 in 16ms (compile: 3ms, render: 13ms)
+ GET /recipes 200 in 1811ms (compile: 76ms, proxy.ts: 833ms, render: 902ms)
+✓ Compiled in 557ms
+ GET /recipes 200 in 1202ms (compile: 16ms, proxy.ts: 694ms, render: 492ms)
+ GET /dashboard/diet 200 in 1470ms (compile: 395ms, proxy.ts: 602ms, render: 474ms)
+ GET /manifest.webmanifest 200 in 44ms (compile: 15ms, render: 30ms)
+✓ Compiled in 87ms
+ GET /recipes 200 in 305ms (compile: 7ms, proxy.ts: 257ms, render: 41ms)
+ GET /dashboard/diet 200 in 498ms (compile: 4ms, proxy.ts: 305ms, render: 189ms)
+ GET /manifest.webmanifest 200 in 6ms (compile: 3ms, render: 2ms)
+✓ Compiled in 373ms
+ GET /recipes 200 in 1339ms (compile: 696ms, proxy.ts: 337ms, render: 306ms)
+ GET /dashboard/diet 200 in 1367ms (compile: 577ms, proxy.ts: 360ms, render: 431ms)
+ GET /manifest.webmanifest 200 in 14ms (compile: 5ms, render: 9ms)
+✓ Compiled in 786ms
+ GET /recipes 200 in 995ms (compile: 133ms, proxy.ts: 437ms, render: 424ms)
+ GET /dashboard/diet 200 in 1018ms (compile: 12ms, proxy.ts: 301ms, render: 706ms)
+ GET /manifest.webmanifest 200 in 16ms (compile: 7ms, render: 8ms)
+✓ Compiled in 526ms
+ GET /recipes 200 in 421ms (compile: 5ms, proxy.ts: 281ms, render: 135ms)
+ GET /dashboard/diet 200 in 445ms (compile: 93ms, proxy.ts: 300ms, render: 53ms)
+ GET /recipes 200 in 368ms (compile: 4ms, proxy.ts: 294ms, render: 69ms)
+ GET /dashboard/diet 200 in 320ms (compile: 3ms, proxy.ts: 272ms, render: 44ms)
+ GET /manifest.webmanifest 200 in 12ms (compile: 6ms, render: 6ms)
+✓ Compiled in 635ms
+ GET /recipes 200 in 1071ms (compile: 8ms, proxy.ts: 676ms, render: 387ms)
+ GET /dashboard/diet 200 in 971ms (compile: 277ms, proxy.ts: 570ms, render: 124ms)
+ GET /recipes 200 in 359ms (compile: 13ms, proxy.ts: 253ms, render: 93ms)
+ GET /dashboard/diet 200 in 367ms (compile: 30ms, proxy.ts: 263ms, render: 74ms)
+ GET /manifest.webmanifest 200 in 17ms (compile: 10ms, render: 7ms)
+✓ Compiled in 752ms
+ GET /recipes 200 in 1061ms (compile: 6ms, proxy.ts: 969ms, render: 86ms)
+ GET /recipes 200 in 339ms (compile: 3ms, proxy.ts: 305ms, render: 31ms)
+ GET /dashboard/diet 200 in 795ms (compile: 5ms, proxy.ts: 254ms, render: 536ms)
+ GET /dashboard/diet 200 in 1646ms (compile: 266ms, proxy.ts: 309ms, render: 1071ms)
+ GET /manifest.webmanifest 200 in 22ms (compile: 12ms, render: 10ms)
+✓ Compiled in 820ms
+ GET /recipes 200 in 653ms (compile: 128ms, proxy.ts: 404ms, render: 121ms)
+ GET /dashboard/diet 200 in 698ms (compile: 22ms, proxy.ts: 428ms, render: 248ms)
+ GET /manifest.webmanifest 200 in 63ms (compile: 16ms, render: 46ms)
+✓ Compiled in 98ms
+ GET /recipes 200 in 870ms (compile: 82ms, proxy.ts: 726ms, render: 62ms)
+ GET /dashboard/diet 200 in 856ms (compile: 15ms, proxy.ts: 707ms, render: 134ms)
+ GET /manifest.webmanifest 200 in 77ms (compile: 7ms, render: 70ms)
+✓ Compiled in 778ms
+✓ Compiled in 256ms
+ GET /manifest.webmanifest 200 in 16ms (compile: 5ms, render: 11ms)
+ GET /dashboard/diet 200 in 7.1s (compile: 1040ms, proxy.ts: 1733ms, render: 4.4s)
+ GET /dashboard 200 in 3.1s (compile: 95ms, proxy.ts: 356ms, render: 2.7s)
+✓ Compiled in 1869ms
+ GET /recipes 200 in 4.6s (compile: 128ms, proxy.ts: 934ms, render: 3.6s)
+ GET /dashboard/diet 200 in 6.1s (compile: 1338ms, proxy.ts: 2.4s, render: 2.4s)
+ GET /manifest.webmanifest 200 in 17ms (compile: 10ms, render: 7ms)
+✓ Compiled in 1609ms
+ GET /recipes 200 in 1327ms (compile: 37ms, proxy.ts: 394ms, render: 896ms)
+ GET /dashboard/diet 200 in 1406ms (compile: 657ms, proxy.ts: 464ms, render: 286ms)
+ GET /recipes 200 in 682ms (compile: 15ms, proxy.ts: 569ms, render: 99ms)
+ GET /dashboard/diet 200 in 696ms (compile: 6ms, proxy.ts: 258ms, render: 432ms)
+ GET /manifest.webmanifest 200 in 41ms (compile: 33ms, render: 9ms)
+✓ Finished filesystem cache database compaction in 10.7s
+✓ Compiled in 40ms
+✓ Compiled in 52ms
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ GET /dashboard/diet 200 in 3.2s (compile: 117ms, proxy.ts: 625ms, render: 2.5s)
+ GET /manifest.webmanifest 200 in 45ms (compile: 14ms, render: 31ms)
+ GET /clients 200 in 6.4s (compile: 1848ms, proxy.ts: 1221ms, render: 3.3s)
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ GET /clients/06aa2e58-d57b-4fd1-9588-ed51aaa8d2b6 200 in 928ms (compile: 272ms, proxy.ts: 11ms, render: 646ms)
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ POST /clients/06aa2e58-d57b-4fd1-9588-ed51aaa8d2b6 200 in 2.2s (compile: 18ms, proxy.ts: 14ms, render: 2.1s)
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ POST /clients/06aa2e58-d57b-4fd1-9588-ed51aaa8d2b6 200 in 1787ms (compile: 6ms, proxy.ts: 5ms, render: 1776ms)
+ GET /clients/06aa2e58-d57b-4fd1-9588-ed51aaa8d2b6?tab=training 200 in 929ms (compile: 5ms, proxy.ts: 4ms, render: 920ms)
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ POST /clients/06aa2e58-d57b-4fd1-9588-ed51aaa8d2b6?tab=training 200 in 591ms (compile: 12ms, proxy.ts: 19ms, render: 560ms)
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ POST /clients/06aa2e58-d57b-4fd1-9588-ed51aaa8d2b6?tab=training 200 in 738ms (compile: 5ms, proxy.ts: 7ms, render: 727ms)

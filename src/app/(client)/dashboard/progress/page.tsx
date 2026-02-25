@@ -2,18 +2,14 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Card } from '@/components/ui/card'
-import { Bell, Flame, Dumbbell, Target } from 'lucide-react'
-import Link from 'next/link'
-import { format, subDays, isToday, parseISO } from 'date-fns'
+import { Flame, Dumbbell, Target } from 'lucide-react'
+import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { WeightChart } from '@/components/client/progress/weight-chart'
 import { RecentHistoryList } from '@/components/client/progress/recent-history-list'
+import { addDaysToDateString, compareDateStrings, dateOnlyToLocalNoon, getTodayString } from '@/lib/utils'
 
-export default async function ProgressPage({
-    searchParams
-}: {
-    searchParams: Promise<{ checkinId: string }>
-}) {
+export default async function ProgressPage() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -24,17 +20,18 @@ export default async function ProgressPage({
     // Fetch Client Data including detailed stats
     const { data: client } = await adminClient
         .from('clients')
-        .select('*')
+        .select('id, current_weight, initial_weight, target_weight, main_goal, activity_level')
         .eq('user_id', user.id)
         .single()
 
     if (!client) return <div>Cliente no encontrado</div>
 
     // 1. Calculate Compliance (Last 30 Days)
-    const startDate = subDays(new Date(), 30).toISOString()
+    const todayStr = getTodayString()
+    const startDate = addDaysToDateString(todayStr, -30)
     const { count: completedCount } = await adminClient
         .from('workout_logs')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('client_id', client.id)
         .gte('date', startDate)
 
@@ -60,7 +57,7 @@ export default async function ProgressPage({
     // 2. Fetch Checkins History
     const { data: checkins } = await adminClient
         .from('checkins')
-        .select('*')
+        .select('id, date, weight, body_fat, created_at')
         .eq('client_id', client.id)
         .order('date', { ascending: false })
         .limit(10)
@@ -75,7 +72,7 @@ export default async function ProgressPage({
 
     // Formatting Data for Chart
     const chartData = checkins?.map(c => ({
-        date: format(new Date(c.date), 'dd MMM', { locale: es }),
+        date: format(dateOnlyToLocalNoon(c.date), 'dd MMM', { locale: es }),
         weight: c.weight || 0
     })) || []
 
@@ -203,7 +200,11 @@ export default async function ProgressPage({
                         <div className="flex items-center gap-2 mt-auto">
                             <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse ring-2 ring-green-100"></span>
                             <div className="text-base font-bold text-gray-900">
-                                {latestCheckin ? (isToday(parseISO(latestCheckin.date)) ? 'Hoy' : format(parseISO(latestCheckin.date), 'dd MMM', { locale: es })) : 'Pendiente'}
+                                {latestCheckin
+                                    ? (compareDateStrings(latestCheckin.date, todayStr) === 0
+                                        ? 'Hoy'
+                                        : format(dateOnlyToLocalNoon(latestCheckin.date), 'dd MMM', { locale: es }))
+                                    : 'Pendiente'}
                             </div>
                         </div>
                     </Card>

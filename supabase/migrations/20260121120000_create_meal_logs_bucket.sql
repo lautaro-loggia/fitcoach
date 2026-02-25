@@ -9,11 +9,13 @@ on conflict (id) do nothing;
 -- Storage policies are often tricky in SQL, usually needing helper functions.
 -- Simplest: Authenticated users can upload.
 
+drop policy if exists "Authenticated users can upload meal logs" on storage.objects;
 create policy "Authenticated users can upload meal logs"
 on storage.objects for insert
 to authenticated
 with check ( bucket_id = 'meal-logs' );
 
+drop policy if exists "Authenticated users can view meal logs" on storage.objects;
 create policy "Authenticated users can view meal logs"
 on storage.objects for select
 to authenticated

@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin' // Import Admin Client
 import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
+import { getTodayString } from '@/lib/utils'
 
 // --- Helpers ---
 
@@ -177,7 +177,7 @@ export async function completeOnboarding(data: {
     const checkinData: any = {
         client_id: client.id,
         trainer_id: client.trainer_id,
-        date: new Date().toISOString().split('T')[0],
+        date: getTodayString(),
         observations: 'Check-in Inicial (Baseline)',
         weight: client.current_weight,
         body_fat: data.body_fat_percentage,

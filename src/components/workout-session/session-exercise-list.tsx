@@ -9,6 +9,8 @@ import { RestTimer } from './rest-timer'
 import { ExerciseInfoDialog } from './exercise-info-dialog'
 import { Info } from 'lucide-react'
 import { AddExtraExercise } from './add-extra-exercise'
+import { useConfirm } from '@/hooks/use-confirm'
+import { toast } from 'sonner'
 import {
     getOrCreateExerciseCheckin,
     getExerciseCheckinWithSets,
@@ -66,6 +68,7 @@ function ExerciseCard({ sessionId, exerciseIndex, exercise, initialCheckin }: Ex
     const [autoStartTimer, setAutoStartTimer] = useState(false)
 
     const { setExerciseCompleted } = useWorkoutSession()
+    const { confirm, ConfirmDialog } = useConfirm()
 
     // Notify context of completion status changes
     useEffect(() => {
@@ -91,7 +94,7 @@ function ExerciseCard({ sessionId, exerciseIndex, exercise, initialCheckin }: Ex
         )
 
         if (error) {
-            alert(error)
+            toast.error(error)
             return
         }
 
@@ -127,7 +130,8 @@ function ExerciseCard({ sessionId, exerciseIndex, exercise, initialCheckin }: Ex
     }
 
     const handleDeleteSet = async (setLogId: string, setNumber: number) => {
-        if (!confirm('¿Eliminar esta serie?')) return
+        const isConfirmed = await confirm('¿Eliminar esta serie?', '¿Seguro que deseas eliminar esta serie?')
+        if (!isConfirmed) return
 
         await deleteSetLog(setLogId)
         setSetLogs(prev => prev.filter(s => s.id !== setLogId))
@@ -253,6 +257,7 @@ function ExerciseCard({ sessionId, exerciseIndex, exercise, initialCheckin }: Ex
                 <Plus className="h-4 w-4 mr-2" />
                 Agregar serie
             </Button>
+            <ConfirmDialog />
         </div>
     )
 }

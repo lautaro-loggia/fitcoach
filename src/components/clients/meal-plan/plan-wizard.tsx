@@ -60,7 +60,7 @@ export function PlanWizard({ open, onOpenChange, onConfirm }: PlanWizardProps) {
                 </div>
 
                 <DialogFooter>
-                    <Button onClick={handleConfirm} disabled={!meals.some(m => m.checked)}>
+                    <Button onClick={handleConfirm} disabled={!meals.some(m => m.checked)} className="cursor-pointer disabled:cursor-not-allowed">
                         Crear Plan
                     </Button>
                 </DialogFooter>

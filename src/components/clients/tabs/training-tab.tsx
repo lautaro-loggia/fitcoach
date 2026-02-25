@@ -1,47 +1,35 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Calendar03Icon, GridViewIcon, PlusSignIcon, LayoutTopIcon, ZapIcon } from 'hugeicons-react'
+import { Calendar03Icon, GridViewIcon, ZapIcon } from 'hugeicons-react'
 import { AssignWorkoutDialog } from '../assign-workout-dialog'
 import { deleteAssignedWorkoutAction, updateAssignedWorkoutAction } from '@/app/(dashboard)/clients/[id]/training-actions'
 
 import { WorkoutCard } from '../workout-card'
 import { CalendarView } from '../calendar-view'
-import { cn } from '@/lib/utils'
+import { cn, getARTDayBounds, getARTWeekday, getNormalizedARTWeekday, normalizeText } from '@/lib/utils'
 import { WorkoutDetailDialog } from '../workout-detail-dialog'
 import { generateWorkoutPDF } from '@/lib/pdf-utils'
 import { TrainingSummarySidebar } from '../training-summary-sidebar'
 import { Badge } from '@/components/ui/badge'
-import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
+import { useConfirm } from '@/hooks/use-confirm'
 
 interface TrainingTabProps {
     client: any
 }
 
 export function TrainingTab({ client }: TrainingTabProps) {
-    const router = useRouter()
     const [workouts, setWorkouts] = useState<any[]>([])
     const [viewMode, setViewMode] = useState<'cards' | 'calendar'>('cards')
     const [editingWorkout, setEditingWorkout] = useState<any>(null)
     const [viewingWorkout, setViewingWorkout] = useState<any>(null)
     const [todaySessions, setTodaySessions] = useState<any[]>([])
-    const [mounted, setMounted] = useState(false)
+    const { confirm, ConfirmDialog } = useConfirm()
 
-    useEffect(() => {
-        setMounted(true)
-        fetchAssignedWorkouts()
-
-        const handleRefresh = () => fetchAssignedWorkouts()
-        window.addEventListener('refresh-workouts', handleRefresh)
-        return () => window.removeEventListener('refresh-workouts', handleRefresh)
-    }, [client.id])
-
-    const fetchAssignedWorkouts = async () => {
+    const fetchAssignedWorkouts = useCallback(async () => {
         const supabase = createClient()
 
         // Fetch assigned workouts
@@ -54,22 +42,36 @@ export function TrainingTab({ client }: TrainingTabProps) {
         if (workoutsData) setWorkouts(workoutsData)
 
         // Fetch today's completed logs
-        const startOfToday = new Date()
-        startOfToday.setHours(0, 0, 0, 0)
+        const { startISO, endISO } = getARTDayBounds()
 
         const { data: logsData } = await supabase
             .from('workout_logs')
             .select('workout_id')
             .eq('client_id', client.id)
-            .gte('completed_at', startOfToday.toISOString())
+            .gte('completed_at', startISO)
+            .lt('completed_at', endISO)
 
         if (logsData) {
             setTodaySessions(logsData.map(l => ({ assigned_workout_id: l.workout_id })))
         }
-    }
+    }, [client.id])
+
+    useEffect(() => {
+        const initialLoad = window.setTimeout(() => {
+            void fetchAssignedWorkouts()
+        }, 0)
+
+        const handleRefresh = () => fetchAssignedWorkouts()
+        window.addEventListener('refresh-workouts', handleRefresh)
+        return () => {
+            window.clearTimeout(initialLoad)
+            window.removeEventListener('refresh-workouts', handleRefresh)
+        }
+    }, [fetchAssignedWorkouts])
 
     const handleDelete = async (id: string) => {
-        if (confirm('¿Estás seguro de eliminar esta rutina asignada?')) {
+        const isConfirmed = await confirm('¿Eliminar rutina asignada?', '¿Estás seguro de eliminar esta rutina asignada?')
+        if (isConfirmed) {
             await deleteAssignedWorkoutAction(id, client.id)
             fetchAssignedWorkouts()
         }
@@ -95,16 +97,16 @@ export function TrainingTab({ client }: TrainingTabProps) {
     const getTodayWorkout = () => {
         if (!workouts.length) return null
 
-        const normalize = (str: string) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-        const dayOfWeek = normalize(format(new Date(), 'EEEE', { locale: es }))
+        const dayOfWeek = getNormalizedARTWeekday()
 
         return workouts.find(w =>
             Array.isArray(w.scheduled_days) &&
-            w.scheduled_days.some((d: string) => normalize(d) === dayOfWeek)
+            w.scheduled_days.some((d: string) => normalizeText(d) === dayOfWeek)
         )
     }
 
     const todayWorkout = getTodayWorkout()
+    const todayWeekdayLabel = getARTWeekday()
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
@@ -132,7 +134,7 @@ export function TrainingTab({ client }: TrainingTabProps) {
                                     </div>
                                     <div className="space-y-1">
                                         <h4 className="text-3xl font-extrabold text-gray-900 tracking-tight capitalize">
-                                            {format(new Date(), 'EEEE', { locale: es })} – {todayWorkout.name}
+                                            {todayWeekdayLabel} – {todayWorkout.name}
                                         </h4>
                                         <div className="flex items-center gap-2 text-indigo-500">
                                             <GridViewIcon className="h-3.5 w-3.5" />
@@ -254,6 +256,7 @@ export function TrainingTab({ client }: TrainingTabProps) {
                     }}
                 />
             )}
+            <ConfirmDialog />
         </div>
     )
 }

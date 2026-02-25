@@ -4,10 +4,26 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { createNotification } from '@/lib/notifications'
 
+async function getClientAuthUserId(supabase: Awaited<ReturnType<typeof createClient>>, clientId: string, trainerId: string) {
+    const { data: client, error } = await supabase
+        .from('clients')
+        .select('user_id')
+        .eq('id', clientId)
+        .eq('trainer_id', trainerId)
+        .single()
+
+    if (error) {
+        console.error('Error fetching client auth user for notification:', error)
+        return null
+    }
+
+    return client?.user_id || null
+}
+
 export async function assignWorkoutAction(data: {
     clientId: string
     name: string
-    exercises: any[]
+    exercises: Record<string, unknown>[]
     originTemplateId?: string
     validUntil?: string
     scheduledDays?: string[]
@@ -46,16 +62,19 @@ export async function assignWorkoutAction(data: {
     // Update client planning status to 'planned'
     await supabase.from('clients').update({ planning_status: 'planned' }).eq('id', data.clientId)
 
-    // Notify Client
-    await createNotification({
-        userId: data.clientId,
-        type: 'workout_assigned',
-        title: 'Nueva rutina asignada',
-        body: `Tu coach te ha asignado la rutina "${data.name}".`,
-        data: {
-            url: '/dashboard?tab=training'
-        }
-    })
+    // Notify Client (auth user id, not client row id)
+    const clientUserId = await getClientAuthUserId(supabase, data.clientId, user.id)
+    if (clientUserId) {
+        await createNotification({
+            userId: clientUserId,
+            type: 'workout_assigned',
+            title: 'Nueva rutina asignada',
+            body: `Tu coach te ha asignado la rutina "${data.name}".`,
+            data: {
+                url: '/dashboard/workout'
+            }
+        })
+    }
 
     revalidatePath(`/clients/${data.clientId}`)
     revalidatePath('/dashboard', 'layout')
@@ -66,7 +85,7 @@ export async function updateAssignedWorkoutAction(data: {
     id: string
     clientId: string
     name: string
-    exercises: any[]
+    exercises: Record<string, unknown>[]
     validUntil?: string
     scheduledDays?: string[]
     notes?: string
@@ -100,16 +119,19 @@ export async function updateAssignedWorkoutAction(data: {
         return { error: 'Error al actualizar el entrenamiento' }
     }
 
-    // Notify Client
-    await createNotification({
-        userId: data.clientId,
-        type: 'workout_assigned', // Keep generic type or add specific 'workout_updated'
-        title: 'Rutina actualizada',
-        body: `Tu coach ha actualizado la rutina "${data.name}".`,
-        data: {
-            url: '/dashboard?tab=training'
-        }
-    })
+    // Notify Client (auth user id, not client row id)
+    const clientUserId = await getClientAuthUserId(supabase, data.clientId, user.id)
+    if (clientUserId) {
+        await createNotification({
+            userId: clientUserId,
+            type: 'workout_assigned', // Keep generic type or add specific 'workout_updated'
+            title: 'Rutina actualizada',
+            body: `Tu coach ha actualizado la rutina "${data.name}".`,
+            data: {
+                url: '/dashboard/workout'
+            }
+        })
+    }
 
     revalidatePath(`/clients/${data.clientId}`)
     revalidatePath('/dashboard', 'layout')

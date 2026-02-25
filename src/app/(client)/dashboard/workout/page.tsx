@@ -1,13 +1,12 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
+import Image from 'next/image'
 import { Card } from '@/components/ui/card'
-import { Calendar, ChevronRight, Dumbbell, ArrowLeft } from 'lucide-react'
+import { ChevronRight, Dumbbell, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { getARTDate } from '@/lib/utils'
+import { getNormalizedARTWeekday, getTodayString, normalizeText } from '@/lib/utils'
 import { WorkoutStartDialog } from '@/components/clients/workout-start-dialog'
 
 export default async function WorkoutPage() {
@@ -28,7 +27,7 @@ export default async function WorkoutPage() {
     // Get all workouts
     const { data: workouts } = await adminClient
         .from('assigned_workouts')
-        .select('*')
+        .select('id, name, structure, scheduled_days')
         .eq('client_id', client.id)
 
     // Check for today's workout to auto-redirect or highlight
@@ -41,24 +40,19 @@ export default async function WorkoutPage() {
     // If there is ONLY ONE workout active schedule, just show it? 
     // Implementing a list view for now to satisfy "Lista de ejercicios" (which is inside the specific routine).
 
-    const todayName = format(getARTDate(), 'EEEE', { locale: es }).toLowerCase()
+    const todayName = getNormalizedARTWeekday()
     const todayWorkout = workouts?.find(w =>
-        w.scheduled_days?.map((d: string) => d.toLowerCase()).includes(todayName)
+        w.scheduled_days?.some((d: string) => normalizeText(d) === todayName)
     )
 
     // Check if today's workout is completed
     let isTodayCompleted = false
     if (todayWorkout) {
-        const todayStr = new Intl.DateTimeFormat('en-CA', {
-            timeZone: 'America/Argentina/Buenos_Aires',
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
-        }).format(new Date())
+        const todayStr = getTodayString()
 
         const { count } = await adminClient
             .from('workout_logs')
-            .select('*', { count: 'exact', head: true })
+            .select('id', { count: 'exact', head: true })
             .eq('client_id', client.id)
             .eq('workout_id', todayWorkout.id)
             .eq('date', todayStr)
@@ -131,10 +125,12 @@ export default async function WorkoutPage() {
             {(!workouts || workouts.length === 0) && (
                 <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
                     <div className="relative w-full max-w-[280px] aspect-square mb-6">
-                        <img
+                        <Image
                             src="/images/training-empty-state.png"
                             alt="No hay rutinas"
-                            className="w-full h-full object-contain opacity-90"
+                            fill
+                            sizes="(max-width: 768px) 280px, 320px"
+                            className="object-contain opacity-90"
                         />
                     </div>
                     <h3 className="text-xl font-bold text-gray-900 mb-2">Sin rutinas asignadas</h3>

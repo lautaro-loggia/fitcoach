@@ -4,6 +4,7 @@ import { CheckinForm } from './_components/checkin-form'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { addDaysToDateString, compareDateStrings, getTodayString } from '@/lib/utils'
 
 export default async function CheckinPage() {
     const supabase = await createClient()
@@ -20,19 +21,27 @@ export default async function CheckinPage() {
     if (!client) redirect('/dashboard')
 
     // Check for existing check-ins
-    const { count: checkinCount } = await supabase
+    const { data: latestCheckin } = await supabase
         .from('checkins')
-        .select('*', { count: 'exact', head: true })
-        .eq('client_id', (client as any).id) // Assuming we need client.id which we missed in the select
+        .select('date')
+        .eq('client_id', client.id)
+        .order('date', { ascending: false })
+        .limit(1)
+        .maybeSingle()
 
-    const hasCheckins = (checkinCount || 0) > 0
+    const hasCheckins = !!latestCheckin
+    const todayStr = getTodayString()
 
     if (client && client.next_checkin_date) {
-        const nextDate = new Date(client.next_checkin_date + 'T00:00:00')
-        const today = new Date()
-
-        if (today < nextDate) {
+        if (compareDateStrings(todayStr, client.next_checkin_date) < 0) {
             redirect('/dashboard')
+        }
+
+        if (latestCheckin?.date) {
+            const marginDate = addDaysToDateString(client.next_checkin_date, -3)
+            if (compareDateStrings(latestCheckin.date, marginDate) >= 0) {
+                redirect('/dashboard')
+            }
         }
     } else if (hasCheckins) {
         // Si tiene check-ins pero no tiene fecha de próximo (el coach debe definirla)

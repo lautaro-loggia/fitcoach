@@ -3,6 +3,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
+import { createNotification } from '@/lib/notifications'
+import { consumeRateLimit } from '@/lib/security/rate-limit'
 
 export async function logMeal(formData: FormData) {
     const supabase = await createClient()
@@ -18,6 +20,32 @@ export async function logMeal(formData: FormData) {
 
     if (!file) {
         return { error: 'No se recibió ninguna foto' }
+    }
+
+    if (!clientId) {
+        return { error: 'Cliente inválido' }
+    }
+
+    const { data: client } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('id', clientId)
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+    if (!client) {
+        return { error: 'No autorizado para registrar comida en este cliente' }
+    }
+
+    const rate = consumeRateLimit({
+        scope: 'meal-log-upload',
+        key: user.id,
+        maxRequests: 40,
+        windowMs: 15 * 60 * 1000,
+    })
+    if (!rate.allowed) {
+        const retryMinutes = Math.max(1, Math.ceil(rate.retryAfterMs / 60000))
+        return { error: `Demasiadas cargas en poco tiempo. Reintenta en ${retryMinutes} min.` }
     }
 
     // 1. Upload to Storage
@@ -50,6 +78,31 @@ export async function logMeal(formData: FormData) {
     if (dbError) {
         console.error('DB Error:', dbError)
         return { error: 'Error al guardar el registro' }
+    }
+
+    // 3. Notify Trainer
+    try {
+        const { data: client } = await adminClient
+            .from('clients')
+            .select('full_name, trainer_id')
+            .eq('id', clientId)
+            .single()
+
+        if (client?.trainer_id) {
+            await createNotification({
+                userId: client.trainer_id,
+                type: 'meal_photo_reminder',
+                title: 'Nueva comida registrada',
+                body: `${client.full_name} ha subido una foto de su comida`,
+                data: {
+                    clientId,
+                    url: `/clients/${clientId}?tab=diet`
+                }
+            })
+        }
+    } catch (notifError) {
+        console.error('Error sending notification:', notifError)
+        // Don't fail the action if notification fails
     }
 
     revalidatePath('/dashboard/diet')

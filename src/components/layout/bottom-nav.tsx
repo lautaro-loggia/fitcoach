@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home01Icon, UserGroupIcon, Dumbbell01Icon, Settings01Icon } from 'hugeicons-react'
+import { Home01Icon, UserGroupIcon, Dumbbell01Icon, Settings01Icon, KitchenUtensilsIcon } from 'hugeicons-react'
 import { cn } from '@/lib/utils'
 
 export function BottomNav() {
@@ -20,6 +20,12 @@ export function BottomNav() {
             href: '/clients',
             icon: UserGroupIcon,
             activePatterns: ['/clients']
+        },
+        {
+            label: 'Recetas',
+            href: '/recipes',
+            icon: KitchenUtensilsIcon,
+            activePatterns: ['/recipes']
         },
         {
             label: 'Rutinas',

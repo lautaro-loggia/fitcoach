@@ -1,12 +1,10 @@
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Tabs, TabsContent } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
 import { PlanesTab } from '@/components/pagos/planes-tab'
 import { HistoryTab } from '@/components/pagos/history-tab'
 import {
@@ -17,10 +15,17 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table'
-import { cn } from '@/lib/utils'
 import {
-    Search,
+    cn,
+    compareDateStrings,
+    dateOnlyToLocalNoon,
+    diffDateStringsInDays,
+    formatCurrency,
+    getTodayString
+} from '@/lib/utils'
+import {
     Plus,
+    Mail,
     Loader2,
     RefreshCw,
     Eye,
@@ -41,10 +46,10 @@ import {
     SheetClose,
 } from '@/components/ui/sheet'
 import {
-    getClientsWithPayments,
-    getPaymentStats,
     getAllPaymentData,
     getIncomeHistory,
+    sendBulkReminders,
+    sendPaymentReminder,
     updatePaymentStatuses,
     type ClientWithPayment,
     type PaymentStats,
@@ -52,7 +57,6 @@ import {
 import { RegisterPaymentDialog } from '@/components/payments/register-payment-dialog'
 import { ChangePlanDialog } from '@/components/payments/change-plan-dialog'
 import { toast } from 'sonner'
-import { formatCurrency } from '@/lib/utils'
 
 import { DashboardTopBar } from '@/components/layout/dashboard-top-bar'
 
@@ -60,6 +64,8 @@ export default function PagosPage() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const filterFromUrl = searchParams.get('filter')
+    const registerActionFromUrl = searchParams.get('action')
+    const registerClientIdFromUrl = searchParams.get('clientId')
 
     const [clients, setClients] = useState<ClientWithPayment[]>([])
     const [stats, setStats] = useState<PaymentStats | null>(null)
@@ -71,6 +77,9 @@ export default function PagosPage() {
     const [changePlanDialogOpen, setChangePlanDialogOpen] = useState(false)
     const [clientToChangePlan, setClientToChangePlan] = useState<ClientWithPayment | null>(null)
     const [activeTab, setActiveTab] = useState('pagos')
+    const [historyClientFilter, setHistoryClientFilter] = useState<{ id: string; name: string } | null>(null)
+    const [remindingClientId, setRemindingClientId] = useState<string | null>(null)
+    const [bulkReminding, setBulkReminding] = useState(false)
 
     // Sync filter from URL params
     useEffect(() => {
@@ -89,6 +98,33 @@ export default function PagosPage() {
             loadData()
         }
     }, [activeTab])
+
+    useEffect(() => {
+        if (loading || activeTab !== 'pagos') return
+        if (registerActionFromUrl !== 'register' || !registerClientIdFromUrl) return
+
+        const targetClient = clients.find(c => c.id === registerClientIdFromUrl)
+        if (targetClient) {
+            setSelectedClient(targetClient)
+            setRegisterDialogOpen(true)
+        } else {
+            toast.error('No se encontró el asesorado para registrar el pago')
+        }
+
+        // Clean action params to avoid re-opening the dialog on subsequent renders
+        const nextParams = new URLSearchParams(searchParams.toString())
+        nextParams.delete('action')
+        nextParams.delete('clientId')
+        const nextQuery = nextParams.toString()
+        router.replace(nextQuery ? `/pagos?${nextQuery}` : '/pagos')
+    }, [loading, activeTab, registerActionFromUrl, registerClientIdFromUrl, clients, searchParams, router])
+
+    function handleTabChange(nextTab: string) {
+        setActiveTab(nextTab)
+        if (nextTab !== 'history') {
+            setHistoryClientFilter(null)
+        }
+    }
 
     async function loadData() {
         console.log('[Pagos] loadData called')
@@ -150,22 +186,21 @@ export default function PagosPage() {
             // Secondary Sort: Next Due Date Ascending (Earlier dates first)
             if (!a.next_due_date) return 1
             if (!b.next_due_date) return -1
-            return new Date(a.next_due_date).getTime() - new Date(b.next_due_date).getTime()
+            return compareDateStrings(a.next_due_date, b.next_due_date)
         })
 
         return filtered
     }, [clients, searchQuery, statusFilter])
 
+    const clientsToRemind = useMemo(() => {
+        return filteredClients.filter(
+            (client) => client.payment_status === 'pending' || client.payment_status === 'overdue'
+        )
+    }, [filteredClients])
+
     function getRelativeDate(dateStr: string | null) {
         if (!dateStr) return '-'
-        // Add T12:00:00 to avoid timezone issues
-        const due = new Date(dateStr + 'T12:00:00')
-        const today = new Date()
-        // Reset time part for accurate day calculation
-        today.setHours(12, 0, 0, 0)
-
-        const diffTime = due.getTime() - today.getTime()
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+        const diffDays = diffDateStringsInDays(dateStr, getTodayString())
 
         if (diffDays === 0) return 'Vence hoy'
         if (diffDays === 1) return 'Vence mañana'
@@ -177,7 +212,7 @@ export default function PagosPage() {
     // Display formatted date (keep original format for Tooltip or alternative view if needed)
     function formatDate(date: string | null) {
         if (!date) return '-'
-        return new Date(date + 'T12:00:00').toLocaleDateString('es-AR', {
+        return dateOnlyToLocalNoon(date).toLocaleDateString('es-AR', {
             day: '2-digit',
             month: '2-digit',
             year: 'numeric',
@@ -186,10 +221,47 @@ export default function PagosPage() {
 
     function isDueSoon(dueDate: string | null) {
         if (!dueDate) return false
-        const due = new Date(dueDate + 'T12:00:00')
-        const today = new Date()
-        const diffDays = Math.floor((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+        const diffDays = diffDateStringsInDays(dueDate, getTodayString())
         return diffDays >= 0 && diffDays <= 3
+    }
+
+    async function handleSendReminder(client: ClientWithPayment) {
+        try {
+            setRemindingClientId(client.id)
+            const result = await sendPaymentReminder(client.id)
+            if (result?.error) {
+                toast.error(result.error)
+                return
+            }
+            toast.success(result?.message || `Recordatorio enviado a ${client.full_name}`)
+        } catch (error) {
+            console.error('Error sending reminder:', error)
+            toast.error('No se pudo enviar el recordatorio')
+        } finally {
+            setRemindingClientId(null)
+        }
+    }
+
+    async function handleBulkReminders() {
+        if (clientsToRemind.length === 0) {
+            toast.info('No hay asesorados pendientes o vencidos en la vista actual')
+            return
+        }
+
+        try {
+            setBulkReminding(true)
+            const result = await sendBulkReminders(clientsToRemind.map((client) => client.id))
+            if (result?.error) {
+                toast.error(result.error)
+                return
+            }
+            toast.success(result?.message || 'Recordatorios enviados')
+        } catch (error) {
+            console.error('Error sending bulk reminders:', error)
+            toast.error('No se pudieron enviar los recordatorios')
+        } finally {
+            setBulkReminding(false)
+        }
     }
 
     if (loading) {
@@ -209,10 +281,6 @@ export default function PagosPage() {
                 </div>
             </div>
         )
-    }
-
-    const clearPaymentFilters = () => {
-        setStatusFilter('all')
     }
 
     const hasPaymentFilters = statusFilter !== 'all'
@@ -255,9 +323,9 @@ export default function PagosPage() {
                 subtitle="Gestión de cobros y suscripciones"
                 activeTab={activeTab}
                 tabs={[
-                    { id: 'pagos', label: 'Pagos', onClick: () => setActiveTab('pagos') },
-                    { id: 'history', label: 'Historial', onClick: () => setActiveTab('history') },
-                    { id: 'planes', label: 'Planes', onClick: () => setActiveTab('planes') },
+                    { id: 'pagos', label: 'Pagos', onClick: () => handleTabChange('pagos') },
+                    { id: 'history', label: 'Historial', onClick: () => handleTabChange('history') },
+                    { id: 'planes', label: 'Planes', onClick: () => handleTabChange('planes') },
                 ]}
             >
                 {activeTab === 'pagos' && (
@@ -304,12 +372,30 @@ export default function PagosPage() {
                                 </SheetFooter>
                             </SheetContent>
                         </Sheet>
+
+                        <Button
+                            variant="outline"
+                            className="h-10 px-4 gap-2 border-gray-200 rounded-xl hover:bg-gray-50 shrink-0"
+                            onClick={handleBulkReminders}
+                            disabled={bulkReminding || clientsToRemind.length === 0}
+                            title="Enviar recordatorios de pago para la vista actual"
+                        >
+                            {bulkReminding ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                                <Mail className="h-4 w-4" />
+                            )}
+                            <span className="hidden md:inline">Recordar</span>
+                            <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
+                                {clientsToRemind.length}
+                            </Badge>
+                        </Button>
                     </div>
                 )}
             </DashboardTopBar>
 
             <main className="flex-1 p-4 md:p-8 pt-6">
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-6">
+                <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full space-y-6">
 
                     <TabsContent value="pagos" className="space-y-6">
                         {/* Compact Summary Bar */}
@@ -444,6 +530,23 @@ export default function PagosPage() {
                                                         </TableCell>
                                                         <TableCell className="text-right">
                                                             <div className="flex justify-end items-center gap-2">
+                                                                {(client.payment_status === 'pending' || client.payment_status === 'overdue') && (
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant="ghost"
+                                                                        className="h-8 w-8 p-0"
+                                                                        onClick={() => handleSendReminder(client)}
+                                                                        title="Enviar recordatorio"
+                                                                        disabled={remindingClientId === client.id}
+                                                                    >
+                                                                        {remindingClientId === client.id ? (
+                                                                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                                                        ) : (
+                                                                            <Mail className="h-4 w-4 text-muted-foreground" />
+                                                                        )}
+                                                                    </Button>
+                                                                )}
+
                                                                 {/* Register Payment Button: Only for Pending/Overdue */}
                                                                 {(client.payment_status === 'pending' || client.payment_status === 'overdue') ? (
                                                                     <Button
@@ -466,7 +569,10 @@ export default function PagosPage() {
                                                                         variant="ghost"
                                                                         className="h-8 w-8 p-0"
                                                                         title="Ver detalles"
-                                                                        disabled // Placeholder for "Ver pago" action
+                                                                        onClick={() => {
+                                                                            setHistoryClientFilter({ id: client.id, name: client.full_name })
+                                                                            handleTabChange('history')
+                                                                        }}
                                                                     >
                                                                         <Eye className="h-4 w-4 text-muted-foreground" />
                                                                     </Button>
@@ -517,7 +623,12 @@ export default function PagosPage() {
                     </TabsContent>
 
                     <TabsContent value="history">
-                        {activeTab === 'history' && <HistoryTab />}
+                        {activeTab === 'history' && (
+                            <HistoryTab
+                                clientFilter={historyClientFilter}
+                                onClearClientFilter={() => setHistoryClientFilter(null)}
+                            />
+                        )}
                     </TabsContent>
 
                     <TabsContent value="planes">

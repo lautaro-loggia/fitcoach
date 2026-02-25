@@ -107,7 +107,19 @@ export async function createWorkoutAction(data: {
 
 export async function deleteWorkoutAction(workoutId: string) {
     const supabase = await createClient()
-    const { error } = await supabase.from('workouts').delete().eq('id', workoutId)
+    const {
+        data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { error: 'No autorizado' }
+    }
+
+    const { error } = await supabase
+        .from('workouts')
+        .delete()
+        .eq('id', workoutId)
+        .eq('trainer_id', user.id)
 
     if (error) {
         console.error("Error deleting workout:", error)
@@ -120,11 +132,21 @@ export async function deleteWorkoutAction(workoutId: string) {
 
 export async function updateWorkoutAction(id: string, name: string, description: string, exercises: any[]) {
     const supabase = await createClient()
+    const {
+        data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { error: 'No autorizado' }
+    }
+
     const { error } = await supabase.from('workouts').update({
         name,
         description,
         structure: exercises
-    }).eq('id', id)
+    })
+        .eq('id', id)
+        .eq('trainer_id', user.id)
 
     if (error) return { error: "Error actualizando rutina" }
     revalidatePath('/workouts')
@@ -169,6 +191,13 @@ export async function createExerciseAction(data: {
     video_url?: string
 }) {
     const supabase = await createClient()
+    const {
+        data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { error: 'No autorizado' }
+    }
 
     if (!data.name?.trim()) {
         return { error: 'El nombre es requerido' }

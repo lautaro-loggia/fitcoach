@@ -2,11 +2,14 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { createNotification } from '@/lib/notifications'
+import { dateOnlyToLocalNoon, diffDateStringsInDays, formatDateInART, getTodayString } from '@/lib/utils'
 
 export interface ClientWithPayment {
     id: string
     full_name: string
     email: string | null
+    phone: string | null
     plan_name: string | null
     price_monthly: number | null
     billing_frequency: string
@@ -37,6 +40,113 @@ export interface PaymentStats {
     pendingClients: number
     overdueClients: number
     paidMonthlyIncome: number
+}
+
+const PENDING_DAYS_THRESHOLD = 7
+
+function calculateNextDueDate(paidAt: string, billingFrequency: string | null | undefined): string {
+    const [year, month, day] = paidAt.split('-').map(Number)
+    const safeFrequency = billingFrequency || 'monthly'
+
+    // Frequencies based on fixed days
+    if (safeFrequency === 'weekly' || safeFrequency === 'biweekly') {
+        const daysToAdd = safeFrequency === 'weekly' ? 7 : 14
+        const target = new Date(Date.UTC(year, month - 1, day + daysToAdd))
+        return `${target.getUTCFullYear()}-${String(target.getUTCMonth() + 1).padStart(2, '0')}-${String(target.getUTCDate()).padStart(2, '0')}`
+    }
+
+    // Month-based frequencies
+    const monthsToAdd = safeFrequency === 'quarterly'
+        ? 3
+        : safeFrequency === 'biannual'
+            ? 6
+            : 1
+
+    let targetMonth = month + monthsToAdd
+    const targetYear = year + Math.floor((targetMonth - 1) / 12)
+    targetMonth = ((targetMonth - 1) % 12) + 1
+
+    const lastDayOfTargetMonth = new Date(Date.UTC(targetYear, targetMonth, 0)).getUTCDate()
+    const targetDay = Math.min(day, lastDayOfTargetMonth)
+
+    return `${targetYear}-${String(targetMonth).padStart(2, '0')}-${String(targetDay).padStart(2, '0')}`
+}
+
+function calculatePaymentStatus(nextDueDate: string | null): 'paid' | 'pending' | 'overdue' {
+    if (!nextDueDate) return 'pending'
+
+    const daysUntilDue = diffDateStringsInDays(nextDueDate, getTodayString())
+
+    if (daysUntilDue < 0) return 'overdue'
+    if (daysUntilDue <= PENDING_DAYS_THRESHOLD) return 'pending'
+    return 'paid'
+}
+
+async function syncClientPaymentState(
+    supabase: Awaited<ReturnType<typeof createClient>>,
+    clientId: string,
+    trainerId: string
+) {
+    const { data: client, error: clientError } = await supabase
+        .from('clients')
+        .select('billing_frequency')
+        .eq('id', clientId)
+        .eq('trainer_id', trainerId)
+        .single()
+
+    if (clientError) {
+        throw clientError
+    }
+
+    const { data: latestPayment, error: paymentError } = await supabase
+        .from('payments')
+        .select('paid_at, amount, created_at')
+        .eq('client_id', clientId)
+        .eq('trainer_id', trainerId)
+        .order('paid_at', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+    if (paymentError) {
+        throw paymentError
+    }
+
+    if (!latestPayment) {
+        const { error: clearError } = await supabase
+            .from('clients')
+            .update({
+                last_paid_at: null,
+                next_due_date: null,
+                payment_status: 'pending'
+            })
+            .eq('id', clientId)
+            .eq('trainer_id', trainerId)
+
+        if (clearError) {
+            throw clearError
+        }
+
+        return
+    }
+
+    const nextDueDate = calculateNextDueDate(latestPayment.paid_at, client.billing_frequency)
+    const paymentStatus = calculatePaymentStatus(nextDueDate)
+
+    const { error: updateError } = await supabase
+        .from('clients')
+        .update({
+            last_paid_at: latestPayment.paid_at,
+            next_due_date: nextDueDate,
+            payment_status: paymentStatus,
+            price_monthly: latestPayment.amount
+        })
+        .eq('id', clientId)
+        .eq('trainer_id', trainerId)
+
+    if (updateError) {
+        throw updateError
+    }
 }
 
 // Get all clients with payment info
@@ -170,71 +280,24 @@ export async function registerPayment(data: {
             return { error: `Error al insertar pago: ${paymentError.message}` }
         }
 
-        // Get client to calculate next due date
-        const { data: client, error: clientError } = await supabase
-            .from('clients')
-            .select('billing_frequency')
-            .eq('id', data.clientId)
-            .single()
-
-        if (clientError) {
-            console.error('Client fetch error:', clientError)
-            return { error: `Error al obtener cliente: ${clientError.message}` }
-        }
-
-        // Calculate next due date
-        // Parse the paid date components directly from the string (YYYY-MM-DD format)
-        const [year, month, day] = data.paidAt.split('-').map(Number)
-
-        let nextYear = year
-        let nextMonth = month
-        let nextDay = day
-
-        switch (client.billing_frequency) {
-            case 'weekly':
-                // For weekly: add 7 days using Date object but extract components immediately
-                const weeklyDate = new Date(Date.UTC(year, month - 1, day + 7))
-                nextYear = weeklyDate.getUTCFullYear()
-                nextMonth = weeklyDate.getUTCMonth() + 1
-                nextDay = weeklyDate.getUTCDate()
-                break
-            case 'monthly':
-            default:
-                // For monthly: simply add 1 month, handling year rollover
-                // The rule is: payment on day X → next due on day X of next month
-                // If day X doesn't exist in next month (e.g., 31st → February), use last day of month
-                nextMonth = month + 1
-                if (nextMonth > 12) {
-                    nextMonth = 1
-                    nextYear = year + 1
-                }
-                // Check if the day exists in the target month
-                // Create a date with day 0 of the next-next month to get the last day of target month
-                const lastDayOfNextMonth = new Date(Date.UTC(nextYear, nextMonth, 0)).getUTCDate()
-                nextDay = Math.min(day, lastDayOfNextMonth)
-                break
-        }
-
-        // Format the next due date as YYYY-MM-DD string directly (no Date object conversion needed)
-
-        // Update client
-        const { error: updateError } = await supabase
+        // Update selected plan (can be null for "Personalizado")
+        const { error: planUpdateError } = await supabase
             .from('clients')
             .update({
-                last_paid_at: data.paidAt,
-                next_due_date: `${nextYear}-${String(nextMonth).padStart(2, '0')}-${String(nextDay).padStart(2, '0')}`,
-                payment_status: 'paid',
                 plan_id: data.planId || null,
-                price_monthly: data.amount
             })
             .eq('id', data.clientId)
+            .eq('trainer_id', user.id)
 
-        if (updateError) {
-            console.error('Client update error:', updateError)
-            return { error: `Error al actualizar cliente: ${updateError.message}` }
+        if (planUpdateError) {
+            console.error('Client plan update error:', planUpdateError)
+            return { error: `Error al actualizar plan del cliente: ${planUpdateError.message}` }
         }
 
+        await syncClientPaymentState(supabase, data.clientId, user.id)
+
         revalidatePath('/pagos')
+        revalidatePath('/')
         return { success: true }
     } catch (error) {
         console.error('Unexpected error in registerPayment:', error)
@@ -276,28 +339,9 @@ export async function updatePaymentStatuses() {
 
     if (error || !clients) return
 
-    const today = new Date()
-    const PENDING_DAYS_THRESHOLD = 7
-
     // Update each client's status based on their due date
     for (const client of clients) {
-        if (!client.next_due_date) continue
-
-        const dueDate = new Date(client.next_due_date)
-        const daysUntilDue = Math.floor((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-
-        let newStatus: string
-
-        if (daysUntilDue < 0) {
-            // Vencido
-            newStatus = 'overdue'
-        } else if (daysUntilDue <= PENDING_DAYS_THRESHOLD) {
-            // Pendiente (vence en 7 días o menos)
-            newStatus = 'pending'
-        } else {
-            // Pagado (vence en más de 7 días)
-            newStatus = 'paid'
-        }
+        const newStatus = calculatePaymentStatus(client.next_due_date)
 
         // Solo actualizar si el estado cambió
         if (client.payment_status !== newStatus) {
@@ -311,47 +355,81 @@ export async function updatePaymentStatuses() {
     revalidatePath('/pagos')
 }
 
-// Send payment reminder (placeholder)
+// Send payment reminder
 export async function sendPaymentReminder(clientId: string) {
-    const supabase = await createClient()
+    try {
+        const supabase = await createClient()
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Not authenticated')
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return { error: 'No estás autenticado' }
 
-    // Get client details
-    const { data: client } = await supabase
-        .from('clients')
-        .select('full_name, email')
-        .eq('id', clientId)
-        .single()
+        const { data: client, error } = await supabase
+            .from('clients')
+            .select('full_name, user_id, payment_status, next_due_date')
+            .eq('id', clientId)
+            .eq('trainer_id', user.id)
+            .single()
 
-    // Log reminder (in production, this would send an actual email/notification)
-    console.log(`[REMINDER] Sending payment reminder to ${client?.full_name} (${client?.email})`)
+        if (error || !client) {
+            return { error: 'No se encontró el asesorado' }
+        }
 
-    return { success: true, message: `Recordatorio enviado a ${client?.full_name}` }
+        if (!client.user_id) {
+            return { error: 'El asesorado no tiene usuario vinculado para notificar' }
+        }
+
+        const firstName = client.full_name?.split(' ')[0] || 'tu'
+        const dueDateLabel = client.next_due_date
+            ? dateOnlyToLocalNoon(client.next_due_date).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })
+            : null
+
+        const isOverdue = client.payment_status === 'overdue'
+        const title = isOverdue ? 'Pago vencido' : 'Recordatorio de pago'
+        const body = isOverdue
+            ? `Hola ${firstName}, tenés un pago vencido${dueDateLabel ? ` (vencía el ${dueDateLabel})` : ''}.`
+            : `Hola ${firstName}, te recordamos tu próximo vencimiento${dueDateLabel ? ` (${dueDateLabel})` : ''}.`
+
+        await createNotification({
+            userId: client.user_id,
+            type: 'payment_registered',
+            title,
+            body,
+            data: {
+                url: '/dashboard'
+            }
+        })
+
+        return { success: true, message: `Recordatorio enviado a ${client.full_name}` }
+    } catch (error) {
+        console.error('sendPaymentReminder error:', error)
+        return { error: 'No se pudo enviar el recordatorio' }
+    }
 }
 
 // Send bulk reminders
 export async function sendBulkReminders(clientIds: string[]) {
-    const supabase = await createClient()
+    try {
+        const supabase = await createClient()
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Not authenticated')
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return { error: 'No estás autenticado' }
 
-    let successCount = 0
+        let sent = 0
+        let failed = 0
 
-    for (const clientId of clientIds) {
-        try {
-            await sendPaymentReminder(clientId)
-            successCount++
-        } catch (error) {
-            console.error(`Failed to send reminder to client ${clientId}:`, error)
+        for (const clientId of clientIds) {
+            const result = await sendPaymentReminder(clientId)
+            if (result?.success) {
+                sent += 1
+            } else {
+                failed += 1
+            }
         }
-    }
 
-    return {
-        success: true,
-        message: `Recordatorios enviados a ${successCount} de ${clientIds.length} clientes`
+        return { success: true, sent, failed, message: `Recordatorios enviados a ${sent} de ${clientIds.length} asesorados` }
+    } catch (error) {
+        console.error('sendBulkReminders error:', error)
+        return { error: 'No se pudieron enviar los recordatorios masivos' }
     }
 }
 
@@ -462,7 +540,7 @@ export async function updatePlan(planId: string, updates: {
         // If price was updated, update all clients with this plan
         if (updates.price_monthly !== undefined) {
             // First get the clients to notify them if needed
-            let clientsToNotify: any[] = []
+            let clientsToNotify: Array<{ id: string; full_name: string | null; email: string | null }> = []
 
             if (notifyClients) {
                 const { data: clients } = await supabase
@@ -662,7 +740,18 @@ export async function updatePayment(paymentId: string, data: {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return { error: 'Not authenticated' }
 
-        const updates: any = {}
+        const { data: existingPayment, error: existingPaymentError } = await supabase
+            .from('payments')
+            .select('client_id')
+            .eq('id', paymentId)
+            .eq('trainer_id', user.id)
+            .single()
+
+        if (existingPaymentError || !existingPayment) {
+            return { error: 'Pago no encontrado' }
+        }
+
+        const updates: Record<string, unknown> = {}
         if (data.amount !== undefined) updates.amount = data.amount
         if (data.method !== undefined) updates.method = data.method
         if (data.note !== undefined) updates.note = data.note
@@ -679,6 +768,8 @@ export async function updatePayment(paymentId: string, data: {
             return { error: 'Error al actualizar el pago' }
         }
 
+        await syncClientPaymentState(supabase, existingPayment.client_id, user.id)
+
         revalidatePath('/pagos')
         revalidatePath('/')
         return { success: true }
@@ -694,6 +785,17 @@ export async function deletePayment(paymentId: string) {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return { error: 'Not authenticated' }
 
+        const { data: existingPayment, error: existingPaymentError } = await supabase
+            .from('payments')
+            .select('client_id')
+            .eq('id', paymentId)
+            .eq('trainer_id', user.id)
+            .single()
+
+        if (existingPaymentError || !existingPayment) {
+            return { error: 'Pago no encontrado' }
+        }
+
         const { error } = await supabase
             .from('payments')
             .delete()
@@ -704,6 +806,8 @@ export async function deletePayment(paymentId: string) {
             console.error('Delete payment error:', error)
             return { error: 'Error al eliminar el pago' }
         }
+
+        await syncClientPaymentState(supabase, existingPayment.client_id, user.id)
 
         revalidatePath('/pagos')
         revalidatePath('/') // Update dashboard income stats
@@ -727,60 +831,68 @@ export async function getIncomeHistory(startDate?: Date, endDate?: Date): Promis
     if (!user) return []
 
     // Default to last 6 months if no dates provided
-    let fromDate: Date
-    let toDate: Date
+    let fromDateStr: string
+    let toDateStr: string
 
     if (startDate && endDate) {
-        fromDate = startDate
-        toDate = endDate
+        fromDateStr = getTodayString(startDate)
+        toDateStr = getTodayString(endDate)
     } else {
-        fromDate = new Date()
-        fromDate.setMonth(fromDate.getMonth() - 5)
-        fromDate.setDate(1)
-        toDate = new Date()
+        const base = new Date()
+        base.setMonth(base.getMonth() - 5)
+        fromDateStr = `${getTodayString(base).slice(0, 7)}-01`
+        toDateStr = getTodayString()
     }
 
     const { data: payments } = await supabase
         .from('payments')
         .select('amount, paid_at')
         .eq('trainer_id', user.id)
-        .gte('paid_at', fromDate.toISOString().split('T')[0])
-        .lte('paid_at', toDate.toISOString().split('T')[0])
+        .gte('paid_at', fromDateStr)
+        .lte('paid_at', toDateStr)
         .order('paid_at', { ascending: true })
 
     if (!payments) return []
 
-    const monthNames = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+    const buckets: { key: string; month: string; amount: number }[] = []
+    const [startYearRaw, startMonthRaw] = fromDateStr.split('-')
+    const [endYearRaw, endMonthRaw] = toDateStr.split('-')
 
-    // Generate filtered results grouped by month
-    // We'll iterate from fromDate to toDate month by month
-    const buckets: { month: string; fullDate: Date; amount: number }[] = []
+    let loopYear = Number(startYearRaw)
+    let loopMonth = Number(startMonthRaw)
+    const endYear = Number(endYearRaw)
+    const endMonth = Number(endMonthRaw)
 
-    const current = new Date(fromDate)
-    current.setDate(1) // Start at first of month to avoid skipping if today is 31st and next month is Feb
+    while (loopYear < endYear || (loopYear === endYear && loopMonth <= endMonth)) {
+        const monthLabelRaw = formatDateInART(
+            new Date(Date.UTC(loopYear, loopMonth - 1, 15)),
+            { month: 'short' }
+        )
 
-    while (current <= toDate || (current.getMonth() === toDate.getMonth() && current.getFullYear() === toDate.getFullYear())) {
         buckets.push({
-            month: monthNames[current.getMonth()],
-            fullDate: new Date(current),
+            key: `${loopYear}-${String(loopMonth).padStart(2, '0')}`,
+            month: monthLabelRaw.charAt(0).toUpperCase() + monthLabelRaw.slice(1),
             amount: 0
         })
-        current.setMonth(current.getMonth() + 1)
+
+        loopMonth += 1
+        if (loopMonth > 12) {
+            loopMonth = 1
+            loopYear += 1
+        }
     }
 
     payments.forEach(payment => {
-        const date = new Date(payment.paid_at + 'T12:00:00')
-        const match = buckets.find(b =>
-            b.fullDate.getMonth() === date.getMonth() &&
-            b.fullDate.getFullYear() === date.getFullYear()
-        )
+        const [year, month] = payment.paid_at.split('-')
+        const key = `${year}-${month}`
+        const match = buckets.find((bucket) => bucket.key === key)
         if (match) {
             match.amount += Number(payment.amount)
         }
     })
 
     return buckets.map(b => ({
-        month: b.month.charAt(0).toUpperCase() + b.month.slice(1),
+        month: b.month,
         amount: b.amount
     }))
 }

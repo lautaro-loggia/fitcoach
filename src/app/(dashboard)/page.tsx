@@ -9,6 +9,7 @@ import { UrgentActions } from '@/components/dashboard/urgent-actions'
 import { redirect } from 'next/navigation'
 import { FloatingActionButton } from '@/components/ui/fab'
 import { CoachOnboardingWrapper } from '@/components/onboarding/coach-onboarding-wrapper'
+import { getARTHour } from '@/lib/utils'
 
 
 
@@ -42,7 +43,7 @@ export default async function DashboardPage() {
 
     // Function to get greeting based on time of day
     const getGreeting = () => {
-        const hour = new Date().getHours()
+        const hour = getARTHour()
         if (hour >= 6 && hour < 12) return 'Buenos días'
         if (hour >= 12 && hour < 20) return 'Buenas tardes'
         return 'Buenas noches'
@@ -110,13 +111,13 @@ export default async function DashboardPage() {
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                                 <div className="h-2 w-2 rounded-full bg-red-500" />
-                                Pagos vencidos
+                                Pagos por cobrar
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-4 pt-0">
                             <div className="text-2xl md:text-4xl font-bold text-foreground">{stats.pendingPaymentsCount}</div>
                             <p className="text-[10px] md:text-xs font-medium text-red-500 mt-1">
-                                Requieren atención
+                                Pendientes y vencidos
                             </p>
                         </CardContent>
                     </Card>

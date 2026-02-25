@@ -7,6 +7,7 @@ import { Plus, Edit, Trash2, Users, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { getPlans, deletePlan, getClientCountByPlan, createPlan, updatePlan, type Plan } from '@/app/(dashboard)/pagos/actions'
 import { PlanDialog } from '@/components/plans/plan-dialog'
+import { useConfirm } from '@/hooks/use-confirm'
 
 export function PlanesTab() {
     const [plans, setPlans] = useState<Plan[]>([])
@@ -15,6 +16,7 @@ export function PlanesTab() {
     const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null)
     const [deletingPlan, setDeletingPlan] = useState<string | null>(null)
     const [clientCounts, setClientCounts] = useState<Record<string, number>>({})
+    const { confirm, ConfirmDialog } = useConfirm()
 
     useEffect(() => {
         loadData()
@@ -56,7 +58,11 @@ export function PlanesTab() {
     }
 
     async function handleDelete(plan: Plan) {
-        if (!confirm(`¿Estás seguro de eliminar el plan "${plan.name}"?`)) {
+        const isConfirmed = await confirm(
+            "¿Eliminar plan?",
+            `¿Estás seguro de eliminar el plan "${plan.name}"?`
+        )
+        if (!isConfirmed) {
             return
         }
 
@@ -206,6 +212,7 @@ export function PlanesTab() {
                 plan={selectedPlan}
                 onSuccess={loadData}
             />
+            <ConfirmDialog />
         </div>
     )
 

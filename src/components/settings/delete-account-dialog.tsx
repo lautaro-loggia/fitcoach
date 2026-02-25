@@ -16,6 +16,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface DeleteAccountDialogProps {
     open: boolean
@@ -32,7 +33,7 @@ export function DeleteAccountDialog({ open, onOpenChange, userId, avatarUrl }: D
 
     const handleDelete = async () => {
         if (confirmText !== 'ELIMINAR') {
-            alert('Debes escribir "ELIMINAR" para confirmar')
+            toast.error('Debes escribir "ELIMINAR" para confirmar')
             return
         }
 
@@ -51,7 +52,7 @@ export function DeleteAccountDialog({ open, onOpenChange, userId, avatarUrl }: D
             if (error) {
                 // If RPC doesn't exist, we need to use admin API or let the user know
                 console.error('Error deleting user:', error)
-                alert('Error al eliminar la cuenta. Por favor, contacta al soporte.')
+                toast.error('Error al eliminar la cuenta. Por favor, contacta al soporte.')
                 return
             }
 
@@ -62,7 +63,7 @@ export function DeleteAccountDialog({ open, onOpenChange, userId, avatarUrl }: D
             router.push('/login')
         } catch (error) {
             console.error('Error during account deletion:', error)
-            alert('Ocurrió un error al eliminar la cuenta')
+            toast.error('Ocurrió un error al eliminar la cuenta')
         } finally {
             setIsDeleting(false)
         }

@@ -9,6 +9,7 @@ import { SetRow } from './set-row'
 import { RestTimer } from './rest-timer'
 import { ExerciseInfoDialog } from './exercise-info-dialog'
 import { Info } from 'lucide-react'
+import { useConfirm } from '@/hooks/use-confirm'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -56,6 +57,7 @@ export function ExerciseCheckinMobile({
     const [sets, setSets] = useState(exercise.sets_detail || [])
     const [loading, setLoading] = useState(true)
     const [autoStartTimer, setAutoStartTimer] = useState(false)
+    const { confirm, ConfirmDialog } = useConfirm()
 
     // Initial load
     useEffect(() => {
@@ -128,7 +130,8 @@ export function ExerciseCheckinMobile({
     }
 
     const handleDeleteSet = async (setLogId: string, setNumber: number) => {
-        if (!confirm('¿Eliminar esta serie?')) return
+        const isConfirmed = await confirm('¿Eliminar esta serie?', '¿Seguro que deseas eliminar esta serie?')
+        if (!isConfirmed) return
 
         await deleteSetLog(setLogId)
         setSetLogs(prev => prev.filter(s => s.id !== setLogId))
@@ -295,6 +298,7 @@ export function ExerciseCheckinMobile({
                     Agregar Serie
                 </Button>
             </div>
+            <ConfirmDialog />
         </div>
     )
 }

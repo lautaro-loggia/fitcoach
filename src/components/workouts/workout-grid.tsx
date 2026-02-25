@@ -8,6 +8,7 @@ import { deleteWorkoutAction } from "@/app/(dashboard)/workouts/actions"
 import { useRouter } from "next/navigation"
 import { Dumbbell01Icon } from "hugeicons-react"
 import { WorkoutDialog } from "./add-workout-dialog"
+import { useConfirm } from "@/hooks/use-confirm"
 
 interface WorkoutGridProps {
     workouts: any[]
@@ -20,9 +21,14 @@ export function WorkoutGrid({ workouts }: WorkoutGridProps) {
     const [detailWorkout, setDetailWorkout] = useState<any | null>(null)
     const [assignWorkout, setAssignWorkout] = useState<any | null>(null)
     const [editingWorkout, setEditingWorkout] = useState<any | null>(null)
+    const { confirm, ConfirmDialog } = useConfirm()
 
     const handleDelete = async (id: string) => {
-        if (confirm("¿Estás seguro de eliminar esta rutina? Se perderá la plantilla (no afectará a las ya asignadas).")) {
+        const isConfirmed = await confirm(
+            "¿Eliminar rutina?",
+            "¿Estás seguro de eliminar esta rutina? Se perderá la plantilla (no afectará a las ya asignadas)."
+        )
+        if (isConfirmed) {
             await deleteWorkoutAction(id)
             router.refresh()
         }
@@ -96,6 +102,8 @@ export function WorkoutGrid({ workouts }: WorkoutGridProps) {
                     trigger={<span className="hidden" />} // Hidden trigger as it's controlled
                 />
             )}
+
+            <ConfirmDialog />
         </>
     )
 }

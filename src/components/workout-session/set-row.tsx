@@ -35,15 +35,15 @@ export function SetRow({
     onSave,
     onDelete,
 }: SetRowProps) {
-    const [weight, setWeight] = useState(currentWeight ?? defaultWeight)
-    const [reps, setReps] = useState(currentReps ?? defaultReps)
+    const [weight, setWeight] = useState<string>((currentWeight ?? defaultWeight).toString())
+    const [reps, setReps] = useState<string>((currentReps ?? defaultReps).toString())
     const [isCompleted, setIsCompleted] = useState(initialCompleted)
     const [isEditing, setIsEditing] = useState(!initialCompleted)
 
     // Sync with props changes
     useEffect(() => {
-        if (currentWeight !== undefined) setWeight(currentWeight)
-        if (currentReps !== undefined) setReps(currentReps)
+        if (currentWeight !== undefined) setWeight(currentWeight.toString())
+        if (currentReps !== undefined) setReps(currentReps.toString())
         setIsCompleted(initialCompleted)
         setIsEditing(!initialCompleted)
     }, [currentWeight, currentReps, initialCompleted])
@@ -52,7 +52,7 @@ export function SetRow({
         const newCompleted = !isCompleted
         setIsCompleted(newCompleted)
         setIsEditing(!newCompleted)
-        onSave(reps, weight, newCompleted)
+        onSave(parseInt(reps) || 0, parseFloat(weight) || 0, newCompleted)
     }
 
     const handleEdit = () => {
@@ -61,20 +61,30 @@ export function SetRow({
     }
 
     const handleWeightChange = (value: string) => {
-        const num = parseFloat(value) || 0
-        setWeight(num)
+        setWeight(value)
     }
 
     const handleRepsChange = (value: string) => {
-        const num = parseInt(value) || 0
-        setReps(num)
+        setReps(value)
+    }
+
+    const handleWeightFocus = () => {
+        if (weight === '0') setWeight('')
+    }
+
+    const handleRepsFocus = () => {
+        if (reps === '0') setReps('')
     }
 
     const handleBlur = () => {
         // Auto-save on blur if values changed
         if (!isCompleted) {
-            onSave(reps, weight, false)
+            onSave(parseInt(reps) || 0, parseFloat(weight) || 0, false)
         }
+
+        // Restore 0 if left empty
+        if (weight === '') setWeight('0')
+        if (reps === '') setReps('0')
     }
 
     return (
@@ -98,6 +108,7 @@ export function SetRow({
                     type="number"
                     value={weight}
                     onChange={(e) => handleWeightChange(e.target.value)}
+                    onFocus={handleWeightFocus}
                     onBlur={handleBlur}
                     disabled={!isEditing}
                     step={0.5}
@@ -116,6 +127,7 @@ export function SetRow({
                     type="number"
                     value={reps}
                     onChange={(e) => handleRepsChange(e.target.value)}
+                    onFocus={handleRepsFocus}
                     onBlur={handleBlur}
                     disabled={!isEditing}
                     min={0}

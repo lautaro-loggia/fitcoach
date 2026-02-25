@@ -41,6 +41,7 @@ import {
     AlertTriangle,
 } from 'lucide-react'
 import Link from 'next/link'
+import { toast } from 'sonner'
 import {
     updateRecipeAction,
     duplicateRecipeAction,
@@ -258,7 +259,7 @@ export function RecipeEditor({ recipe, userId, isAdmin = false }: RecipeEditorPr
         })
 
         if (result.error) {
-            alert(result.error)
+            toast.error(result.error)
         } else {
             router.push('/recipes')
         }
@@ -270,7 +271,7 @@ export function RecipeEditor({ recipe, userId, isAdmin = false }: RecipeEditorPr
         setIsDuplicating(true)
         const result = await duplicateRecipeAction(recipe.id)
         if (result.error) {
-            alert(result.error)
+            toast.error(result.error)
         } else if (result.recipe) {
             router.push(`/recipes/${result.recipe.id}`)
         }
@@ -282,7 +283,7 @@ export function RecipeEditor({ recipe, userId, isAdmin = false }: RecipeEditorPr
         setIsDeleting(true)
         const result = await deleteRecipeAction(recipe.id)
         if (result.error) {
-            alert(result.error)
+            toast.error(result.error)
         } else {
             router.push('/recipes')
         }
@@ -310,7 +311,7 @@ export function RecipeEditor({ recipe, userId, isAdmin = false }: RecipeEditorPr
 
             if (uploadError) {
                 console.error('Upload error:', uploadError)
-                alert(`Error al subir la imagen: ${uploadError.message}`)
+                toast.error(`Error al subir la imagen: ${uploadError.message}`)
                 setIsUploading(false)
                 return
             }
@@ -322,7 +323,7 @@ export function RecipeEditor({ recipe, userId, isAdmin = false }: RecipeEditorPr
             setImageUrl(publicUrl)
         } catch (error) {
             console.error('Error handling image:', error)
-            alert('Error al procesar la imagen')
+            toast.error('Error al procesar la imagen')
         } finally {
             setIsUploading(false)
         }
@@ -347,44 +348,46 @@ export function RecipeEditor({ recipe, userId, isAdmin = false }: RecipeEditorPr
             )}
 
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <Button variant="outline" size="icon" asChild>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3 sm:gap-4 w-full">
+                    <Button variant="outline" size="icon" className="shrink-0" asChild>
                         <Link href="/recipes">
                             <ArrowLeft className="h-4 w-4" />
                         </Link>
                     </Button>
-                    <div>
-                        <h2 className="text-2xl font-bold">Editar Receta</h2>
-                        <p className="text-muted-foreground text-sm">
+                    <div className="flex-1 min-w-0">
+                        <h2 className="text-xl sm:text-2xl font-bold truncate">Editar Receta</h2>
+                        <p className="text-muted-foreground text-xs sm:text-sm truncate sm:whitespace-normal">
                             Modificá los ingredientes y la información de la receta
                         </p>
                     </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 w-full sm:w-auto">
                     <Button
                         variant="outline"
                         onClick={handleDuplicate}
                         disabled={isDuplicating}
+                        className="flex-1 sm:flex-none"
                     >
                         {isDuplicating ? (
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            <Loader2 className="h-4 w-4 animate-spin sm:mr-2" />
                         ) : (
-                            <Copy className="h-4 w-4 mr-2" />
+                            <Copy className="h-4 w-4 sm:mr-2" />
                         )}
-                        Duplicar
+                        <span className="hidden sm:inline">Duplicar</span>
                     </Button>
                     <Button
                         onClick={handleSave}
                         disabled={isSaving || isUploading || !canEdit}
-                        className="bg-primary"
+                        className="bg-primary flex-1 sm:flex-none"
                     >
                         {isSaving || isUploading ? (
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            <Loader2 className="h-4 w-4 animate-spin sm:mr-2" />
                         ) : (
-                            <Save className="h-4 w-4 mr-2" />
+                            <Save className="h-4 w-4 sm:mr-2" />
                         )}
-                        {isUploading ? 'Subiendo...' : 'Guardar cambios'}
+                        <span className="hidden sm:inline">{isUploading ? 'Subiendo...' : 'Guardar cambios'}</span>
+                        <span className="sm:hidden">{isUploading ? 'Subiendo...' : 'Guardar'}</span>
                     </Button>
                 </div>
             </div>
@@ -467,7 +470,7 @@ export function RecipeEditor({ recipe, userId, isAdmin = false }: RecipeEditorPr
                             </div>
 
                             {/* Row: Meal Type, Servings, Prep Time */}
-                            <div className="grid grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <div className="space-y-2">
                                     <Label>Tipo de comida</Label>
                                     <Select value={mealType} onValueChange={setMealType}>
@@ -546,7 +549,7 @@ export function RecipeEditor({ recipe, userId, isAdmin = false }: RecipeEditorPr
                             ) : (
                                 <div className="space-y-3">
                                     {/* Header */}
-                                    <div className="grid grid-cols-12 gap-2 text-xs text-muted-foreground font-medium px-2">
+                                    <div className="hidden sm:grid grid-cols-12 gap-2 text-xs text-muted-foreground font-medium px-2">
                                         <div className="col-span-5">Ingrediente</div>
                                         <div className="col-span-2">Gramos</div>
                                         <div className="col-span-4 text-right">Macros</div>
@@ -573,18 +576,26 @@ export function RecipeEditor({ recipe, userId, isAdmin = false }: RecipeEditorPr
                                             return (
                                                 <div
                                                     key={index}
-                                                    className="grid grid-cols-12 gap-2 items-center p-2 rounded-lg border bg-muted/30"
+                                                    className="flex flex-col sm:grid sm:grid-cols-12 gap-2 sm:items-center p-3 sm:p-2 rounded-lg border bg-muted/30"
                                                 >
-                                                    <div className="col-span-5 text-sm">
-                                                        {ing.ingredient_name || 'Ingrediente sin nombre'}
+                                                    <div className="w-full sm:col-span-5 flex justify-between items-center sm:block">
+                                                        <span className="text-sm font-medium">{ing.ingredient_name || 'Ingrediente sin nombre'}</span>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8 text-destructive sm:hidden"
+                                                            onClick={() => handleRemoveIngredient(index)}
+                                                        >
+                                                            <X className="h-4 w-4" />
+                                                        </Button>
                                                     </div>
-                                                    <div className="col-span-2 text-sm text-muted-foreground">
+                                                    <div className="sm:col-span-2 text-sm text-muted-foreground">
                                                         {ing.grams}g
                                                     </div>
-                                                    <div className="col-span-4 text-right text-xs text-muted-foreground">
+                                                    <div className="sm:col-span-4 sm:text-right text-xs text-muted-foreground">
                                                         -
                                                     </div>
-                                                    <div className="col-span-1 flex justify-end">
+                                                    <div className="hidden sm:flex sm:col-span-1 justify-end">
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"
@@ -602,14 +613,14 @@ export function RecipeEditor({ recipe, userId, isAdmin = false }: RecipeEditorPr
                                         return (
                                             <div
                                                 key={index}
-                                                className="grid grid-cols-12 gap-2 items-center p-2 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                                                className="flex flex-col sm:grid sm:grid-cols-12 gap-2 sm:items-center p-3 sm:p-2 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
                                             >
-                                                <div className="col-span-5">
+                                                <div className="w-full sm:col-span-5 flex items-center justify-between gap-2">
                                                     <Select
                                                         value={ing.ingredient_code}
                                                         onValueChange={(val) => handleIngredientChange(index, val)}
                                                     >
-                                                        <SelectTrigger className="h-9">
+                                                        <SelectTrigger className="h-9 flex-1">
                                                             <SelectValue placeholder="Seleccionar ingrediente" />
                                                         </SelectTrigger>
                                                         <SelectContent>
@@ -620,13 +631,21 @@ export function RecipeEditor({ recipe, userId, isAdmin = false }: RecipeEditorPr
                                                             ))}
                                                         </SelectContent>
                                                     </Select>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 text-destructive sm:hidden shrink-0 border border-transparent shadow-sm hover:bg-destructive/10"
+                                                        onClick={() => handleRemoveIngredient(index)}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
                                                 </div>
 
-                                                <div className="col-span-2 flex gap-1">
+                                                <div className="sm:col-span-2 flex gap-1">
                                                     <Input
                                                         type="number"
                                                         min="0"
-                                                        className="h-9 w-[70px] px-2"
+                                                        className="h-9 w-[70px] sm:w-[70px] px-2"
                                                         value={ing.quantity || ing.grams || 0}
                                                         onChange={(e) =>
                                                             handleQuantityChange(index, parseFloat(e.target.value) || 0)
@@ -636,7 +655,7 @@ export function RecipeEditor({ recipe, userId, isAdmin = false }: RecipeEditorPr
                                                         value={ing.unit || 'g'}
                                                         onValueChange={(val) => handleUnitChange(index, val)}
                                                     >
-                                                        <SelectTrigger className="h-9 px-2 min-w-[60px]">
+                                                        <SelectTrigger className="h-9 px-2 min-w-[60px] flex-1 sm:flex-none">
                                                             <SelectValue />
                                                         </SelectTrigger>
                                                         <SelectContent>
@@ -653,7 +672,7 @@ export function RecipeEditor({ recipe, userId, isAdmin = false }: RecipeEditorPr
                                                         </SelectContent>
                                                     </Select>
                                                 </div>
-                                                <div className="col-span-4 text-right text-xs text-muted-foreground">
+                                                <div className="sm:col-span-4 sm:text-right text-xs text-muted-foreground mt-1 sm:mt-0 bg-muted/30 p-2 sm:p-0 rounded-md sm:bg-transparent">
                                                     {ingMacros ? (
                                                         <>
                                                             <span className="font-medium text-foreground">{Math.round(ingMacros.kcal)}</span> kcal | P: {Math.round(ingMacros.protein)}g | C: {Math.round(ingMacros.carbs)}g | G: {Math.round(ingMacros.fat)}g
@@ -662,14 +681,14 @@ export function RecipeEditor({ recipe, userId, isAdmin = false }: RecipeEditorPr
                                                         <span className="italic">Sin datos nutricionales</span>
                                                     )}
                                                 </div>
-                                                <div className="col-span-1 flex justify-end">
+                                                <div className="hidden sm:flex sm:col-span-1 justify-end">
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="h-8 w-8 text-destructive hover:text-destructive"
+                                                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                                                         onClick={() => handleRemoveIngredient(index)}
                                                     >
-                                                        <X className="h-4 w-4" />
+                                                        <Trash2 className="h-4 w-4" />
                                                     </Button>
                                                 </div>
                                             </div>

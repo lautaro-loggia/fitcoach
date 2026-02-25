@@ -16,7 +16,7 @@ interface CreateNotificationParams {
     type: NotificationType
     title: string
     body: string
-    data?: Record<string, any>
+    data?: Record<string, unknown>
 }
 
 /**
@@ -42,8 +42,8 @@ export async function createNotification({ userId, type, title, body, data }: Cr
             }
         }
 
-        // 2. Insert into notifications queue (triggers webhook → Edge Function → push)
-        const { error } = await supabase
+        // 2. Insert into notifications queue (history)
+        const { data: inserted, error } = await supabase
             .from('notifications')
             .insert({
                 user_id: userId,
@@ -53,12 +53,16 @@ export async function createNotification({ userId, type, title, body, data }: Cr
                 data: data || {},
                 read: false
             })
+            .select('id, user_id, type, title, body, data')
+            .single()
 
         if (error) {
             console.error('[createNotification] Error:', error)
             return { error }
         }
 
+        // 3. The push delivery is handled automatically by a Database Webhook 
+        // triggering the 'push' Edge Function when a new row is inserted into 'notifications'.
         return { success: true }
 
     } catch (err) {

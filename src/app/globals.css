@@ -159,3 +159,26 @@
 .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
 }
+
+@layer utilities {
+  @keyframes scan-laser {
+    0% {
+      top: 0%;
+    }
+
+    50% {
+      top: 98%;
+    }
+
+    100% {
+      top: 0%;
+    }
+  }
+
+  .animate-scan-laser {
+    animation: scan-laser 2.5s ease-in-out infinite;
+    position: absolute;
+    left: 0;
+    right: 0;
+  }
+}

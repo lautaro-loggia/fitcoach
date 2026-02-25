@@ -11,17 +11,16 @@ import { Loader2 } from 'lucide-react'
 
 interface WhatsAppSettingsFormProps {
     initialTemplate: string
-    userId: string
 }
 
-export function WhatsAppSettingsForm({ initialTemplate, userId }: WhatsAppSettingsFormProps) {
+export function WhatsAppSettingsForm({ initialTemplate }: WhatsAppSettingsFormProps) {
     const [template, setTemplate] = useState(initialTemplate || 'Hola {nombre}, recuerda que tenemos entrenamiento {hora}')
     const [loading, setLoading] = useState(false)
 
     const handleSave = async () => {
         setLoading(true)
         try {
-            const result = await updateProfileWhatsAppTemplate(userId, template)
+            const result = await updateProfileWhatsAppTemplate(template)
             if (result.error) {
                 toast.error("Error", {
                     description: result.error,

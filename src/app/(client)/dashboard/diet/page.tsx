@@ -5,7 +5,7 @@ import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { getDailyMealLogs } from '@/app/(dashboard)/clients/[id]/meal-plan-actions'
-import { getARTDate, getTodayString } from '@/lib/utils'
+import { getARTDayOfWeek, getTodayString } from '@/lib/utils'
 import { NutritionView } from '@/components/clients/nutrition/nutrition-view'
 
 export default async function DietPage() {
@@ -34,8 +34,7 @@ export default async function DietPage() {
 
     // Filter logic for "Plan del día"
     // ART Date day calculation
-    const artNow = getARTDate()
-    const jsDay = artNow.getDay()
+    const jsDay = getARTDayOfWeek()
     const dbDay = jsDay === 0 ? 7 : jsDay
 
     const todayPlan = mealPlan?.days?.find((d: any) => d.day_of_week === dbDay)
@@ -43,12 +42,6 @@ export default async function DietPage() {
     // Fetch Daily Logs using ART date string
     const todayStr = getTodayString()
     const { logs: dailyLogs } = await getDailyMealLogs(client.id, todayStr)
-
-    // Calculate Progress
-    const plannedMealNames = todayPlan?.meals?.map((m: any) => m.name) || []
-    const loggedMealTypes = new Set((dailyLogs || []).map((l: any) => l.meal_type))
-    const completedCount = plannedMealNames.filter((name: string) => loggedMealTypes.has(name)).length
-    const totalCount = plannedMealNames.length
 
     // Prepare data for the View
     // Structure expected by NutritionView: { meals: [...] }

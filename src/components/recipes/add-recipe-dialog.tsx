@@ -160,7 +160,7 @@ export function AddRecipeDialog({ open: controlledOpen, onOpenChange, onSuccess,
             setImageUrl(publicUrl)
         } catch (error: any) {
             console.error('Upload error:', error)
-            alert(`Error al subir la imagen: ${error.message}`)
+            toast.error(`Error al subir la imagen: ${error.message}`)
         } finally {
             setIsUploading(false)
         }
@@ -261,8 +261,9 @@ export function AddRecipeDialog({ open: controlledOpen, onOpenChange, onSuccess,
         }}>
             {!isControlled && (
                 <DialogTrigger asChild>
-                    <Button className="bg-primary hover:bg-primary/90 text-white">
-                        <Plus className="mr-2 h-4 w-4" /> Nueva receta
+                    <Button className="bg-primary hover:bg-primary/90 text-white px-3 sm:px-4">
+                        <Plus className="h-4 w-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Nueva receta</span>
                     </Button>
                 </DialogTrigger>
             )}

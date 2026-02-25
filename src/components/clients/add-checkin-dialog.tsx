@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { PlusSignIcon, RulerIcon, BalanceScaleIcon, Camera01Icon, Cancel01Icon } from "hugeicons-react"
+import { PlusSignIcon, Camera01Icon, Cancel01Icon } from "hugeicons-react"
 import { createCheckinAction } from "@/app/(dashboard)/clients/[id]/checkin-actions"
 import { createClient } from "@/lib/supabase/client"
+import { dateOnlyToLocalNoon, getTodayString } from "@/lib/utils"
 import Image from "next/image"
+import { toast } from "sonner"
 
 interface AddCheckinDialogProps {
     clientId: string
@@ -29,22 +31,11 @@ export function AddCheckinDialog({ clientId, autoOpen, trigger }: AddCheckinDial
     }, [autoOpen])
 
     const [loading, setLoading] = useState(false)
-    const [date, setDate] = useState(() => {
-        // Use local date to avoid UTC shifts
-        const d = new Date()
-        const year = d.getFullYear()
-        const month = String(d.getMonth() + 1).padStart(2, '0')
-        const day = String(d.getDate()).padStart(2, '0')
-        return `${year}-${month}-${day}`
-    })
+    const [date, setDate] = useState(() => getTodayString())
     const [nextCheckinDate, setNextCheckinDate] = useState(() => {
-        const next = new Date()
+        const next = dateOnlyToLocalNoon(getTodayString())
         next.setMonth(next.getMonth() + 1)
-        // Same here for next date default
-        const year = next.getFullYear()
-        const month = String(next.getMonth() + 1).padStart(2, '0')
-        const day = String(next.getDate()).padStart(2, '0')
-        return `${year}-${month}-${day}`
+        return getTodayString(next)
     })
     const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -91,7 +82,7 @@ export function AddCheckinDialog({ clientId, autoOpen, trigger }: AddCheckinDial
         // Parse numeric values safely
         const parseNum = (val: string) => val ? parseFloat(val) : undefined
 
-        let uploadedPhotoUrls: string[] = []
+        const uploadedPhotoUrls: string[] = []
 
         if (photoFile) {
             try {
@@ -99,13 +90,13 @@ export function AddCheckinDialog({ clientId, autoOpen, trigger }: AddCheckinDial
                 const fileExt = photoFile.name.split('.').pop()
                 const fileName = `${clientId}/${Date.now()}.${fileExt}`
 
-                const { error: uploadError, data } = await supabase.storage
+                const { error: uploadError } = await supabase.storage
                     .from('progress-photos')
                     .upload(fileName, photoFile)
 
                 if (uploadError) {
                     console.error('Upload error:', uploadError)
-                    alert('Error al subir la imagen')
+                    toast.error('Error al subir la imagen')
                     setLoading(false)
                     return
                 }
@@ -118,7 +109,7 @@ export function AddCheckinDialog({ clientId, autoOpen, trigger }: AddCheckinDial
 
             } catch (error) {
                 console.error('Error handling photo:', error)
-                alert('Error al procesar la imagen')
+                toast.error('Error al procesar la imagen')
                 setLoading(false)
                 return
             }
@@ -144,7 +135,7 @@ export function AddCheckinDialog({ clientId, autoOpen, trigger }: AddCheckinDial
         })
 
         if (result.error) {
-            alert(result.error)
+            toast.error(result.error)
         } else {
             setOpen(false)
             setWeight("")

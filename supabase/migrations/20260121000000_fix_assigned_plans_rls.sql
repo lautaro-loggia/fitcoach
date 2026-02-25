@@ -4,6 +4,7 @@
 -- Enable RLS just in case (though likely enabled)
 alter table public.assigned_workouts enable row level security;
 
+drop policy if exists "Clients can view their own workouts" on public.assigned_workouts;
 create policy "Clients can view their own workouts"
 on public.assigned_workouts for select
 using (
@@ -15,6 +16,7 @@ using (
 -- 2. Policies for assigned_diets
 alter table public.assigned_diets enable row level security;
 
+drop policy if exists "Clients can view their own diets" on public.assigned_diets;
 create policy "Clients can view their own diets"
 on public.assigned_diets for select
 using (

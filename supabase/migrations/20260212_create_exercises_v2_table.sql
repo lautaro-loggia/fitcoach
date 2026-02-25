@@ -1,5 +1,5 @@
 -- Create a new table to avoid conflicts with existing interrupted schema
-create table public.exercises_v2 (
+create table if not exists public.exercises_v2 (
   id text primary key, -- Original API ID
   name text not null, -- Spanish translated name
   english_name text, -- Original name for reference
@@ -15,12 +15,14 @@ create table public.exercises_v2 (
 alter table public.exercises_v2 enable row level security;
 
 -- Policies
+drop policy if exists "Allow public read access v2" on public.exercises_v2;
 create policy "Allow public read access v2"
   on public.exercises_v2
   for select
   to public
   using (true);
 
+drop policy if exists "Allow service role full access v2" on public.exercises_v2;
 create policy "Allow service role full access v2"
   on public.exercises_v2
   for all
@@ -29,4 +31,4 @@ create policy "Allow service role full access v2"
   with check (true);
 
 -- Indexes
-create index exercises_v2_name_search_idx on public.exercises_v2 using gin(to_tsvector('spanish', name));
+create index if not exists exercises_v2_name_search_idx on public.exercises_v2 using gin(to_tsvector('spanish', name));

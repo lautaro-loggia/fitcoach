@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { DietaryCard } from '../cards/dietary-card'
+import { toast } from 'sonner'
 
 interface WeeklyMealPlanContainerProps {
     client: any
@@ -43,13 +44,13 @@ export function WeeklyMealPlanContainer({ client }: WeeklyMealPlanContainerProps
         try {
             const result = await createWeeklyPlan(client.id, config)
             if (result.error) {
-                alert(result.error)
+                toast.error(result.error)
                 return
             }
             setWizardOpen(false)
             setRefreshKey(prev => prev + 1)
         } catch (error) {
-            alert('Error inesperado al crear el plan')
+            toast.error('Error inesperado al crear el plan')
         }
     }
 
@@ -92,7 +93,9 @@ export function WeeklyMealPlanContainer({ client }: WeeklyMealPlanContainerProps
 
     if (loading) return <div className="flex justify-center p-12"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div>
 
-    if (!plan) {
+    const isPlanEmpty = plan && plan.days.every((d: any) => !d.meals || d.meals.length === 0)
+
+    if (!plan || isPlanEmpty) {
         return (
             <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed rounded-lg space-y-4">
                 <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center">
@@ -102,7 +105,7 @@ export function WeeklyMealPlanContainer({ client }: WeeklyMealPlanContainerProps
                     <h3 className="text-lg font-semibold">No hay plan semanal activo</h3>
                     <p className="text-muted-foreground max-w-sm">Configura un plan semanal para organizar las comidas de tu asesorado día por día.</p>
                 </div>
-                <Button onClick={() => setWizardOpen(true)}>Crear Plan Semanal</Button>
+                <Button onClick={() => setWizardOpen(true)} className="cursor-pointer">Crear Plan Semanal</Button>
                 <PlanWizard open={wizardOpen} onOpenChange={setWizardOpen} onConfirm={handleCreatePlan} />
             </div>
         )

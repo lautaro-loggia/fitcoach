@@ -3,7 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ClientAvatar } from "@/components/clients/client-avatar"
 import { Badge } from "@/components/ui/badge"
-import { formatCurrency } from "@/lib/utils"
+import { diffDateStringsInDays, formatCurrency, getTodayString } from "@/lib/utils"
 
 interface ClientDue {
     id: string
@@ -32,13 +32,7 @@ export function UpcomingPayments({
 }: UpcomingPaymentsProps) {
 
     const getDateBadge = (dateString: string) => {
-        // Add T12:00:00 to avoid timezone issues when parsing YYYY-MM-DD dates
-        const date = new Date(dateString + 'T12:00:00')
-        const today = new Date()
-        const d = new Date(date.getFullYear(), date.getMonth(), date.getDate())
-        const t = new Date(today.getFullYear(), today.getMonth(), today.getDate())
-        const diffTime = d.getTime() - t.getTime()
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+        const diffDays = diffDateStringsInDays(dateString, getTodayString())
 
         if (diffDays < 0) {
             return (

@@ -10,11 +10,13 @@ ON CONFLICT (id) DO NOTHING;
 
 -- Policy to allow authenticated users to upload images
 -- (This might need adjustment based on specific RLS needs, assuming authenticated 'authenticated' role)
+DROP POLICY IF EXISTS "Authenticated users can upload checkin images" ON storage.objects;
 CREATE POLICY "Authenticated users can upload checkin images"
 ON storage.objects FOR INSERT
 TO authenticated
 WITH CHECK ( bucket_id = 'checkin-images' );
 
+DROP POLICY IF EXISTS "Authenticated users can view checkin images" ON storage.objects;
 CREATE POLICY "Authenticated users can view checkin images"
 ON storage.objects FOR SELECT
 TO authenticated

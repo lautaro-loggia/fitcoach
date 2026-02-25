@@ -17,6 +17,7 @@ import { Loader2 } from 'lucide-react'
 import { registerPayment, getPlans, type ClientWithPayment, type Plan } from '@/app/(dashboard)/pagos/actions'
 import { toast } from 'sonner'
 import { useEffect } from 'react'
+import { getTodayString } from '@/lib/utils'
 
 interface RegisterPaymentDialogProps {
     client: ClientWithPayment
@@ -32,7 +33,7 @@ export function RegisterPaymentDialog({
     onSuccess,
 }: RegisterPaymentDialogProps) {
     const [loading, setLoading] = useState(false)
-    const [paidAt, setPaidAt] = useState(new Date().toISOString().split('T')[0])
+    const [paidAt, setPaidAt] = useState(getTodayString())
     const [amount, setAmount] = useState(client.price_monthly?.toString() || '')
     const [method, setMethod] = useState<string>('bank_transfer')
     const [note, setNote] = useState('')
@@ -111,7 +112,7 @@ export function RegisterPaymentDialog({
             onSuccess()
 
             // Reset form
-            setPaidAt(new Date().toISOString().split('T')[0])
+            setPaidAt(getTodayString())
             setAmount(client.price_monthly?.toString() || '')
             setMethod('bank_transfer')
             setNote('')

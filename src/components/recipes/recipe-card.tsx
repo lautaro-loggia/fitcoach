@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Utensils, Copy, Clock, Users, Flame, Loader2 } from 'lucide-react'
 import { duplicateRecipeAction } from '@/app/(dashboard)/recipes/actions'
 import { AssignRecipeDialog } from './assign-recipe-dialog'
+import { toast } from 'sonner'
 
 interface RecipeIngredient {
     ingredient_code: string
@@ -128,7 +129,7 @@ export function RecipeCard({ recipe, isAdmin, onSelect, isSelected }: RecipeCard
         startDuplicating(async () => {
             const result = await duplicateRecipeAction(recipe.id)
             if (result.error) {
-                alert(result.error)
+                toast.error(result.error)
             } else if (result.recipe) {
                 router.push(`/recipes/${result.recipe.id}`)
             }
@@ -146,15 +147,14 @@ export function RecipeCard({ recipe, isAdmin, onSelect, isSelected }: RecipeCard
     return (
         <>
             <Card
-                className={`group flex flex-col justify-between overflow-hidden rounded-[20px] border bg-card text-card-foreground transition-all cursor-pointer p-4 pb-4 ${isSelected
+                className={`group flex flex-col justify-between overflow-hidden rounded-[20px] border bg-card text-card-foreground transition-all cursor-pointer p-0 ${isSelected
                     ? 'border-primary ring-2 ring-primary ring-offset-2'
                     : 'hover:border-zinc-300 hover:shadow-md'
                     }`}
                 onClick={handleCardClick}
             >
                 {/* Image Section */}
-                {/* User wants the image rounded inside the card, with badge on top right */}
-                <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-muted/50 mb-4">
+                <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted/50 shrink-0">
                     {recipe.image_url ? (
                         <Image
                             src={recipe.image_url}
@@ -168,17 +168,17 @@ export function RecipeCard({ recipe, isAdmin, onSelect, isSelected }: RecipeCard
                         </div>
                     )}
 
-                    {/* Badge */}
+                    {/* Badge Overlay */}
                     {recipe.meal_type && (
                         <Badge
-                            className={`absolute top-3 right-3 border-0 px-3 py-1 font-medium ${mealTypeColors[recipe.meal_type] || 'bg-white/90 text-zinc-800'}`}
+                            className={`absolute top-3 left-3 border-0 px-2.5 py-0.5 text-xs font-semibold shadow-sm ${mealTypeColors[recipe.meal_type] || 'bg-white/90 text-zinc-800'}`}
                         >
                             {mealTypeLabels[recipe.meal_type] || recipe.meal_type}
                         </Badge>
                     )}
                 </div>
 
-                <div className="flex flex-col flex-1 justify-between space-y-4">
+                <div className="flex flex-col flex-1 justify-between space-y-4 p-4">
                     <div className="space-y-4">
                         {/* Title */}
                         <div className="flex flex-col min-h-[4rem] justify-start">
@@ -203,26 +203,26 @@ export function RecipeCard({ recipe, isAdmin, onSelect, isSelected }: RecipeCard
 
                         {/* Macros Grid */}
                         <div className="grid grid-cols-4 gap-1.5">
-                            <div className="flex flex-col items-center justify-center rounded-xl bg-zinc-50 py-2 px-1 border border-zinc-100 dark:bg-zinc-900 dark:border-zinc-800">
+                            <div className={`flex flex-col items-center justify-center rounded-xl bg-zinc-50 py-2 px-1 border border-zinc-100 dark:bg-zinc-900 dark:border-zinc-800 ${Math.round(macros.kcal) === 0 ? 'opacity-60' : ''}`}>
                                 <span className="text-[15px] font-bold text-zinc-900 dark:text-zinc-50">{Math.round(macros.kcal)}</span>
                                 <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-500 mt-0.5">Kcal</span>
                             </div>
-                            <div className="flex flex-col items-center justify-center rounded-xl bg-blue-50 py-2 px-1 border border-blue-100/50 dark:bg-blue-900/20">
+                            <div className={`flex flex-col items-center justify-center rounded-xl bg-blue-50 py-2 px-1 border border-blue-100/50 dark:bg-blue-900/20 ${Math.round(macros.protein) === 0 ? 'opacity-60' : ''}`}>
                                 <span className="text-[15px] font-bold text-blue-600 dark:text-blue-400">{Math.round(macros.protein)}g</span>
                                 <span className="text-[9px] font-bold uppercase tracking-wider text-blue-600/70 mt-0.5">Prot</span>
                             </div>
-                            <div className="flex flex-col items-center justify-center rounded-xl bg-amber-50 py-2 px-1 border border-amber-100/50 dark:bg-amber-900/20">
+                            <div className={`flex flex-col items-center justify-center rounded-xl bg-amber-50 py-2 px-1 border border-amber-100/50 dark:bg-amber-900/20 ${Math.round(macros.carbs) === 0 ? 'opacity-60' : ''}`}>
                                 <span className="text-[15px] font-bold text-amber-600 dark:text-amber-400">{Math.round(macros.carbs)}g</span>
                                 <span className="text-[9px] font-bold uppercase tracking-wider text-amber-600/70 mt-0.5">Carbs</span>
                             </div>
-                            <div className="flex flex-col items-center justify-center rounded-xl bg-rose-50 py-2 px-1 border border-rose-100/50 dark:bg-rose-900/20">
+                            <div className={`flex flex-col items-center justify-center rounded-xl bg-rose-50 py-2 px-1 border border-rose-100/50 dark:bg-rose-900/20 ${Math.round(macros.fat) === 0 ? 'opacity-60' : ''}`}>
                                 <span className="text-[15px] font-bold text-rose-600 dark:text-rose-400">{Math.round(macros.fat)}g</span>
                                 <span className="text-[9px] font-bold uppercase tracking-wider text-rose-600/70 mt-0.5">Grasas</span>
                             </div>
                         </div>
                     </div>
 
-                    {/* Actions - Only show if not in selection mode */}
+                    {/* Actions Footer */}
                     {!onSelect && (
                         <div className="flex items-center gap-2 pt-1 mt-auto">
                             <Button
@@ -241,7 +241,7 @@ export function RecipeCard({ recipe, isAdmin, onSelect, isSelected }: RecipeCard
                                 className="h-11 w-11 rounded-xl border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-900 p-0 shrink-0 shadow-sm transition-all"
                                 onClick={handleDuplicate}
                                 disabled={isDuplicating}
-                                title="Duplicar receta"
+                                title="Duplicar"
                             >
                                 {isDuplicating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Copy className="h-4 w-4" />}
                             </Button>
@@ -255,7 +255,7 @@ export function RecipeCard({ recipe, isAdmin, onSelect, isSelected }: RecipeCard
                                         e.stopPropagation()
                                         router.push(`/recipes/${recipe.id}`)
                                     }}
-                                    title="Editar Receta"
+                                    title="Configurar"
                                 >
                                     <Utensils className="h-4 w-4" />
                                 </Button>

@@ -7,6 +7,7 @@ import { CheckinKPIs } from '@/components/clients/checkin/checkin-kpis'
 import { WeightChart } from '@/components/clients/checkin/weight-chart'
 import { CheckinHistoryNav } from '@/components/clients/checkin/checkin-history-nav'
 import { CoachNoteCard } from '@/components/clients/checkin/coach-note-card'
+import { ClientNoteCard } from '@/components/clients/checkin/client-note-card'
 import { CheckinSelector } from '@/components/clients/checkin/checkin-selector'
 import { CheckinPhotos } from '@/components/clients/checkin/checkin-photos'
 import { EditTargetDialog } from '@/components/clients/checkin/edit-target-dialog'
@@ -254,7 +255,12 @@ export function CheckinTab({ client }: { client: any }) {
                         />
                     </div>
 
-                    <div id="coach-notes" className="pt-4">
+                    <div id="coach-notes" className="pt-4 space-y-4">
+                        <ClientNoteCard
+                            checkin={selectedCheckin}
+                            comparisonCheckin={isCompareMode ? comparisonCheckin : null}
+                        />
+
                         <CoachNoteCard
                             checkin={selectedCheckin}
                             comparisonCheckin={isCompareMode ? comparisonCheckin : null}
