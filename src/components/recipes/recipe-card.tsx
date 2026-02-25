@@ -178,55 +178,53 @@ export function RecipeCard({ recipe, isAdmin, onSelect, isSelected }: RecipeCard
                     )}
                 </div>
 
-                <div className="flex flex-col flex-1 justify-between space-y-4 p-4">
-                    <div className="space-y-4">
-                        {/* Title */}
-                        <div className="flex flex-col min-h-[4rem] justify-start">
-                            <h3 className="text-lg font-bold leading-tight tracking-tight text-foreground line-clamp-2">
+                <div className="flex flex-col flex-1 p-5 space-y-5">
+                    <div className="flex flex-col flex-1 space-y-4">
+                        {/* Title & Info */}
+                        <div className="space-y-1.5 min-h-[4rem]">
+                            <h3 className="text-lg font-bold leading-tight tracking-tight text-foreground line-clamp-2" title={recipe.name}>
                                 {recipe.name}
                             </h3>
-                            {/* Meta: Time & Servings */}
-                            <div className="mt-1.5 flex items-center gap-3 text-[13px] font-medium text-muted-foreground">
+                            <div className="flex items-center gap-2 text-[13px] text-muted-foreground font-medium">
+                                <span>{recipe.servings ? `${recipe.servings} ${recipe.servings === 1 ? 'porción' : 'porciones'}` : '1 porción'}</span>
                                 {!!recipe.prep_time_min && (
-                                    <div className="flex items-center gap-1">
-                                        <Clock className="h-3.5 w-3.5" />
-                                        <span>{recipe.prep_time_min} min</span>
-                                    </div>
-                                )}
-                                {!!recipe.servings && (
-                                    <div className="flex items-center gap-1">
-                                        <span>{recipe.servings} {recipe.servings === 1 ? 'porción' : 'porciones'}</span>
-                                    </div>
+                                    <>
+                                        <span className="text-zinc-300 dark:text-zinc-700">•</span>
+                                        <div className="flex items-center gap-1">
+                                            <Clock className="w-3.5 h-3.5" />
+                                            <span>{recipe.prep_time_min} min</span>
+                                        </div>
+                                    </>
                                 )}
                             </div>
                         </div>
 
-                        {/* Macros Grid */}
-                        <div className="grid grid-cols-4 gap-1.5">
-                            <div className={`flex flex-col items-center justify-center rounded-xl bg-zinc-50 py-2 px-1 border border-zinc-100 dark:bg-zinc-900 dark:border-zinc-800 ${Math.round(macros.kcal) === 0 ? 'opacity-60' : ''}`}>
-                                <span className="text-[15px] font-bold text-zinc-900 dark:text-zinc-50">{Math.round(macros.kcal)}</span>
-                                <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-500 mt-0.5">Kcal</span>
+                        {/* Clean Apple Health style Macros */}
+                        <div className="flex items-center justify-between pt-1 pb-2 mt-auto">
+                            <div className={`flex flex-col ${Math.round(macros.kcal) === 0 ? 'opacity-50' : ''}`}>
+                                <span className="text-[18px] font-bold tracking-tight text-zinc-900 dark:text-zinc-50 leading-none">{Math.round(macros.kcal)}</span>
+                                <span className="text-[12px] font-medium text-zinc-500 mt-1 uppercase tracking-wide">Kcal</span>
                             </div>
-                            <div className={`flex flex-col items-center justify-center rounded-xl bg-blue-50 py-2 px-1 border border-blue-100/50 dark:bg-blue-900/20 ${Math.round(macros.protein) === 0 ? 'opacity-60' : ''}`}>
-                                <span className="text-[15px] font-bold text-blue-600 dark:text-blue-400">{Math.round(macros.protein)}g</span>
-                                <span className="text-[9px] font-bold uppercase tracking-wider text-blue-600/70 mt-0.5">Prot</span>
+                            <div className={`flex flex-col ${Math.round(macros.protein) === 0 ? 'opacity-50' : ''}`}>
+                                <span className="text-[18px] font-bold tracking-tight text-blue-600 dark:text-blue-400 leading-none">{Math.round(macros.protein)}g</span>
+                                <span className="text-[12px] font-medium text-zinc-500 mt-1 uppercase tracking-wide">Prot</span>
                             </div>
-                            <div className={`flex flex-col items-center justify-center rounded-xl bg-amber-50 py-2 px-1 border border-amber-100/50 dark:bg-amber-900/20 ${Math.round(macros.carbs) === 0 ? 'opacity-60' : ''}`}>
-                                <span className="text-[15px] font-bold text-amber-600 dark:text-amber-400">{Math.round(macros.carbs)}g</span>
-                                <span className="text-[9px] font-bold uppercase tracking-wider text-amber-600/70 mt-0.5">Carbs</span>
+                            <div className={`flex flex-col ${Math.round(macros.carbs) === 0 ? 'opacity-50' : ''}`}>
+                                <span className="text-[18px] font-bold tracking-tight text-amber-600 dark:text-amber-400 leading-none">{Math.round(macros.carbs)}g</span>
+                                <span className="text-[12px] font-medium text-zinc-500 mt-1 uppercase tracking-wide">Carbs</span>
                             </div>
-                            <div className={`flex flex-col items-center justify-center rounded-xl bg-rose-50 py-2 px-1 border border-rose-100/50 dark:bg-rose-900/20 ${Math.round(macros.fat) === 0 ? 'opacity-60' : ''}`}>
-                                <span className="text-[15px] font-bold text-rose-600 dark:text-rose-400">{Math.round(macros.fat)}g</span>
-                                <span className="text-[9px] font-bold uppercase tracking-wider text-rose-600/70 mt-0.5">Grasas</span>
+                            <div className={`flex flex-col ${Math.round(macros.fat) === 0 ? 'opacity-50' : ''}`}>
+                                <span className="text-[18px] font-bold tracking-tight text-rose-600 dark:text-rose-400 leading-none">{Math.round(macros.fat)}g</span>
+                                <span className="text-[12px] font-medium text-zinc-500 mt-1 uppercase tracking-wide">Grasas</span>
                             </div>
                         </div>
                     </div>
 
                     {/* Actions Footer */}
                     {!onSelect && (
-                        <div className="flex items-center gap-2 pt-1 mt-auto">
+                        <div className="flex items-center gap-2 pt-4 border-t border-zinc-100 dark:border-zinc-800/50 mt-auto">
                             <Button
-                                className="flex-1 gap-2 rounded-xl h-11 bg-zinc-900 hover:bg-zinc-800 text-white font-medium shadow-sm transition-all"
+                                className="flex-1 h-11 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white gap-2 font-medium shadow-sm transition-all dark:bg-zinc-50 dark:hover:bg-zinc-200 dark:text-zinc-900"
                                 onClick={(e) => {
                                     e.stopPropagation()
                                     setShowAssignDialog(true)
@@ -238,7 +236,7 @@ export function RecipeCard({ recipe, isAdmin, onSelect, isSelected }: RecipeCard
 
                             <Button
                                 variant="outline"
-                                className="h-11 w-11 rounded-xl border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-900 p-0 shrink-0 shadow-sm transition-all"
+                                className="h-11 w-11 rounded-xl border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 p-0 shrink-0 shadow-sm transition-all"
                                 onClick={handleDuplicate}
                                 disabled={isDuplicating}
                                 title="Duplicar"
@@ -250,7 +248,7 @@ export function RecipeCard({ recipe, isAdmin, onSelect, isSelected }: RecipeCard
                             {isAdmin && (
                                 <Button
                                     variant="outline"
-                                    className="h-11 w-11 rounded-xl border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-900 p-0 shrink-0 shadow-sm transition-all"
+                                    className="h-11 w-11 rounded-xl border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 p-0 shrink-0 shadow-sm transition-all"
                                     onClick={(e) => {
                                         e.stopPropagation()
                                         router.push(`/recipes/${recipe.id}`)
