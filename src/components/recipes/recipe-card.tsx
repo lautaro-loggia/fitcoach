@@ -179,20 +179,20 @@ export function RecipeCard({ recipe, isAdmin, onSelect, isSelected }: RecipeCard
                     )}
                 </div>
 
-                <div className="flex flex-col flex-1 p-5 pt-4">
-                    <div className="flex flex-col flex-1 space-y-5">
-                        {/* Title & Info */}
+                <div className="flex flex-col flex-1 p-4">
+                    {/* Header Group */}
+                    <div className="flex flex-col space-y-4 mb-4">
                         <div className="space-y-1">
-                            <h3 className="text-[17px] font-bold leading-[1.2] tracking-tight text-zinc-900 dark:text-zinc-50 line-clamp-2" title={recipe.name}>
+                            <h3 className="text-base font-bold leading-tight text-zinc-900 dark:text-zinc-50 line-clamp-2" title={recipe.name}>
                                 {recipe.name}
                             </h3>
-                            <div className="flex items-center gap-1.5 text-[13px] text-muted-foreground font-medium pt-0.5">
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium pt-0.5">
                                 <span>{recipe.servings ? `${recipe.servings} ${recipe.servings === 1 ? 'porción' : 'porciones'}` : '1 porción'}</span>
                                 {!!recipe.prep_time_min && (
                                     <>
                                         <span className="text-zinc-300 dark:text-zinc-700">•</span>
                                         <div className="flex items-center gap-1 text-zinc-500">
-                                            <Clock className="w-3.5 h-3.5" />
+                                            <Clock className="w-3 h-3" />
                                             <span>{recipe.prep_time_min} min</span>
                                         </div>
                                     </>
@@ -200,30 +200,30 @@ export function RecipeCard({ recipe, isAdmin, onSelect, isSelected }: RecipeCard
                             </div>
                         </div>
 
-                        {/* Ultra-Clean Macros Grid */}
-                        <div className="grid grid-cols-4 gap-2 pt-2 mt-auto">
-                            <div className={`flex flex-col ${Math.round(macros.kcal) === 0 ? 'opacity-40' : ''}`}>
-                                <span className="text-xl font-[800] tracking-tight text-zinc-900 dark:text-zinc-50 leading-none">{Math.round(macros.kcal)}</span>
-                                <span className="text-[10px] font-semibold text-zinc-400 mt-1 uppercase tracking-wider">Kcal</span>
+                        {/* 2x2 Grid Macros - Prevents horizontal squeezing */}
+                        <div className="grid grid-cols-2 gap-1.5">
+                            <div className={`flex items-center justify-between px-2.5 py-1.5 rounded-md bg-zinc-50 dark:bg-zinc-800/50 ${Math.round(macros.kcal) === 0 ? 'opacity-50' : ''}`}>
+                                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Kcal</span>
+                                <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{Math.round(macros.kcal)}</span>
                             </div>
-                            <div className={`flex flex-col ${Math.round(macros.protein) === 0 ? 'opacity-40' : ''}`}>
-                                <span className="text-xl font-[800] tracking-tight text-blue-600 dark:text-blue-400 leading-none">{Math.round(macros.protein)}</span>
-                                <span className="text-[10px] font-semibold text-blue-400 dark:text-blue-600/70 mt-1 uppercase tracking-wider">Prot<span className="text-[9px] lowercase opacity-70 ml-[1px]">g</span></span>
+                            <div className={`flex items-center justify-between px-2.5 py-1.5 rounded-md bg-blue-50/50 dark:bg-blue-900/20 ${Math.round(macros.protein) === 0 ? 'opacity-50' : ''}`}>
+                                <span className="text-[10px] font-bold text-blue-600/70 uppercase tracking-wider">Prot</span>
+                                <span className="text-sm font-bold text-blue-700 dark:text-blue-400">{Math.round(macros.protein)}g</span>
                             </div>
-                            <div className={`flex flex-col ${Math.round(macros.carbs) === 0 ? 'opacity-40' : ''}`}>
-                                <span className="text-xl font-[800] tracking-tight text-amber-500 dark:text-amber-400 leading-none">{Math.round(macros.carbs)}</span>
-                                <span className="text-[10px] font-semibold text-amber-500/70 dark:text-amber-600/70 mt-1 uppercase tracking-wider">Carbs<span className="text-[9px] lowercase opacity-70 ml-[1px]">g</span></span>
+                            <div className={`flex items-center justify-between px-2.5 py-1.5 rounded-md bg-amber-50/50 dark:bg-amber-900/20 ${Math.round(macros.carbs) === 0 ? 'opacity-50' : ''}`}>
+                                <span className="text-[10px] font-bold text-amber-600/70 uppercase tracking-wider">Carbs</span>
+                                <span className="text-sm font-bold text-amber-700 dark:text-amber-400">{Math.round(macros.carbs)}g</span>
                             </div>
-                            <div className={`flex flex-col ${Math.round(macros.fat) === 0 ? 'opacity-40' : ''}`}>
-                                <span className="text-xl font-[800] tracking-tight text-rose-500 dark:text-rose-400 leading-none">{Math.round(macros.fat)}</span>
-                                <span className="text-[10px] font-semibold text-rose-400 dark:text-rose-600/70 mt-1 uppercase tracking-wider">Grasas<span className="text-[9px] lowercase opacity-70 ml-[1px]">g</span></span>
+                            <div className={`flex items-center justify-between px-2.5 py-1.5 rounded-md bg-rose-50/50 dark:bg-rose-900/20 ${Math.round(macros.fat) === 0 ? 'opacity-50' : ''}`}>
+                                <span className="text-[10px] font-bold text-rose-600/70 uppercase tracking-wider">Grasas</span>
+                                <span className="text-sm font-bold text-rose-700 dark:text-rose-400">{Math.round(macros.fat)}g</span>
                             </div>
                         </div>
                     </div>
 
                     {/* Subtle Actions Footer */}
                     {!onSelect && (
-                        <div className="flex items-center justify-between gap-2 pt-5 mt-5 border-t border-zinc-100 dark:border-zinc-800/50">
+                        <div className="flex items-center justify-between gap-2 pt-3 mt-auto border-t border-zinc-100 dark:border-zinc-800/50">
                             {/* Primary action gets full visual weight but remains elegant */}
                             <Button
                                 className="flex-1 h-9 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white gap-2 text-sm font-semibold shadow-none dark:bg-zinc-50 dark:hover:bg-zinc-200 dark:text-zinc-900"
@@ -236,7 +236,7 @@ export function RecipeCard({ recipe, isAdmin, onSelect, isSelected }: RecipeCard
                                 Asignar
                             </Button>
 
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1">
                                 {/* Secondary actions are grouped and de-emphasized */}
                                 <Button
                                     variant="ghost"
