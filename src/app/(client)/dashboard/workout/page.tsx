@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { getNormalizedARTWeekday, getTodayString, normalizeText } from '@/lib/utils'
 import { WorkoutStartDialog } from '@/components/clients/workout-start-dialog'
+import { formatEstimatedWorkoutDuration } from '@/lib/workout-time-estimate'
 
 export default async function WorkoutPage() {
     const supabase = await createClient()
@@ -44,6 +45,9 @@ export default async function WorkoutPage() {
     const todayWorkout = workouts?.find(w =>
         w.scheduled_days?.some((d: string) => normalizeText(d) === todayName)
     )
+    const todayWorkoutEstimatedTime = todayWorkout
+        ? formatEstimatedWorkoutDuration(todayWorkout.structure)
+        : undefined
 
     // Check if today's workout is completed
     let isTodayCompleted = false
@@ -78,6 +82,7 @@ export default async function WorkoutPage() {
                         workoutId={todayWorkout.id}
                         workoutName={todayWorkout.name}
                         exercisesCount={todayWorkout.structure?.length || 0}
+                        estimatedTime={todayWorkoutEstimatedTime}
                     >
                         <Card className="p-5 bg-blue-600 text-white shadow-none cursor-pointer transition-transform active:scale-[0.98]">
                             <div className="flex justify-between items-center">
@@ -102,7 +107,7 @@ export default async function WorkoutPage() {
                         workoutId={workout.id}
                         workoutName={workout.name}
                         exercisesCount={workout.structure?.length || 0}
-                        estimatedTime={`${(workout.structure?.length || 0) * 4} min aprox.`}
+                        estimatedTime={formatEstimatedWorkoutDuration(workout.structure)}
                     >
                         <Card className="p-4 flex flex-row items-center justify-between hover:bg-gray-50 rounded-2xl border border-gray-200 shadow-none transition-all cursor-pointer">
                             <div className="flex items-center gap-3">
