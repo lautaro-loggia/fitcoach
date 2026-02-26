@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { PlusSignIcon, Cancel01Icon, DragDropVerticalIcon, FloppyDiskIcon, ArrowLeft01Icon, PencilEdit01Icon, Calendar03Icon, Delete02Icon, Tick01Icon, ArrowUpDownIcon, InformationCircleIcon, Dumbbell01Icon, ZapIcon, GridViewIcon } from 'hugeicons-react'
 import { createClient } from '@/lib/supabase/client'
 import { assignWorkoutAction, updateAssignedWorkoutAction } from '@/app/(dashboard)/clients/[id]/training-actions'
+import { searchExercises } from '@/app/(dashboard)/workouts/actions'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
 import { Textarea } from '@/components/ui/textarea'
@@ -46,6 +47,7 @@ const getMuscleGroupColor = (muscleGroup: string) => {
         'Pecho': 'bg-red-100 text-red-700',
         'Espalda': 'bg-blue-100 text-blue-700',
         'Hombros': 'bg-purple-100 text-purple-700',
+        'Brazos': 'bg-green-100 text-green-700',
         'Bíceps': 'bg-green-100 text-green-700',
         'Tríceps': 'bg-teal-100 text-teal-700',
         'Piernas': 'bg-amber-100 text-amber-700',
@@ -57,6 +59,7 @@ const getMuscleGroupColor = (muscleGroup: string) => {
         'Antebrazos': 'bg-cyan-100 text-cyan-700',
         'Pantorrillas': 'bg-emerald-100 text-emerald-700',
         'Trapecio': 'bg-sky-100 text-sky-700',
+        'Cuello': 'bg-fuchsia-100 text-fuchsia-700',
         'Cardio': 'bg-orange-100 text-orange-700'
     }
     return colors[muscleGroup] || 'bg-gray-100 text-gray-600'
@@ -621,6 +624,8 @@ function ExerciseForm({
     const [exerciseId, setExerciseId] = useState(initialData?.exercise_id || '')
     const [muscleGroup, setMuscleGroup] = useState(initialData?.muscle_group || '')
     const [category, setCategory] = useState(initialData?.category || '')
+    const [gifUrl, setGifUrl] = useState(initialData?.gif_url || '')
+    const [instructions, setInstructions] = useState<string[]>(initialData?.instructions || [])
     const [sets, setSets] = useState<any[]>(
         initialData?.sets_detail || [{ reps: '10', weight: '40', rest: '1' }]
     )
@@ -641,16 +646,16 @@ function ExerciseForm({
     const [exercisesList, setExercisesList] = useState<any[]>([])
     const [openCombobox, setOpenCombobox] = useState(false)
 
-    const isCardio = category === 'Cardio'
+    const isCardio = normalizeText(category || '').includes('cardio')
 
     const fetchExercises = async () => {
-        const supabase = createClient()
-        const { data } = await supabase
-            .from('exercises')
-            .select('id, name, main_muscle_group, category')
-            .order('name')
-
-        if (data) setExercisesList(data)
+        try {
+            const { exercises } = await searchExercises('', 2000, 0)
+            setExercisesList(exercises || [])
+        } catch (error) {
+            console.error('Error loading exercises', error)
+            setExercisesList([])
+        }
     }
 
     useEffect(() => {
@@ -682,6 +687,8 @@ function ExerciseForm({
                 exercise_id: exerciseId || undefined,
                 name: name,
                 category: 'Cardio',
+                gif_url: gifUrl || undefined,
+                instructions: instructions.length > 0 ? instructions : undefined,
                 cardio_config: {
                     type: cardioType,
                     duration: cardioType === 'continuous' ? duration : undefined,
@@ -696,6 +703,8 @@ function ExerciseForm({
                 exercise_id: exerciseId || undefined,
                 name: name,
                 muscle_group: muscleGroup || undefined,
+                gif_url: gifUrl || undefined,
+                instructions: instructions.length > 0 ? instructions : undefined,
                 sets_detail: sets
             })
         }
@@ -749,6 +758,8 @@ function ExerciseForm({
                                                 setExerciseId(ex.id)
                                                 setMuscleGroup(ex.main_muscle_group || '')
                                                 setCategory(ex.category || '')
+                                                setGifUrl(ex.gif_url || '')
+                                                setInstructions(ex.instructions || [])
                                                 setOpenCombobox(false)
                                             }}
                                         >

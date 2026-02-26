@@ -8,7 +8,6 @@ import { ArrowLeft, MoreVertical, Plus, Dumbbell } from 'lucide-react'
 import { SetRow } from './set-row'
 import { RestTimer } from './rest-timer'
 import { ExerciseInfoDialog } from './exercise-info-dialog'
-import { Info } from 'lucide-react'
 import { useConfirm } from '@/hooks/use-confirm'
 import {
     DropdownMenu,
@@ -198,18 +197,38 @@ export function ExerciseCheckinMobile({
                             <ArrowLeft className="h-5 w-5" />
                         </Button>
                         <div className="flex items-center gap-3">
-                            <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
-                                <Dumbbell className="h-6 w-6 text-muted-foreground" />
-                            </div>
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <h1 className="text-lg font-bold text-primary">{exercise.name}</h1>
-                                    <ExerciseInfoDialog
-                                        name={exercise.name}
-                                        gifUrl={exercise.gif_url}
-                                        instructions={exercise.instructions}
-                                    />
+                            {exercise.gif_url || (exercise.instructions && exercise.instructions.length > 0) ? (
+                                <ExerciseInfoDialog
+                                    name={exercise.name}
+                                    gifUrl={exercise.gif_url}
+                                    instructions={exercise.instructions}
+                                    trigger={
+                                        <button
+                                            type="button"
+                                            aria-label={`Ver cómo se realiza ${exercise.name}`}
+                                            className="h-12 w-12 rounded-full overflow-hidden border border-border/60 bg-muted shadow-sm hover:opacity-90 transition-opacity shrink-0"
+                                        >
+                                            {exercise.gif_url ? (
+                                                <img
+                                                    src={exercise.gif_url}
+                                                    alt={`Miniatura de ${exercise.name}`}
+                                                    className="h-full w-full object-cover"
+                                                />
+                                            ) : (
+                                                <span className="h-full w-full flex items-center justify-center text-muted-foreground">
+                                                    <Dumbbell className="h-5 w-5" />
+                                                </span>
+                                            )}
+                                        </button>
+                                    }
+                                />
+                            ) : (
+                                <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                                    <Dumbbell className="h-6 w-6 text-muted-foreground" />
                                 </div>
+                            )}
+                            <div>
+                                <h1 className="text-lg font-bold text-primary">{exercise.name}</h1>
                                 <p className="text-xs text-muted-foreground">{clientName}</p>
                             </div>
                         </div>
