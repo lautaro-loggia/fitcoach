@@ -186,6 +186,25 @@ function ExerciseCard({ sessionId, exerciseIndex, exercise, initialCheckin }: Ex
                         name={exercise.name}
                         gifUrl={exercise.gif_url}
                         instructions={exercise.instructions}
+                        trigger={
+                            <button
+                                type="button"
+                                aria-label={`Ver cómo se realiza ${exercise.name}`}
+                                className="h-11 w-11 rounded-full overflow-hidden border border-border/60 bg-muted shadow-sm hover:opacity-90 transition-opacity shrink-0"
+                            >
+                                {exercise.gif_url ? (
+                                    <img
+                                        src={exercise.gif_url}
+                                        alt={`Miniatura de ${exercise.name}`}
+                                        className="h-full w-full object-cover"
+                                    />
+                                ) : (
+                                    <span className="h-full w-full flex items-center justify-center text-muted-foreground">
+                                        <Info className="h-4 w-4" />
+                                    </span>
+                                )}
+                            </button>
+                        }
                     />
                 </div>
 

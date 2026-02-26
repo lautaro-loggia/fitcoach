@@ -8,8 +8,7 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Info, PlayCircle } from "lucide-react"
-import Image from "next/image"
+import { Info } from "lucide-react"
 
 interface ExerciseInfoDialogProps {
     name: string

@@ -32,6 +32,7 @@ const getMuscleGroupColor = (muscleGroup: string) => {
         'Pecho': 'bg-red-100 text-red-700',
         'Espalda': 'bg-blue-100 text-blue-700',
         'Hombros': 'bg-purple-100 text-purple-700',
+        'Brazos': 'bg-green-100 text-green-700',
         'Bíceps': 'bg-green-100 text-green-700',
         'Tríceps': 'bg-teal-100 text-teal-700',
         'Piernas': 'bg-amber-100 text-amber-700',
@@ -43,6 +44,7 @@ const getMuscleGroupColor = (muscleGroup: string) => {
         'Antebrazos': 'bg-cyan-100 text-cyan-700',
         'Pantorrillas': 'bg-emerald-100 text-emerald-700',
         'Trapecio': 'bg-sky-100 text-sky-700',
+        'Cuello': 'bg-fuchsia-100 text-fuchsia-700',
         'Cardio': 'bg-orange-100 text-orange-700'
     }
     return colors[muscleGroup] || 'bg-gray-100 text-gray-600'
@@ -602,7 +604,7 @@ function ExerciseForm({
     const [offset, setOffset] = useState(0)
     const [hasMore, setHasMore] = useState(true)
 
-    const isCardio = category === 'Cardio'
+    const isCardio = normalizeText(category || '').includes('cardio')
 
     useEffect(() => {
         setOffset(0)

@@ -8,6 +8,23 @@ export async function searchExercises(query: string = '', limit: number = 50, of
 
     try {
         const normalize = (str: string) => str ? str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : ""
+        const mapExercise = (ex: any) => {
+            const isCardio =
+                normalize(ex.muscle_group).includes('cardio') ||
+                normalize(ex.target).includes('cardio') ||
+                normalize(ex.target).includes('cardiovascular')
+
+            return {
+                id: ex.id,
+                name: ex.name,
+                english_name: ex.english_name,
+                main_muscle_group: ex.muscle_group,
+                category: isCardio ? 'Cardio' : ex.target,
+                equipment: ex.equipment,
+                gif_url: ex.gif_url,
+                instructions: ex.instructions || []
+            }
+        }
         const trimmedQuery = query.trim()
 
         let dbQuery = supabase
@@ -16,7 +33,10 @@ export async function searchExercises(query: string = '', limit: number = 50, of
 
         // Filtro en DB cuando hay query (reduce transferencia)
         if (trimmedQuery.length > 0) {
-            dbQuery = dbQuery.ilike('name', `%${trimmedQuery}%`)
+            const safeQuery = trimmedQuery.replace(/,/g, ' ')
+            dbQuery = dbQuery.or(
+                `name.ilike.%${safeQuery}%,english_name.ilike.%${safeQuery}%,muscle_group.ilike.%${safeQuery}%,target.ilike.%${safeQuery}%,equipment.ilike.%${safeQuery}%`
+            )
         }
 
         const { data, error } = await dbQuery
@@ -26,32 +46,18 @@ export async function searchExercises(query: string = '', limit: number = 50, of
             return { exercises: [] }
         }
 
-        let exercises = (data || []).map((ex: any) => ({
-            id: ex.id,
-            name: ex.name,
-            main_muscle_group: ex.muscle_group,
-            category: ex.target,
-            equipment: ex.equipment,
-            gif_url: ex.gif_url,
-            instructions: ex.instructions || []
-        }))
+        let exercises = (data || []).map(mapExercise)
 
         // Fallback fuzzy (acentos, grupo muscular) si el filtro DB no dio resultados
         if (trimmedQuery.length > 0 && exercises.length === 0) {
             const { data: allData } = await supabase.from('exercises_v2').select('*')
             const normalizedQuery = normalize(trimmedQuery)
 
-            exercises = (allData || []).map((ex: any) => ({
-                id: ex.id,
-                name: ex.name,
-                main_muscle_group: ex.muscle_group,
-                category: ex.target,
-                equipment: ex.equipment,
-                gif_url: ex.gif_url,
-                instructions: ex.instructions || []
-            })).filter(ex =>
+            exercises = (allData || []).map(mapExercise).filter(ex =>
                 normalize(ex.name).includes(normalizedQuery) ||
+                normalize(ex.english_name).includes(normalizedQuery) ||
                 normalize(ex.main_muscle_group).includes(normalizedQuery) ||
+                normalize(ex.equipment).includes(normalizedQuery) ||
                 (ex.category && normalize(ex.category).includes(normalizedQuery))
             )
         }
