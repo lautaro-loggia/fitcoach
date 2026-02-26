@@ -7,18 +7,31 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Plus, AlertTriangle, Loader2 } from "lucide-react"
 import { assignDietAction } from "@/app/(dashboard)/clients/[id]/diet-actions"
-import { checkRecipeAllergens } from "@/lib/allergen-utils"
+import { checkDietaryCompliance, checkRecipeAllergens } from "@/lib/allergen-utils"
 import { RecipeCard } from "@/components/recipes/recipe-card"
 import { toast } from "sonner"
 
 interface AssignDietDialogProps {
-    client: any
+    client: {
+        id: string
+        allergens?: string[] | null
+        dietary_preference?: string | null
+        dietary_info?: {
+            allergens?: string[]
+            preference?: string
+        } | null
+    }
 }
 
 export function AssignDietDialog({ client }: AssignDietDialogProps) {
     const [open, setOpen] = useState(false)
     const [loading, setLoading] = useState(false)
-    const [recipes, setRecipes] = useState<any[]>([])
+    const [recipes, setRecipes] = useState<Array<{
+        id: string
+        name: string
+        ingredients?: unknown[]
+        ingredients_data?: unknown[]
+    }>>([])
 
     // Filtering
     const [searchQuery, setSearchQuery] = useState("")
@@ -36,16 +49,9 @@ export function AssignDietDialog({ client }: AssignDietDialogProps) {
 
     // Warning State
     const [warningOpen, setWarningOpen] = useState(false)
-    const [detectedAllergen, setDetectedAllergen] = useState<string | null>(null)
-    const [pendingSubmit, setPendingSubmit] = useState<boolean>(false)
+    const [warningMessage, setWarningMessage] = useState<string>("")
 
-    useEffect(() => {
-        if (open) {
-            fetchRecipes()
-        }
-    }, [open])
-
-    const fetchRecipes = async () => {
+    async function fetchRecipes() {
         setIsLoadingRecipes(true)
         const supabase = createClient()
         const { data: { user } } = await supabase.auth.getUser()
@@ -65,13 +71,35 @@ export function AssignDietDialog({ client }: AssignDietDialogProps) {
         setIsLoadingRecipes(false)
     }
 
+    useEffect(() => {
+        if (!open) return
+        const timer = window.setTimeout(() => {
+            void fetchRecipes()
+        }, 0)
+
+        return () => window.clearTimeout(timer)
+    }, [open])
+
     const validateAndSubmit = async (force: boolean = false) => {
         if (selectedRecipeId !== 'custom') {
             const recipe = recipes.find(r => r.id === selectedRecipeId)
             if (recipe && !force) {
-                const conflict = checkRecipeAllergens(recipe, client.allergens)
+                const effectiveAllergens =
+                    (Array.isArray(client.allergens) && client.allergens.length > 0)
+                        ? client.allergens
+                        : (Array.isArray(client.dietary_info?.allergens) ? client.dietary_info.allergens : [])
+                const effectiveDietPreference = client.dietary_preference || client.dietary_info?.preference
+
+                const conflict = checkRecipeAllergens(recipe, effectiveAllergens)
                 if (conflict) {
-                    setDetectedAllergen(conflict)
+                    setWarningMessage(`Esta receta podría contener ${conflict}, y el asesorado tiene esta alergia/restricción cargada.`)
+                    setWarningOpen(true)
+                    return
+                }
+
+                const dietConflict = checkDietaryCompliance(recipe, effectiveDietPreference)
+                if (dietConflict) {
+                    setWarningMessage(`Esta receta no parece compatible con la preferencia ${dietConflict} del asesorado.`)
                     setWarningOpen(true)
                     return
                 }
@@ -84,9 +112,9 @@ export function AssignDietDialog({ client }: AssignDietDialogProps) {
         setLoading(true)
         setWarningOpen(false) // Close warning if open
 
-        let submitData = {
+        const submitData = {
             name: customName,
-            ingredients: [] as any[],
+            ingredients: [] as unknown[],
             recipeId: undefined as string | undefined,
             isCustomized: false
         }
@@ -232,10 +260,10 @@ export function AssignDietDialog({ client }: AssignDietDialogProps) {
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle className="flex items-center gap-2 text-destructive">
-                            <AlertTriangle className="h-5 w-5" /> Advertencia de Alérgenos
+                            <AlertTriangle className="h-5 w-5" /> Advertencia nutricional
                         </AlertDialogTitle>
                         <AlertDialogDescription>
-                            El asesorado es alérgico a <strong>{detectedAllergen}</strong> y esta receta podría contenerlo.
+                            {warningMessage}
                             <br /><br />
                             ¿Deseas asignarla de todas formas?
                         </AlertDialogDescription>

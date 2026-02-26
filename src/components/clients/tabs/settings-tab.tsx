@@ -40,11 +40,13 @@ export function SettingsTab({ client }: { client: any }) {
         initial_body_fat: client.initial_body_fat || '',
         status: client.status || 'active',
         goal_text: client.goal_text || '',
+        goal_timeframe: client.goals?.timeframe || '',
         goal_specific: client.goal_specific || '',
         activity_level: client.activity_level || '',
+        work_type: client.work_type || '',
         target_weight: client.target_weight || '',
         target_fat: client.target_fat || '',
-        training_frequency: client.training_frequency || '',
+        training_days: client.training_availability?.days_per_week?.toString() || client.training_frequency?.toString() || '',
         target_calories: client.target_calories || '',
         target_protein: client.target_protein || '',
         target_carbs: client.target_carbs || '',
@@ -65,15 +67,28 @@ export function SettingsTab({ client }: { client: any }) {
         setLoading(true)
         setMessage(null)
 
+        const parsedTrainingDays = formData.training_days ? parseInt(formData.training_days) : null
+        const goalTimeframe = formData.goal_timeframe
+        const baseFormData = { ...formData } as Record<string, unknown>
+        delete baseFormData.training_days
+        delete baseFormData.goal_timeframe
+
         // Prepare data types
         const dataToUpdate = {
-            ...formData,
+            ...baseFormData,
             height: formData.height ? parseFloat(formData.height) : null,
             initial_weight: formData.initial_weight ? parseFloat(formData.initial_weight) : null,
             initial_body_fat: formData.initial_body_fat ? parseFloat(formData.initial_body_fat) : null,
             target_weight: formData.target_weight ? parseFloat(formData.target_weight) : null,
             target_fat: formData.target_fat ? parseFloat(formData.target_fat) : null,
-            training_frequency: formData.training_frequency ? parseInt(formData.training_frequency) : null,
+            training_frequency: parsedTrainingDays,
+            training_availability: parsedTrainingDays
+                ? { ...(client.training_availability || {}), days_per_week: parsedTrainingDays }
+                : null,
+            goals: {
+                ...(client.goals || {}),
+                timeframe: goalTimeframe || null
+            },
             target_calories: formData.target_calories ? parseInt(formData.target_calories) : null,
             target_protein: formData.target_protein ? parseInt(formData.target_protein) : null,
             target_carbs: formData.target_carbs ? parseInt(formData.target_carbs) : null,
@@ -216,8 +231,36 @@ export function SettingsTab({ client }: { client: any }) {
                                 </div>
 
                                 <div className="grid gap-2">
-                                    <Label htmlFor="training_frequency">Días de entreno (Semanal)</Label>
-                                    <Select value={String(formData.training_frequency)} onValueChange={(val) => handleSelectChange('training_frequency', val)}>
+                                    <Label htmlFor="work_type">Tipo de Trabajo</Label>
+                                    <Select value={formData.work_type} onValueChange={(val) => handleSelectChange('work_type', val)}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Seleccionar" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="sedentary">Escritorio / Sentado</SelectItem>
+                                            <SelectItem value="mixed">Mixto (Parado/Sentado)</SelectItem>
+                                            <SelectItem value="physical">Físico / Activo</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="goal_timeframe">Plazo del objetivo</Label>
+                                    <Select value={formData.goal_timeframe} onValueChange={(val) => handleSelectChange('goal_timeframe', val)}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Seleccionar" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="1-3 months">1 - 3 meses</SelectItem>
+                                            <SelectItem value="3-6 months">3 - 6 meses</SelectItem>
+                                            <SelectItem value="6+ months">Más de 6 meses</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="training_days">Días de entreno (Semanal)</Label>
+                                    <Select value={String(formData.training_days)} onValueChange={(val) => handleSelectChange('training_days', val)}>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Seleccionar" />
                                         </SelectTrigger>
@@ -304,8 +347,12 @@ export function SettingsTab({ client }: { client: any }) {
 
             <div className="mt-8 border-t pt-8">
                 <AllergenSelector
-                    initialAllergens={client.allergens || []}
-                    initialPreference={client.dietary_preference || 'sin_restricciones'}
+                    initialAllergens={
+                        (Array.isArray(client.allergens) && client.allergens.length > 0)
+                            ? client.allergens
+                            : (Array.isArray(client.dietary_info?.allergens) ? client.dietary_info.allergens : [])
+                    }
+                    initialPreference={client.dietary_preference || client.dietary_info?.preference || 'sin_restricciones'}
                     onSave={async (allergens, preference) => {
                         const result = await updateClientAction(client.id, {
                             allergens,

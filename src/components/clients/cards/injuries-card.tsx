@@ -5,6 +5,12 @@ import { AlertCircleIcon, Task01Icon } from 'hugeicons-react'
 import { format, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
 
+const severityTranslations: Record<string, string> = {
+    low: 'Leve',
+    moderate: 'Moderada',
+    severe: 'Severa',
+}
+
 export function InjuriesCard({ client }: { client: any }) {
     const injuries = client.injuries || []
     const hasInjuries = Array.isArray(injuries) && injuries.length > 0
@@ -44,6 +50,23 @@ export function InjuriesCard({ client }: { client: any }) {
                                         <p className="text-xs text-gray-500 leading-relaxed">
                                             {injury.description || 'Sin descripción adicional.'}
                                         </p>
+                                        <div className="flex flex-wrap gap-2 pt-0.5">
+                                            {injury.severity && (
+                                                <span className="text-[10px] font-bold bg-orange-50 text-orange-700 px-1.5 py-0.5 rounded border border-orange-100 whitespace-nowrap">
+                                                    Intensidad: {severityTranslations[injury.severity] || injury.severity}
+                                                </span>
+                                            )}
+                                            {injury.since && (
+                                                <span className="text-[10px] font-bold bg-gray-50 text-gray-600 px-1.5 py-0.5 rounded border border-gray-200 whitespace-nowrap">
+                                                    Desde: {injury.since}
+                                                </span>
+                                            )}
+                                            {typeof injury.diagnosed === 'boolean' && (
+                                                <span className="text-[10px] font-bold bg-slate-50 text-slate-700 px-1.5 py-0.5 rounded border border-slate-200 whitespace-nowrap">
+                                                    {injury.diagnosed ? 'Diagnosticada' : 'Sin diagnóstico'}
+                                                </span>
+                                            )}
+                                        </div>
                                         <p className="text-[10px] text-gray-300 font-medium uppercase tracking-wider pt-1">
                                             Reportado: {injury.created_at ? format(parseISO(injury.created_at), "d MMM yyyy", { locale: es }) : 'Recientemente'}
                                         </p>

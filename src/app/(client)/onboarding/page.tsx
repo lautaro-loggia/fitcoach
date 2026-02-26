@@ -12,17 +12,21 @@ export default async function OnboardingPage(props: {
 
     if (!user) redirect('/login')
 
-    let { data: client, error } = await supabase
+    const { data: clientData, error } = await supabase
         .from('clients')
         .select('*, trainer:profiles(full_name)')
         .eq('user_id', user.id)
         .single()
+
+    let client = clientData
 
     // If in preview mode and no client found (e.g. trainer exploring), use a mock
     if (isPreview && (!client || error)) {
         client = {
             id: 'mock-id',
             full_name: user.user_metadata?.full_name || 'Usuario de Prueba',
+            email: user.email || 'preview@orbit.app',
+            registered_email: user.email || 'preview@orbit.app',
             gender: 'male',
             height: 175,
             onboarding_status: 'pending',
@@ -34,6 +38,11 @@ export default async function OnboardingPage(props: {
 
     if (client.onboarding_status === 'completed' && !isPreview) {
         redirect('/dashboard')
+    }
+
+    client = {
+        ...client,
+        registered_email: user.email || client.email || client.registered_email,
     }
 
     return (
