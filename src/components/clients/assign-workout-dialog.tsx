@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -20,6 +21,8 @@ import { es } from 'date-fns/locale'
 import { cn, normalizeText } from '@/lib/utils'
 import { Switch } from '@/components/ui/switch'
 import { toast } from 'sonner'
+import { AlertTriangle } from 'lucide-react'
+import { formatInjuryWarningMessage, getActiveInjuries } from '@/lib/injury-risk-utils'
 
 // Helper to convert string to Title Case
 const toTitleCase = (str: string) => {
@@ -109,10 +112,14 @@ export function AssignWorkoutDialog({
     const [isPresential, setIsPresential] = useState(false)
     const [startTime, setStartTime] = useState<string>('')
     const [endTime, setEndTime] = useState<string>('')
+    const [clientInjuries, setClientInjuries] = useState<any[]>([])
 
     // Exercise Form State
     const [editingExerciseIndex, setEditingExerciseIndex] = useState<number | null>(null)
     const [isAddingNewExercise, setIsAddingNewExercise] = useState(false)
+    const [injuryWarningOpen, setInjuryWarningOpen] = useState(false)
+    const [injuryWarningMessage, setInjuryWarningMessage] = useState('')
+    const [pendingWarningAction, setPendingWarningAction] = useState<null | (() => void)>(null)
 
     useEffect(() => {
         if (isOpen) {
@@ -131,8 +138,27 @@ export function AssignWorkoutDialog({
                 setStep('select')
                 resetEditor()
             }
+
+            fetchClientInjuries()
         }
     }, [isOpen, existingWorkout])
+
+    const fetchClientInjuries = async () => {
+        const supabase = createClient()
+        const { data, error } = await supabase
+            .from('clients')
+            .select('injuries')
+            .eq('id', clientId)
+            .single()
+
+        if (error) {
+            console.error('Error loading client injuries:', error)
+            setClientInjuries([])
+            return
+        }
+
+        setClientInjuries(getActiveInjuries(data?.injuries))
+    }
 
     const fetchTemplates = async () => {
         const supabase = createClient()
@@ -190,7 +216,7 @@ export function AssignWorkoutDialog({
         setStep('edit')
     }
 
-    const handleSaveExercise = (exerciseData: any) => {
+    const applyExerciseChange = (exerciseData: any) => {
         let newExercise = { ...exerciseData }
 
         // Only calculate sets summary for strength exercises
@@ -217,11 +243,24 @@ export function AssignWorkoutDialog({
         setIsAddingNewExercise(false)
     }
 
+    const handleSaveExercise = (exerciseData: any) => {
+        const message = formatInjuryWarningMessage(exerciseData, clientInjuries)
+
+        if (!message) {
+            applyExerciseChange(exerciseData)
+            return
+        }
+
+        setInjuryWarningMessage(message)
+        setPendingWarningAction(() => () => applyExerciseChange(exerciseData))
+        setInjuryWarningOpen(true)
+    }
+
     const handleRemoveExercise = (index: number) => {
         setExercises(exercises.filter((_, i) => i !== index))
     }
 
-    const handleSave = async () => {
+    const handleSave = async (bypassInjuryWarning = false) => {
         if (!validUntil) {
             toast.error('La fecha de revisión es obligatoria')
             return
@@ -230,6 +269,21 @@ export function AssignWorkoutDialog({
         if (scheduledDays.length === 0) {
             toast.error('Debes seleccionar al menos un día para asignar la rutina')
             return
+        }
+
+        if (!bypassInjuryWarning) {
+            const firstConflictExercise = exercises.find(ex => formatInjuryWarningMessage(ex, clientInjuries))
+            if (firstConflictExercise) {
+                const message = formatInjuryWarningMessage(firstConflictExercise, clientInjuries)
+                if (message) {
+                    setInjuryWarningMessage(`${message} Si querés, podés guardar igual.`)
+                    setPendingWarningAction(() => () => {
+                        handleSave(true)
+                    })
+                    setInjuryWarningOpen(true)
+                    return
+                }
+            }
         }
 
         setLoading(true)
@@ -270,7 +324,8 @@ export function AssignWorkoutDialog({
     const isEditingExercise = editingExerciseIndex !== null || isAddingNewExercise
 
     return (
-        <Dialog open={isOpen} onOpenChange={setOpen}>
+        <>
+            <Dialog open={isOpen} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 {trigger ? trigger : (
                     <Button className="bg-primary hover:bg-primary/90 text-white">
@@ -595,7 +650,9 @@ export function AssignWorkoutDialog({
                                 <div className="flex justify-end gap-3 pt-4 border-t">
                                     <Button variant="outline" onClick={() => setOpen(false)}>Cerrar</Button>
                                     <Button
-                                        onClick={handleSave}
+                                        onClick={() => {
+                                            void handleSave()
+                                        }}
                                         disabled={loading || !workoutName || !validUntil || scheduledDays.length === 0}
                                         className="bg-primary hover:bg-primary/90 text-white"
                                     >
@@ -607,7 +664,43 @@ export function AssignWorkoutDialog({
                     </>
                 )}
             </DialogContent>
-        </Dialog>
+            </Dialog>
+
+            <AlertDialog open={injuryWarningOpen} onOpenChange={setInjuryWarningOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="flex items-center gap-2 text-amber-600">
+                            <AlertTriangle className="h-5 w-5" />
+                            Advertencia por lesión
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="text-base pt-2">
+                            {injuryWarningMessage}
+                            <br /><br />
+                            ¿Querés continuar de todos modos?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => {
+                            setInjuryWarningOpen(false)
+                            setPendingWarningAction(null)
+                        }}>
+                            Cancelar
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            className="bg-amber-600 text-white hover:bg-amber-700"
+                            onClick={() => {
+                                const action = pendingWarningAction
+                                setInjuryWarningOpen(false)
+                                setPendingWarningAction(null)
+                                if (action) action()
+                            }}
+                        >
+                            Continuar igual
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </>
     )
 }
 

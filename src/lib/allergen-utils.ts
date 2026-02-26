@@ -1,3 +1,32 @@
+const normalizeValue = (value?: string | null) =>
+    (value ?? '')
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim()
+
+const CANONICAL_ALLERGEN_MAP: Record<string, string> = {
+    // Canonical IDs
+    huevo: 'huevo',
+    pescado: 'pescado',
+    gluten: 'gluten',
+    lactosa: 'lactosa',
+    leche: 'leche',
+    frutos_secos: 'frutos_secos',
+    mani: 'mani',
+    sesamo: 'sesamo',
+    marisco: 'marisco',
+    soja: 'soja',
+    // UI labels / variants
+    'gluten (tacc)': 'gluten',
+    'frutos secos': 'frutos_secos',
+    lacteos: 'leche',
+    'lacteos (lactosa)': 'lactosa',
+    'lacteos/lactosa': 'lactosa',
+    huevos: 'huevo',
+    mariscos: 'marisco',
+}
+
 export const ALLERGEN_KEYWORDS: Record<string, string[]> = {
     huevo: ['huevo', 'yema', 'clara', 'tortilla', 'revuelto', 'omelette'],
     pescado: ['pescado', 'atun', 'salmon', 'merluza', 'tilapia', 'bacalao', 'sardina'],
@@ -11,32 +40,62 @@ export const ALLERGEN_KEYWORDS: Record<string, string[]> = {
     soja: ['soja', 'tofu', 'tempeh', 'edamame', 'salsa de soja', 'soya']
 }
 
-export function checkRecipeAllergens(recipe: any, clientAllergens: string[] = []): string | null {
+type RecipeLike = {
+    name?: string
+    ingredients?: unknown[] | null
+    ingredients_data?: unknown[] | null
+}
+
+type IngredientLike = {
+    name?: string
+    item?: string
+}
+
+function ingredientToText(ingredient: unknown): string {
+    if (typeof ingredient === 'string') return ingredient
+    if (typeof ingredient === 'object' && ingredient !== null) {
+        const ing = ingredient as IngredientLike
+        return ing.name || ing.item || JSON.stringify(ingredient)
+    }
+    return String(ingredient ?? '')
+}
+
+export function normalizeAllergenInput(allergen: string): string {
+    const normalized = normalizeValue(allergen)
+    return CANONICAL_ALLERGEN_MAP[normalized] || normalized
+}
+
+function resolveAllergenKeywords(allergen: string): string[] {
+    const normalized = normalizeAllergenInput(allergen)
+    return ALLERGEN_KEYWORDS[normalized] || [normalized]
+}
+
+export function checkRecipeAllergens(recipe: RecipeLike, clientAllergens: string[] = []): string | null {
     if (!clientAllergens || clientAllergens.length === 0) return null;
 
     for (const allergen of clientAllergens) {
-        const keywords = ALLERGEN_KEYWORDS[allergen.toLowerCase()] || [allergen.toLowerCase()];
+        const keywords = resolveAllergenKeywords(allergen)
 
         // Check Recipe Name
-        if (keywords.some(k => recipe.name.toLowerCase().includes(k))) {
+        if (keywords.some(k => normalizeValue(recipe.name).includes(k))) {
             return allergen;
         }
 
         // Check Ingredients
         // Ingredients can be formatted differently, assuming array of objects or strings
         if (recipe.ingredients && Array.isArray(recipe.ingredients)) {
-            const hasAllergen = recipe.ingredients.some((ing: any) => {
-                const text = typeof ing === 'string' ? ing : (ing.name || ing.item || JSON.stringify(ing));
-                return keywords.some(k => text.toLowerCase().includes(k));
+            const hasAllergen = recipe.ingredients.some((ing) => {
+                const text = ingredientToText(ing)
+                return keywords.some(k => normalizeValue(text).includes(k));
             });
             if (hasAllergen) return allergen;
         }
 
         // Also check ingredients_data if present (legacy field mentioned in migration comments)
         if (recipe.ingredients_data && Array.isArray(recipe.ingredients_data)) {
-            const hasAllergen = recipe.ingredients_data.some((ing: any) => {
-                const text = typeof ing === 'string' ? ing : (ing.name || ing.item || JSON.stringify(ing));
-                return keywords.some(k => text.toLowerCase().includes(k));
+            const hasAllergen = recipe.ingredients_data.some((ing) => {
+                const text = ingredientToText(ing)
+                return keywords.some(k => normalizeValue(text).includes(k));
             });
             if (hasAllergen) return allergen;
         }
@@ -60,35 +119,52 @@ export const MEAT_KEYWORDS = [
     'jamon', 'tocino', 'salchicha', 'chorizo', 'panceta', 'steak', 'bife', 'asado'
 ]
 
-export function checkDietaryCompliance(recipe: any, dietType: string | undefined): 'vegetariano' | 'vegano' | null {
+function normalizeDietType(dietType?: string): 'vegetariana' | 'vegana' | null {
     if (!dietType) return null
-    const diet = dietType.toLowerCase()
+    const normalized = normalizeValue(dietType)
 
-    if (diet !== 'vegetariano' && diet !== 'vegano') return null
+    if ([
+        'vegetarian',
+        'vegetariana',
+        'vegetariano',
+    ].includes(normalized)) return 'vegetariana'
 
-    const keywords = diet === 'vegano' ? ANIMAL_PRODUCT_KEYWORDS : MEAT_KEYWORDS
+    if ([
+        'vegan',
+        'vegana',
+        'vegano',
+    ].includes(normalized)) return 'vegana'
+
+    return null
+}
+
+export function checkDietaryCompliance(recipe: RecipeLike, dietType: string | undefined): 'vegetariano' | 'vegano' | null {
+    const normalizedDiet = normalizeDietType(dietType)
+    if (!normalizedDiet) return null
+
+    const keywords = normalizedDiet === 'vegana' ? ANIMAL_PRODUCT_KEYWORDS : MEAT_KEYWORDS
 
     // Check Name
-    if (keywords.some(k => recipe.name.toLowerCase().includes(k))) {
-        return diet === 'vegano' ? 'vegano' : 'vegetariano'
+    if (keywords.some(k => normalizeValue(recipe.name).includes(k))) {
+        return normalizedDiet === 'vegana' ? 'vegano' : 'vegetariano'
     }
 
     // Check Ingredients
     if (recipe.ingredients && Array.isArray(recipe.ingredients)) {
-        const hasViolation = recipe.ingredients.some((ing: any) => {
-            const text = typeof ing === 'string' ? ing : (ing.name || ing.item || JSON.stringify(ing));
-            return keywords.some(k => text.toLowerCase().includes(k));
+        const hasViolation = recipe.ingredients.some((ing) => {
+            const text = ingredientToText(ing)
+            return keywords.some(k => normalizeValue(text).includes(k));
         });
-        if (hasViolation) return diet === 'vegano' ? 'vegano' : 'vegetariano'
+        if (hasViolation) return normalizedDiet === 'vegana' ? 'vegano' : 'vegetariano'
     }
 
     // Check Ingredients Data (Legacy)
     if (recipe.ingredients_data && Array.isArray(recipe.ingredients_data)) {
-        const hasViolation = recipe.ingredients_data.some((ing: any) => {
-            const text = typeof ing === 'string' ? ing : (ing.name || ing.item || JSON.stringify(ing));
-            return keywords.some(k => text.toLowerCase().includes(k));
+        const hasViolation = recipe.ingredients_data.some((ing) => {
+            const text = ingredientToText(ing)
+            return keywords.some(k => normalizeValue(text).includes(k));
         });
-        if (hasViolation) return diet === 'vegano' ? 'vegano' : 'vegetariano'
+        if (hasViolation) return normalizedDiet === 'vegana' ? 'vegano' : 'vegetariano'
     }
 
     return null

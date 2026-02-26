@@ -119,6 +119,12 @@ export function WeeklyMealPlanContainer({ client }: WeeklyMealPlanContainerProps
     const targetProt = client.target_protein || 0
     const targetCarbs = client.target_carbs || 0
     const targetFats = client.target_fats || 0
+    const dietaryInfo = client.dietary_info || {}
+    const resolvedAllergens =
+        Array.isArray(client.allergens) && client.allergens.length > 0
+            ? client.allergens
+            : (Array.isArray(dietaryInfo.allergens) ? dietaryInfo.allergens : [])
+    const resolvedPreference = client.dietary_preference || dietaryInfo.preference || 'sin_restricciones'
 
     return (
         <div className="space-y-6">
@@ -166,8 +172,8 @@ export function WeeklyMealPlanContainer({ client }: WeeklyMealPlanContainerProps
                 day={currentDayData}
                 allDays={plan.days}
                 clientId={client.id}
-                clientAllergens={client.allergens}
-                clientPreference={client.dietary_preference}
+                clientAllergens={resolvedAllergens}
+                clientPreference={resolvedPreference}
                 onUpdate={() => setRefreshKey(prev => prev + 1)}
                 dailyStats={dailyStats ? {
                     ...dailyStats,

@@ -51,6 +51,12 @@ const workTypeTranslations: { [key: string]: string } = {
     physical: "Físico / Activo"
 }
 
+const timeframeTranslations: { [key: string]: string } = {
+    '1-3 months': '1-3 meses',
+    '3-6 months': '3-6 meses',
+    '6+ months': 'Más de 6 meses',
+}
+
 export function ProfileTab({ client }: ProfileTabProps) {
     const router = useRouter()
     const [checkins, setCheckins] = useState<any[]>([])
@@ -182,8 +188,8 @@ export function ProfileTab({ client }: ProfileTabProps) {
     })).filter(d => d.fat).slice(-6)
 
     // -- Metrics Calculation --
-    const currentWeight = checkins.length > 0 ? checkins[checkins.length - 1].weight : client.initial_weight
-    const previousWeight = checkins.length > 1 ? checkins[checkins.length - 2].weight : client.initial_weight
+    const currentWeight = checkins.length > 0 ? checkins[checkins.length - 1].weight : (client.current_weight || client.initial_weight)
+    const previousWeight = checkins.length > 1 ? checkins[checkins.length - 2].weight : (client.current_weight || client.initial_weight)
 
     // Ensure previousWeight is valid before calculating diff. 
     // If it's 0 or null, we treat it as no previous data, so diff is 0.
@@ -204,6 +210,11 @@ export function ProfileTab({ client }: ProfileTabProps) {
                         <p className="text-[15px] text-gray-600 leading-snug">
                             {client.main_goal ? (goalTranslations[client.main_goal] || client.main_goal) : "Mantener"}
                             {client.goal_text && <span className="block text-xs text-gray-500 mt-1">"{client.goal_text}"</span>}
+                            {client.goals?.timeframe && (
+                                <span className="block text-xs text-gray-500 mt-1">
+                                    Plazo: {timeframeTranslations[client.goals.timeframe] || client.goals.timeframe}
+                                </span>
+                            )}
                         </p>
                     </div>
                 </Card>
@@ -216,6 +227,11 @@ export function ProfileTab({ client }: ProfileTabProps) {
                             <span className="block text-xs text-gray-500 mt-1">
                                 {client.work_type ? `Trabajo: ${workTypeTranslations[client.work_type] || client.work_type}` : ''}
                             </span>
+                            {client.training_availability?.days_per_week && (
+                                <span className="block text-xs text-gray-500 mt-1">
+                                    Entrena {client.training_availability.days_per_week} días/semana
+                                </span>
+                            )}
                         </p>
                     </div>
                 </Card>
@@ -301,9 +317,9 @@ export function ProfileTab({ client }: ProfileTabProps) {
                 <Card className="flex flex-col md:h-[320px]">
                     <CardHeader className="pb-2 flex flex-row items-center justify-between">
                         <CardTitle className="text-sm font-medium text-muted-foreground">Grasa corporal</CardTitle>
-                        {client.target_body_fat && (
+                        {client.target_fat && (
                             <Badge variant="secondary" className="text-xs font-normal">
-                                Grasa objetiva {client.target_body_fat}%
+                                Grasa objetiva {client.target_fat}%
                             </Badge>
                         )}
                     </CardHeader>

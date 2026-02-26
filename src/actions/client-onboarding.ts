@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin' // Import Admin Client
 import { revalidatePath } from 'next/cache'
 import { getTodayString } from '@/lib/utils'
+import { normalizeAllergenInput } from '@/lib/allergen-utils'
 
 // --- Helpers ---
 
@@ -42,6 +43,7 @@ export async function updateBasicProfile(data: {
             birth_date: data.birth_date,
             height: data.height,
             current_weight: data.weight,
+            initial_weight: client.initial_weight ?? data.weight,
             gender: data.gender,
             updated_at: new Date().toISOString()
         })
@@ -90,6 +92,7 @@ export async function updateLifestyle(data: {
         .update({
             activity_level: data.activity_level,
             work_type: data.work_type,
+            training_frequency: data.training_days,
             training_availability: {
                 days_per_week: data.training_days
             }
@@ -102,7 +105,7 @@ export async function updateLifestyle(data: {
 
 export async function updateInjuries(data: {
     has_injuries: boolean
-    injuries: any[]
+    injuries: unknown[]
 }) {
     const { adminSupabase, client } = await getAuthenticatedClient()
 
@@ -126,6 +129,21 @@ export async function updateNutrition(data: {
 }) {
     const { adminSupabase, client } = await getAuthenticatedClient()
 
+    const normalizedAllergens = Array.from(
+        new Set((data.allergens || []).map(allergen => normalizeAllergenInput(allergen)).filter(Boolean))
+    )
+
+    const dietaryPreferenceMap: Record<string, string> = {
+        no_preference: 'sin_restricciones',
+        high_protein: 'sin_restricciones',
+        keto: 'sin_restricciones',
+        other: 'sin_restricciones',
+        vegetarian: 'vegetariana',
+        vegan: 'vegana',
+    }
+
+    const normalizedDietaryPreference = dietaryPreferenceMap[data.diet_preference] || 'sin_restricciones'
+
     const dietaryInfo = {
         preference: data.diet_preference,
         meals_count: data.meals_per_day,
@@ -137,11 +155,50 @@ export async function updateNutrition(data: {
     const { error } = await adminSupabase
         .from('clients')
         .update({
-            dietary_info: dietaryInfo
+            dietary_info: dietaryInfo,
+            allergens: normalizedAllergens,
+            dietary_preference: normalizedDietaryPreference
         })
         .eq('id', client.id)
 
     if (error) return { error: error.message }
+    return { success: true }
+}
+
+export async function setOnboardingPassword(data: {
+    password: string
+    confirmPassword: string
+}) {
+    const { supabase, adminSupabase, client } = await getAuthenticatedClient()
+
+    if (!data.password || !data.confirmPassword) {
+        return { error: 'Por favor complete todos los campos' }
+    }
+
+    if (data.password.length < 6) {
+        return { error: 'La contraseña debe tener al menos 6 caracteres' }
+    }
+
+    if (data.password !== data.confirmPassword) {
+        return { error: 'Las contraseñas no coinciden' }
+    }
+
+    const { error: passwordError } = await supabase.auth.updateUser({
+        password: data.password,
+        data: { needs_password: false }
+    })
+
+    if (passwordError) return { error: passwordError.message }
+
+    if (client.onboarding_status !== 'completed') {
+        const { error: clientError } = await adminSupabase
+            .from('clients')
+            .update({ onboarding_status: 'in_progress' })
+            .eq('id', client.id)
+
+        if (clientError) return { error: clientError.message }
+    }
+
     return { success: true }
 }
 
@@ -157,7 +214,7 @@ export async function completeOnboarding(data: {
     const { adminSupabase, client } = await getAuthenticatedClient()
 
     // 1. Update DB with Body Fat info if provided
-    const updates: any = {
+    const updates: Record<string, unknown> = {
         onboarding_status: 'completed',
         status: 'active'
     }
@@ -174,7 +231,7 @@ export async function completeOnboarding(data: {
     if (updateError) return { error: updateError.message }
 
     // 2. Create Baseline Check-in
-    const checkinData: any = {
+    const checkinData: Record<string, unknown> = {
         client_id: client.id,
         trainer_id: client.trainer_id,
         date: getTodayString(),

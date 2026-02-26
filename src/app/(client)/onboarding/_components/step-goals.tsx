@@ -13,14 +13,71 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { cn } from '@/lib/utils'
 
 const GOALS = [
-    { id: 'fat_loss', label: 'Pérdida de grasa', icon: Scale, color: 'text-orange-500', bg: 'bg-orange-50' },
-    { id: 'muscle_gain', label: 'Ganancia muscular', icon: BicepsFlexed, color: 'text-blue-500', bg: 'bg-blue-50' },
-    { id: 'recomp', label: 'Recomposición', icon: RefreshCw, color: 'text-purple-500', bg: 'bg-purple-50' },
-    { id: 'performance', label: 'Rendimiento', icon: Zap, color: 'text-amber-500', bg: 'bg-amber-50' },
-    { id: 'health', label: 'Salud general', icon: HeartPulse, color: 'text-rose-500', bg: 'bg-rose-50' },
+    {
+        id: 'fat_loss',
+        label: 'Pérdida de grasa',
+        description: 'Bajar % de grasa manteniendo la mayor cantidad de músculo posible.',
+        icon: Scale,
+        color: 'text-orange-500',
+        bg: 'bg-orange-50'
+    },
+    {
+        id: 'muscle_gain',
+        label: 'Ganancia muscular',
+        description: 'Subir masa muscular con un plan de fuerza + calorías en superávit.',
+        icon: BicepsFlexed,
+        color: 'text-blue-500',
+        bg: 'bg-blue-50'
+    },
+    {
+        id: 'recomp',
+        label: 'Recomposición',
+        description: 'Bajar grasa y ganar músculo a la vez. Progreso más lento pero muy sólido.',
+        icon: RefreshCw,
+        color: 'text-purple-500',
+        bg: 'bg-purple-50'
+    },
+    {
+        id: 'performance',
+        label: 'Rendimiento',
+        description: 'Mejorar fuerza, resistencia o performance deportiva (sin priorizar estética).',
+        icon: Zap,
+        color: 'text-amber-500',
+        bg: 'bg-amber-50'
+    },
+    {
+        id: 'health',
+        label: 'Salud general',
+        description: 'Crear hábitos: moverte más, comer mejor, dormir mejor y sentirte con energía',
+        icon: HeartPulse,
+        color: 'text-rose-500',
+        bg: 'bg-rose-50'
+    },
 ]
 
-export function StepGoals({ client, onNext, onPrev, isPreview }: { client: any, onNext: () => void, onPrev: () => void, isPreview?: boolean }) {
+type StepGoalsClient = {
+    main_goal?: string | null
+    goal_text?: string | null
+    goals?: {
+        timeframe?: string | null
+    } | null
+    target_weight?: number | null
+    target_fat?: number | null
+    current_weight?: number | null
+    initial_weight?: number | null
+}
+
+export function StepGoals({
+    client,
+    onNext,
+    onPrev,
+    isPreview
+}: {
+    client: StepGoalsClient
+    onNext: () => void
+    onPrev: () => void
+    isPreview?: boolean
+}) {
     const [loading, setLoading] = useState(false)
     const [formData, setFormData] = useState({
         main_goal: client.main_goal || '',
@@ -89,7 +146,7 @@ export function StepGoals({ client, onNext, onPrev, isPreview }: { client: any, 
             } else {
                 onNext()
             }
-        } catch (err) {
+        } catch {
             toast.error('Error al guardar')
         } finally {
             setLoading(false)
@@ -130,12 +187,18 @@ export function StepGoals({ client, onNext, onPrev, isPreview }: { client: any, 
                                     <g.icon className="w-7 h-7 stroke-[1.5]" />
                                 </div>
                                 <div className="flex-1">
-                                    <span className={cn(
+                                    <p className={cn(
                                         "font-bold text-base transition-colors",
                                         formData.main_goal === g.id ? "text-[#1A1A1A]" : "text-gray-500"
                                     )}>
                                         {g.label}
-                                    </span>
+                                    </p>
+                                    <p className={cn(
+                                        "mt-1 text-xs leading-relaxed transition-colors",
+                                        formData.main_goal === g.id ? "text-gray-600" : "text-gray-400"
+                                    )}>
+                                        {g.description}
+                                    </p>
                                 </div>
                                 {formData.main_goal === g.id && (
                                     <div className="w-2 h-2 rounded-full bg-black ml-2" />

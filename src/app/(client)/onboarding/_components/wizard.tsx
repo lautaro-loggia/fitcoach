@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { StepAccountPassword } from './step-account-password'
 import { StepBinding } from './step-binding'
 import { StepProfile } from './step-profile'
 import { StepGoals } from './step-goals'
@@ -9,19 +10,52 @@ import { StepInjuries } from './step-injuries'
 import { StepNutrition } from './step-nutrition'
 import { StepBodyFat } from './step-body-fat'
 import { StepSuccess } from './step-success'
-import { Button } from '@/components/ui/button'
-import { toast } from 'sonner'
 
-export function OnboardingWizard({ client, isPreview }: { client: any, isPreview?: boolean }) {
+type OnboardingClient = {
+    trainer?: {
+        full_name?: string | null
+    } | null
+    email?: string | null
+    registered_email?: string | null
+    birth_date?: string | null
+    height?: number | null
+    current_weight?: number | null
+    initial_weight?: number | null
+    gender?: string | null
+    main_goal?: string | null
+    goal_text?: string | null
+    goals?: {
+        timeframe?: string | null
+        [key: string]: unknown
+    } | null
+    target_weight?: number | null
+    target_fat?: number | null
+    activity_level?: string | null
+    work_type?: string | null
+    training_availability?: {
+        days_per_week?: number | null
+        [key: string]: unknown
+    } | null
+    injuries?: unknown[] | null
+    dietary_info?: {
+        preference?: string
+        meals_count?: number
+        experience?: string
+        allergens?: string[]
+        other?: string
+    } | null
+}
+
+export function OnboardingWizard({ client, isPreview }: { client: OnboardingClient, isPreview?: boolean }) {
     const [step, setStep] = useState(0)
     const [clientData, setClientData] = useState(client)
-    const TOTAL_STEPS = 8 // 0 a 7
+    const TOTAL_STEPS = 9 // 0 a 8
 
     const nextStep = () => setStep(s => Math.min(s + 1, TOTAL_STEPS - 1))
     const prevStep = () => setStep(s => Math.max(s - 1, 0))
 
-    const updateClient = (data: any) => {
-        setClientData((prev: any) => ({ ...prev, ...data }))
+    const updateClient = (data: Partial<OnboardingClient>) => {
+        setClientData(prev => ({ ...prev, ...data }))
     }
 
     const isLastStep = step === TOTAL_STEPS - 1
@@ -53,21 +87,22 @@ export function OnboardingWizard({ client, isPreview }: { client: any, isPreview
             )}
 
             {isPreview && step < TOTAL_STEPS - 1 && (
-                <div className="bg-amber-50 text-amber-700 text-[11px] py-1.5 px-4 text-center font-medium border-b border-amber-b-100">
+                <div className="bg-amber-50 text-amber-700 text-[11px] py-1.5 px-4 text-center font-medium border-b border-amber-100">
                     Modo Vista Previa: Los datos no se guardarán.
                 </div>
             )}
 
             <div className="flex-1 p-6 flex flex-col max-w-lg mx-auto w-full overflow-y-auto">
                 <div className="flex-1 mb-8">
-                    {step === 0 && <StepBinding client={clientData} onNext={nextStep} isPreview={isPreview} />}
-                    {step === 1 && <StepProfile client={clientData} onUpdate={updateClient} onNext={nextStep} isNextTo="Objetivos" isPreview={isPreview} />}
-                    {step === 2 && <StepGoals client={clientData} onNext={nextStep} onPrev={prevStep} isPreview={isPreview} />}
-                    {step === 3 && <StepLifestyle client={clientData} onNext={nextStep} onPrev={prevStep} isPreview={isPreview} />}
-                    {step === 4 && <StepInjuries client={clientData} onNext={nextStep} onPrev={prevStep} isPreview={isPreview} />}
-                    {step === 5 && <StepNutrition client={clientData} onNext={nextStep} onPrev={prevStep} isPreview={isPreview} />}
-                    {step === 6 && <StepBodyFat client={clientData} onNext={nextStep} onPrev={prevStep} isPreview={isPreview} />}
-                    {step === 7 && <StepSuccess isPreview={isPreview} />}
+                    {step === 0 && <StepAccountPassword client={clientData} onNext={nextStep} isPreview={isPreview} />}
+                    {step === 1 && <StepBinding client={clientData} onNext={nextStep} isPreview={isPreview} />}
+                    {step === 2 && <StepProfile client={clientData} onUpdate={updateClient} onNext={nextStep} isNextTo="Objetivos" isPreview={isPreview} />}
+                    {step === 3 && <StepGoals client={clientData} onNext={nextStep} onPrev={prevStep} isPreview={isPreview} />}
+                    {step === 4 && <StepLifestyle client={clientData} onNext={nextStep} onPrev={prevStep} isPreview={isPreview} />}
+                    {step === 5 && <StepInjuries client={clientData} onNext={nextStep} onPrev={prevStep} isPreview={isPreview} />}
+                    {step === 6 && <StepNutrition client={clientData} onNext={nextStep} onPrev={prevStep} isPreview={isPreview} />}
+                    {step === 7 && <StepBodyFat client={clientData} onNext={nextStep} onPrev={prevStep} isPreview={isPreview} />}
+                    {step === 8 && <StepSuccess isPreview={isPreview} />}
                 </div>
 
             </div>
