@@ -23,15 +23,31 @@ interface AssignDietDialogProps {
     }
 }
 
+type RecipeIngredient = {
+    ingredient_code: string
+    ingredient_name: string
+    grams: number
+    kcal_100g?: number
+    protein_100g?: number
+    carbs_100g?: number
+    fat_100g?: number
+}
+
+type RecipeOption = {
+    id: string
+    name: string
+    meal_type: string | null
+    servings: number | null
+    prep_time_min: number | null
+    image_url: string | null
+    ingredients: RecipeIngredient[] | null
+    ingredients_data?: RecipeIngredient[] | null
+}
+
 export function AssignDietDialog({ client }: AssignDietDialogProps) {
     const [open, setOpen] = useState(false)
     const [loading, setLoading] = useState(false)
-    const [recipes, setRecipes] = useState<Array<{
-        id: string
-        name: string
-        ingredients?: unknown[]
-        ingredients_data?: unknown[]
-    }>>([])
+    const [recipes, setRecipes] = useState<RecipeOption[]>([])
 
     // Filtering
     const [searchQuery, setSearchQuery] = useState("")
@@ -67,7 +83,7 @@ export function AssignDietDialog({ client }: AssignDietDialogProps) {
             .eq('trainer_id', user.id)
             .order('name')
 
-        if (data) setRecipes(data)
+        if (data) setRecipes(data as RecipeOption[])
         setIsLoadingRecipes(false)
     }
 

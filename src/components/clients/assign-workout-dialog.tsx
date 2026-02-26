@@ -650,7 +650,9 @@ export function AssignWorkoutDialog({
                                 <div className="flex justify-end gap-3 pt-4 border-t">
                                     <Button variant="outline" onClick={() => setOpen(false)}>Cerrar</Button>
                                     <Button
-                                        onClick={handleSave}
+                                        onClick={() => {
+                                            void handleSave()
+                                        }}
                                         disabled={loading || !workoutName || !validUntil || scheduledDays.length === 0}
                                         className="bg-primary hover:bg-primary/90 text-white"
                                     >

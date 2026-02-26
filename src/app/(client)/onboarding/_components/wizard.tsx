@@ -17,7 +17,33 @@ type OnboardingClient = {
     } | null
     email?: string | null
     registered_email?: string | null
-    [key: string]: unknown
+    birth_date?: string | null
+    height?: number | null
+    current_weight?: number | null
+    initial_weight?: number | null
+    gender?: string | null
+    main_goal?: string | null
+    goal_text?: string | null
+    goals?: {
+        timeframe?: string | null
+        [key: string]: unknown
+    } | null
+    target_weight?: number | null
+    target_fat?: number | null
+    activity_level?: string | null
+    work_type?: string | null
+    training_availability?: {
+        days_per_week?: number | null
+        [key: string]: unknown
+    } | null
+    injuries?: unknown[] | null
+    dietary_info?: {
+        preference?: string
+        meals_count?: number
+        experience?: string
+        allergens?: string[]
+        other?: string
+    } | null
 }
 
 export function OnboardingWizard({ client, isPreview }: { client: OnboardingClient, isPreview?: boolean }) {

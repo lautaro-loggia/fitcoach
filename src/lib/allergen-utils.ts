@@ -1,5 +1,5 @@
 const normalizeValue = (value?: string | null) =>
-    value
+    (value ?? '')
         .toLowerCase()
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
@@ -20,7 +20,6 @@ const CANONICAL_ALLERGEN_MAP: Record<string, string> = {
     // UI labels / variants
     'gluten (tacc)': 'gluten',
     'frutos secos': 'frutos_secos',
-    sesamo: 'sesamo',
     lacteos: 'leche',
     'lacteos (lactosa)': 'lactosa',
     'lacteos/lactosa': 'lactosa',
@@ -43,8 +42,8 @@ export const ALLERGEN_KEYWORDS: Record<string, string[]> = {
 
 type RecipeLike = {
     name?: string
-    ingredients?: unknown[]
-    ingredients_data?: unknown[]
+    ingredients?: unknown[] | null
+    ingredients_data?: unknown[] | null
 }
 
 type IngredientLike = {
