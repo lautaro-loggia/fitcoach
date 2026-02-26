@@ -24,6 +24,7 @@ import {
     getTodayString,
     normalizeText
 } from '@/lib/utils'
+import { estimateWorkoutDurationMinutes } from '@/lib/workout-time-estimate'
 import { WorkoutStartDialog } from '@/components/clients/workout-start-dialog'
 import { AdvisedDashboardMenu } from '@/components/clients/advised-dashboard-menu'
 
@@ -74,6 +75,9 @@ export default async function ClientDashboard() {
     const todayWorkout = workouts?.find((w) =>
         w.scheduled_days?.some((d: string) => normalizeText(d) === todayName)
     )
+    const todayWorkoutEstimatedMinutes = todayWorkout
+        ? estimateWorkoutDurationMinutes(todayWorkout.structure)
+        : 0
 
     // 2. Check if workout is completed today (verifica ambas tablas para consistencia)
     let isCompleted = false
@@ -272,7 +276,7 @@ export default async function ClientDashboard() {
                                 <div className="flex items-center gap-4 text-gray-500 text-sm font-semibold">
                                     <div className="flex items-center gap-2">
                                         <Clock className="h-4 w-4 text-gray-400" />
-                                        <span>{(todayWorkout.structure?.length || 0) * 4} min aprox.</span>
+                                        <span>{todayWorkoutEstimatedMinutes} min aprox.</span>
                                     </div>
                                     <span className="text-gray-200 text-xs">•</span>
                                     <div className="flex items-center gap-2">
@@ -286,7 +290,7 @@ export default async function ClientDashboard() {
                                 workoutId={todayWorkout.id}
                                 workoutName={todayWorkout.name}
                                 exercisesCount={todayWorkout.structure?.length || 0}
-                                estimatedTime={`${(todayWorkout.structure?.length || 0) * 4} min`}
+                                estimatedTime={`${todayWorkoutEstimatedMinutes} min`}
                             >
                                 <Button className="w-full h-16 bg-gray-950 hover:bg-black text-white rounded-[1.2rem] text-[15px] font-bold shadow-xl shadow-gray-900/10 flex items-center justify-center gap-3 transition-all active:scale-[0.98]">
                                     Comenzar entrenamiento
