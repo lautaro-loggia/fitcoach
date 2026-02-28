@@ -49,7 +49,14 @@ export async function logMeal(formData: FormData) {
     }
 
     // 1. Upload to Storage
-    const fileExt = file.name.split('.').pop()
+    const fileExt =
+        file.type === 'image/webp'
+            ? 'webp'
+            : file.type === 'image/jpeg'
+                ? 'jpg'
+                : file.type === 'image/png'
+                    ? 'png'
+                    : (file.name.split('.').pop() || 'webp')
     const fileName = `${clientId}/${Date.now()}.${fileExt}`
 
     // Use admin client for storage if public client lacks permissions, 
@@ -58,7 +65,11 @@ export async function logMeal(formData: FormData) {
     const { data: uploadData, error: uploadError } = await supabase
         .storage
         .from('meal-logs')
-        .upload(fileName, file)
+        .upload(fileName, file, {
+            contentType: file.type || 'image/webp',
+            cacheControl: '31536000',
+            upsert: false,
+        })
 
     if (uploadError) {
         console.error('Upload Error:', uploadError)

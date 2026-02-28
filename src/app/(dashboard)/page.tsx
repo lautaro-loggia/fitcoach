@@ -1,25 +1,26 @@
-import { UserPlus, UserCheck } from 'lucide-react'
-import { createClient } from '@/lib/supabase/server'
-import { getDashboardStats, getUpcomingPayments, getTodayPresentialTrainings, getPendingCheckins } from '@/lib/actions/dashboard'
-import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { PresentialTrainings } from '@/components/dashboard/presential-trainings'
-import { UrgentActions } from '@/components/dashboard/urgent-actions'
+import { UserPlus } from 'lucide-react'
+import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { FloatingActionButton } from '@/components/ui/fab'
+import { Button } from '@/components/ui/button'
 import { CoachOnboardingWrapper } from '@/components/onboarding/coach-onboarding-wrapper'
-import { getARTHour } from '@/lib/utils'
-
-
+import { getCoachHomeData, syncCoachHomeNotifications } from '@/lib/actions/coach-home'
+import { CoachMetricCards } from '@/components/dashboard/coach-metric-cards'
+import { CoachUrgentActionsTable } from '@/components/dashboard/coach-urgent-actions-table'
+import { CoachComplianceCard } from '@/components/dashboard/coach-compliance-card'
+import { CoachRetentionAlerts } from '@/components/dashboard/coach-retention-alerts'
+import { CoachWeeklyMilestones } from '@/components/dashboard/coach-weekly-milestones'
 
 export default async function DashboardPage() {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+        data: { user }
+    } = await supabase.auth.getUser()
 
-    if (!user) return null
+    if (!user) {
+        return null
+    }
 
-    // Helper to check client role and redirect
     if (user.user_metadata?.role === 'client') {
         const { data: client } = await supabase
             .from('clients')
@@ -34,144 +35,46 @@ export default async function DashboardPage() {
         }
     }
 
-    // Get user profile for name
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', user.id)
-        .single()
+    const homeData = await getCoachHomeData()
 
-    // Function to get greeting based on time of day
-    const getGreeting = () => {
-        const hour = getARTHour()
-        if (hour >= 6 && hour < 12) return 'Buenos días'
-        if (hour >= 12 && hour < 20) return 'Buenas tardes'
-        return 'Buenas noches'
-    }
-
-    const greeting = getGreeting()
-    const userName = profile?.full_name?.split(' ')[0] || 'Entrenador'
-
-    // Fetch all dashboard data
-    const [stats, upcomingPayments, presentialTrainings, pendingCheckins] = await Promise.all([
-        getDashboardStats(),
-        getUpcomingPayments(),
-        getTodayPresentialTrainings(),
-        getPendingCheckins()
-    ])
-
-    const overduePayments = upcomingPayments.filter(p => p.status === 'overdue')
+    // Persist coach home notifications as in-app alerts with cooldown dedupe.
+    await syncCoachHomeNotifications({
+        urgentActions: homeData.urgentActions,
+        retentionAlerts: homeData.retentionAlerts,
+        weeklyMilestones: homeData.weeklyMilestones
+    })
 
     return (
-        <div className="p-4 md:p-8 pt-6 md:pt-8 bg-background min-h-full">
-            <FloatingActionButton />
-            <div className="space-y-6 md:space-y-8">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="min-h-full bg-[#f9f9fa] px-4 py-6 md:px-8 md:py-8">
+            <div className="space-y-4 md:space-y-6">
+                <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h2 className="text-2xl md:text-3xl font-normal tracking-tight text-foreground">
-                            {greeting}, <span className="font-bold">{userName}</span>
-                        </h2>
-                        <p className="text-muted-foreground mt-1">
-                            Este es tu estado hoy
-                        </p>
+                        <h1 className="text-[30px] leading-[36px] tracking-[-0.75px] text-[#0e0e0e]">
+                            {homeData.greeting}, <span className="font-bold">{homeData.coachName}</span>
+                        </h1>
+                        <p className="text-[16px] leading-6 text-[#8c929c] mt-1">Este es tu estado hoy</p>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <Link href="/clients?new=true">
-                            <Button variant="outline" className="gap-2 bg-background">
-                                <UserPlus className="h-4 w-4 text-muted-foreground" />
-                                Nuevo asesorado
-                            </Button>
-                        </Link>
-                    </div>
-                </div>
+                    <Link href="/clients?new=true">
+                        <Button className="h-10 rounded-xl bg-[#0e0e0e] hover:bg-[#1a1a1a] text-white text-sm font-medium px-4 gap-2">
+                            <UserPlus className="h-4 w-4" />
+                            Nuevo asesorado
+                        </Button>
+                    </Link>
+                </header>
 
-                {/* Onboarding Coach */}
                 <CoachOnboardingWrapper />
 
-                {/* Status Cards Row */}
-                <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
-                    {/* Active Clients Card */}
-                    <Card className="border bg-white">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                                <div className="h-2 w-2 rounded-full bg-blue-500" />
-                                Asesorados activos
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-4 pt-0">
-                            <div className="text-2xl md:text-4xl font-bold text-foreground">{stats.activeClients}</div>
-                            <p className="text-[10px] md:text-xs font-medium text-muted-foreground mt-1">
-                                Total clientes activos
-                            </p>
-                        </CardContent>
-                    </Card>
+                <CoachMetricCards metrics={homeData.metrics} />
 
-                    {/* Pagos Cards */}
-                    <Card className="border bg-white">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                                <div className="h-2 w-2 rounded-full bg-red-500" />
-                                Pagos por cobrar
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-4 pt-0">
-                            <div className="text-2xl md:text-4xl font-bold text-foreground">{stats.pendingPaymentsCount}</div>
-                            <p className="text-[10px] md:text-xs font-medium text-red-500 mt-1">
-                                Pendientes y vencidos
-                            </p>
-                        </CardContent>
-                    </Card>
+                <section className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-6">
+                    <CoachUrgentActionsTable actions={homeData.urgentActions} />
+                    <CoachComplianceCard compliance={homeData.compliance} />
+                </section>
 
-                    {/* Check-ins Card */}
-                    <Card className="border bg-white">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                                <div className="h-2 w-2 rounded-full bg-amber-500" />
-                                Check-ins pendientes
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-4 pt-0">
-                            <div className="text-2xl md:text-4xl font-bold text-foreground">{stats.pendingCheckinsCount}</div>
-                            <p className="text-[10px] md:text-xs font-medium text-amber-500 mt-1">
-                                Esperando revisión
-                            </p>
-                        </CardContent>
-                    </Card>
-
-                    {/* Trainings Card */}
-                    <Card className="border bg-white relative overflow-hidden">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                                <div className="h-2 w-2 rounded-full bg-green-500" />
-                                Entrenamientos hoy
-                            </CardTitle>
-                            <div className="h-6 w-6 rounded-full border border-green-200 flex items-center justify-center bg-green-50">
-                                <UserCheck className="h-3 w-3 text-green-600" />
-                            </div>
-                        </CardHeader>
-                        <CardContent className="p-4 pt-0">
-                            <div className="text-2xl md:text-4xl font-bold text-foreground">{presentialTrainings.length}</div>
-                            <p className="text-[10px] md:text-xs font-medium text-green-500 mt-1">
-                                Todo en orden
-                            </p>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                <div className="grid lg:grid-cols-12 gap-6">
-                    {/* Left Column: Urgent Actions */}
-                    <div className="lg:col-span-8">
-                        <UrgentActions
-                            overduePayments={overduePayments}
-                            pendingCheckins={pendingCheckins}
-                        />
-                    </div>
-
-                    {/* Right Column: Presential Trainings */}
-                    <div className="lg:col-span-4">
-                        <PresentialTrainings trainings={presentialTrainings} />
-                    </div>
-                </div>
+                <section className="grid grid-cols-1 xl:grid-cols-2 gap-6 pb-4">
+                    <CoachRetentionAlerts alerts={homeData.retentionAlerts} />
+                    <CoachWeeklyMilestones milestones={homeData.weeklyMilestones} />
+                </section>
             </div>
         </div>
     )

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import {
     UserGroupIcon,
@@ -11,139 +11,199 @@ import {
     Dumbbell01Icon,
     CreditCardIcon,
     Settings01Icon,
-    Logout01Icon,
     PanelLeftCloseIcon,
-    PanelLeftOpenIcon,
+    PanelLeftOpenIcon
 } from 'hugeicons-react'
 import { Button } from '@/components/ui/button'
-import { createClient } from '@/lib/supabase/client'
 import { useSidebar } from './sidebar-context'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
-const navigation = [
+const mainNavigation = [
     { name: 'Inicio', href: '/', icon: Home01Icon },
     { name: 'Asesorados', href: '/clients', icon: UserGroupIcon },
     { name: 'Recetas', href: '/recipes', icon: KitchenUtensilsIcon },
-    { name: 'Planes de entrenamiento', href: '/workouts', icon: Dumbbell01Icon },
-    { name: 'Pagos y Planes', href: '/pagos', icon: CreditCardIcon },
-    { name: 'Ajustes', href: '/settings', icon: Settings01Icon },
+    { name: 'Entrenamientos', href: '/workouts', icon: Dumbbell01Icon },
+    { name: 'Finanzas', href: '/pagos', icon: CreditCardIcon }
 ]
 
-function SidebarContent({ collapsed, onNavigate, toggleSidebar }: { collapsed: boolean; onNavigate?: () => void; toggleSidebar?: () => void }) {
+const bottomNavigation = [
+    { name: 'Ajustes', href: '/settings', icon: Settings01Icon }
+]
+
+interface CoachProfile {
+    fullName: string
+    avatarUrl: string | null
+}
+
+function getInitials(name: string) {
+    const words = name.trim().split(/\s+/).filter(Boolean)
+    if (words.length === 0) return 'CO'
+    if (words.length === 1) return words[0].slice(0, 2).toUpperCase()
+    return `${words[0][0]}${words[1][0]}`.toUpperCase()
+}
+
+function getFirstName(name: string) {
+    const [firstName] = name.trim().split(/\s+/).filter(Boolean)
+    return firstName || 'Coach'
+}
+
+function SidebarContent({
+    collapsed,
+    coachProfile,
+    onNavigate,
+    toggleSidebar
+}: {
+    collapsed: boolean
+    coachProfile: CoachProfile
+    onNavigate?: () => void
+    toggleSidebar?: () => void
+}) {
     const pathname = usePathname()
-    const router = useRouter()
-
-    const handleSignOut = async () => {
-        const supabase = createClient()
-        await supabase.auth.signOut()
-        router.push('/login')
-    }
-
-    const handleLinkClick = () => {
-        if (onNavigate) onNavigate()
-    }
 
     return (
-        <>
+        <div className="h-full flex flex-col bg-white">
             <div className={cn(
-                "flex h-16 items-center px-4",
-                collapsed ? "justify-center" : "justify-between"
+                'h-16 border-b border-border flex items-center',
+                collapsed ? 'justify-center px-2' : 'justify-between px-4'
             )}>
-                {!collapsed && (
-                    <>
-                        <div className="flex items-center justify-start px-2">
-                            <Image src="/orbit_logo_black.png" alt="Orbit" width={120} height={40} className="h-8 w-auto object-contain" priority />
-                        </div>
-                        {toggleSidebar && (
-                            <Button variant="ghost" size="icon" onClick={toggleSidebar} className="h-6 w-6 text-muted-foreground hover:text-primary">
-                                <PanelLeftCloseIcon className="h-4 w-4" />
-                            </Button>
-                        )}
-                    </>
-                )}
-                {collapsed && toggleSidebar && (
-                    <Button variant="ghost" size="icon" onClick={toggleSidebar} className="h-8 w-8 text-muted-foreground hover:text-primary">
+                {collapsed ? (
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={toggleSidebar}
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                    >
                         <PanelLeftOpenIcon className="h-4 w-4" />
                     </Button>
-                )}
-                {collapsed && !toggleSidebar && (
-                    <div className="h-8 w-8 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold">O</div>
+                ) : (
+                    <>
+                        <Image
+                            src="/orbit_logo_black.png"
+                            alt="Orbit"
+                            width={104}
+                            height={32}
+                            className="h-8 w-auto"
+                            priority
+                        />
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={toggleSidebar}
+                            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                        >
+                            <PanelLeftCloseIcon className="h-4 w-4" />
+                        </Button>
+                    </>
                 )}
             </div>
 
-            {/* Separator */}
-            <div className="px-4 mb-2">
-                <div className="border-b border-sidebar-border" />
-            </div>
+            <nav className={cn(
+                'flex-1 pt-3',
+                collapsed ? 'px-2' : 'px-3'
+            )}>
+                <div className="flex flex-col gap-1">
+                    {mainNavigation.map((item) => {
+                        const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))
+                        return (
+                            <Link
+                                key={item.name}
+                                href={item.href}
+                                prefetch
+                                onClick={onNavigate}
+                                title={collapsed ? item.name : undefined}
+                                className={cn(
+                                    'h-10 rounded-lg flex items-center text-sm transition-colors',
+                                    collapsed ? 'justify-center' : 'px-3 gap-3',
+                                    isActive
+                                        ? 'bg-[#0e0e0e] text-white'
+                                        : 'text-[#8c929c] hover:bg-[#f4f4f5] hover:text-[#101019]'
+                                )}
+                            >
+                                <item.icon className="h-5 w-5" />
+                                {!collapsed && <span className="font-medium">{item.name}</span>}
+                            </Link>
+                        )
+                    })}
+                </div>
+            </nav>
 
-            <div className="flex-1 flex flex-col gap-1 px-3 overflow-y-auto">
-                {navigation.map((item) => {
-                    const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))
+            <div className="border-t border-border p-2 space-y-2">
+                {bottomNavigation.map((item) => {
+                    const isActive = pathname === item.href || pathname.startsWith(item.href)
                     return (
                         <Link
                             key={item.name}
                             href={item.href}
-                            prefetch={true}
-                            onClick={handleLinkClick}
-                            className={cn(
-                                "flex items-center rounded-lg py-2.5 text-sm font-medium transition-colors w-full text-left",
-                                collapsed ? "justify-center px-2" : "px-3 gap-3",
-                                isActive
-                                    ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                                    : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                            )
-                            }
+                            prefetch
+                            onClick={onNavigate}
                             title={collapsed ? item.name : undefined}
+                            className={cn(
+                                'h-10 rounded-lg flex items-center text-sm transition-colors',
+                                collapsed ? 'justify-center' : 'px-3 gap-3',
+                                isActive
+                                    ? 'bg-[#0e0e0e] text-white'
+                                    : 'text-[#8c929c] hover:bg-[#f4f4f5] hover:text-[#101019]'
+                            )}
                         >
-                            <item.icon className={cn("h-5 w-5", !collapsed && "mr-1")} />
-                            {!collapsed && <span>{item.name}</span>}
+                            <item.icon className="h-5 w-5" />
+                            {!collapsed && <span className="font-medium">{item.name}</span>}
                         </Link>
                     )
                 })}
-            </div >
 
-            <div className="p-2 border-t border-sidebar-border">
-                <Button
-                    variant="ghost"
+                <div
                     className={cn(
-                        "w-full text-sidebar-foreground hover:bg-sidebar-accent hover:text-primary",
-                        collapsed ? "justify-center px-0" : "justify-start"
+                        'rounded-lg border border-[#ececef] bg-[#fafafa] flex items-center',
+                        collapsed ? 'justify-center p-2' : 'px-3 py-2 gap-3'
                     )}
-                    onClick={handleSignOut}
-                    title={collapsed ? "Cerrar sesión" : undefined}
                 >
-                    <Logout01Icon className={cn("h-4 w-4", !collapsed && "mr-2")} />
-                    {!collapsed && "Cerrar sesión"}
-                </Button>
+                    <Avatar className="h-8 w-8 border border-black/5">
+                        <AvatarImage src={coachProfile.avatarUrl || undefined} alt={coachProfile.fullName} />
+                        <AvatarFallback className="bg-[#e9ecef] text-[#101019] text-xs font-semibold">
+                            {getInitials(coachProfile.fullName)}
+                        </AvatarFallback>
+                    </Avatar>
+                    {!collapsed && (
+                        <div className="min-w-0">
+                            <p className="text-sm font-medium text-[#101019] truncate">{getFirstName(coachProfile.fullName)}</p>
+                        </div>
+                    )}
+                </div>
             </div>
-        </>
+        </div>
     )
 }
 
-export function Sidebar() {
+export function Sidebar({ coachProfile }: { coachProfile: CoachProfile }) {
     const { collapsed, toggleSidebar, mobileOpen, setMobileOpen } = useSidebar()
 
     return (
         <>
-            {/* Desktop Sidebar */}
             <div
                 className={cn(
-                    "hidden md:flex h-full flex-col bg-sidebar border-r border-sidebar-border transition-all duration-300 ease-in-out",
-                    collapsed ? "w-[70px]" : "w-64"
+                    'hidden md:flex h-full border-r border-border bg-white transition-all duration-300 ease-in-out',
+                    collapsed ? 'w-20' : 'w-[207px]'
                 )}
             >
-                <SidebarContent collapsed={collapsed} toggleSidebar={toggleSidebar} />
+                <SidebarContent
+                    collapsed={collapsed}
+                    coachProfile={coachProfile}
+                    toggleSidebar={toggleSidebar}
+                />
             </div>
 
-            {/* Mobile Sidebar - Sheet */}
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-                <SheetContent side="left" className="w-64 p-0 bg-sidebar">
-                    <SheetTitle className="sr-only">Menú de navegación</SheetTitle>
-                    <SidebarContent collapsed={false} onNavigate={() => setMobileOpen(false)} />
+                <SheetContent side="left" className="w-[270px] p-0 bg-white">
+                    <SheetTitle className="sr-only">Menú principal</SheetTitle>
+                    <SidebarContent
+                        collapsed={false}
+                        coachProfile={coachProfile}
+                        onNavigate={() => setMobileOpen(false)}
+                        toggleSidebar={() => setMobileOpen(false)}
+                    />
                 </SheetContent>
             </Sheet>
         </>
     )
 }
-
-

@@ -12,6 +12,7 @@ import { createClient } from "@/lib/supabase/client"
 import { dateOnlyToLocalNoon, getTodayString } from "@/lib/utils"
 import Image from "next/image"
 import { toast } from "sonner"
+import { compressImage } from "@/lib/image-utils"
 
 interface AddCheckinDialogProps {
     clientId: string
@@ -47,6 +48,14 @@ export function AddCheckinDialog({ clientId, autoOpen, trigger }: AddCheckinDial
     const [photoFile, setPhotoFile] = useState<File | null>(null)
     const [photoPreview, setPhotoPreview] = useState<string | null>(null)
 
+    useEffect(() => {
+        return () => {
+            if (photoPreview?.startsWith('blob:')) {
+                URL.revokeObjectURL(photoPreview)
+            }
+        }
+    }, [photoPreview])
+
     // Measurements
     const [chest, setChest] = useState("")
     const [waist, setWaist] = useState("")
@@ -55,21 +64,35 @@ export function AddCheckinDialog({ clientId, autoOpen, trigger }: AddCheckinDial
     const [thigh, setThigh] = useState("")
     const [calves, setCalves] = useState("")
 
-    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0]
-            setPhotoFile(file)
+    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
 
-            const reader = new FileReader()
-            reader.onloadend = () => {
-                setPhotoPreview(reader.result as string)
-            }
-            reader.readAsDataURL(file)
+        try {
+            const compressedFile = await compressImage(file, 0.74, 1280, 450 * 1024)
+            setPhotoFile(compressedFile)
+
+            setPhotoPreview((prev) => {
+                if (prev?.startsWith('blob:')) {
+                    URL.revokeObjectURL(prev)
+                }
+                return URL.createObjectURL(compressedFile)
+            })
+        } catch (error) {
+            console.error('Error compressing check-in image:', error)
+            toast.error('Error al procesar la imagen')
+            setPhotoFile(null)
+            setPhotoPreview(null)
+        } finally {
+            e.target.value = ""
         }
     }
 
     const handleRemovePhoto = () => {
         setPhotoFile(null)
+        if (photoPreview?.startsWith('blob:')) {
+            URL.revokeObjectURL(photoPreview)
+        }
         setPhotoPreview(null)
         if (fileInputRef.current) {
             fileInputRef.current.value = ""
@@ -92,7 +115,11 @@ export function AddCheckinDialog({ clientId, autoOpen, trigger }: AddCheckinDial
 
                 const { error: uploadError } = await supabase.storage
                     .from('progress-photos')
-                    .upload(fileName, photoFile)
+                    .upload(fileName, photoFile, {
+                        contentType: photoFile.type || 'image/webp',
+                        cacheControl: '31536000',
+                        upsert: false,
+                    })
 
                 if (uploadError) {
                     console.error('Upload error:', uploadError)
@@ -243,6 +270,8 @@ export function AddCheckinDialog({ clientId, autoOpen, trigger }: AddCheckinDial
                                         src={photoPreview}
                                         alt="Previsualización"
                                         fill
+                                        sizes="(max-width: 768px) 92vw, 680px"
+                                        quality={74}
                                         className="object-contain"
                                     />
                                     <Button

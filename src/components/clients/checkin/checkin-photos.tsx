@@ -74,6 +74,8 @@ export function CheckinPhotos({ photos: initialPhotos }: CheckinPhotosProps) {
                                 src={photo.url}
                                 alt={photo.type}
                                 fill
+                                sizes="(max-width: 768px) 44vw, (max-width: 1200px) 24vw, 260px"
+                                quality={72}
                                 className="object-cover transition-transform duration-300 group-hover:scale-110"
                             />
                             <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -105,6 +107,8 @@ export function CheckinPhotos({ photos: initialPhotos }: CheckinPhotosProps) {
                                 src={selectedPhoto}
                                 alt="Checkin photo"
                                 fill
+                                sizes="(max-width: 1024px) 92vw, 1200px"
+                                quality={84}
                                 className="object-contain"
                                 priority
                             />

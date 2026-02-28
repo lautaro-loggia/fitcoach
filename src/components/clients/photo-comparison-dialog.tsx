@@ -164,7 +164,14 @@ export function PhotoComparisonDialog({ photos }: PhotoComparisonDialogProps) {
                                                 {/* Thumbnail */}
                                                 <div className="relative aspect-square w-full md:w-20 bg-muted flex-shrink-0">
                                                     {url ? (
-                                                        <Image src={url} alt="Thumb" fill className="object-cover" />
+                                                        <Image
+                                                            src={url}
+                                                            alt="Thumb"
+                                                            fill
+                                                            sizes="80px"
+                                                            quality={64}
+                                                            className="object-cover"
+                                                        />
                                                     ) : (
                                                         <div className="w-full h-full flex items-center justify-center bg-gray-100">
                                                             <span className="text-[10px] text-gray-400">Sin foto</span>
@@ -236,6 +243,8 @@ export function PhotoComparisonDialog({ photos }: PhotoComparisonDialogProps) {
                                                         src={getPhotoUrl(c)!}
                                                         alt="Comparison"
                                                         fill
+                                                        sizes="(max-width: 1024px) 92vw, 45vw"
+                                                        quality={78}
                                                         className="object-contain"
                                                     />
                                                 ) : (
@@ -273,6 +282,8 @@ export function PhotoComparisonDialog({ photos }: PhotoComparisonDialogProps) {
                                                             src={getPhotoUrl(activeCheckin)!}
                                                             alt="Mobile Comp"
                                                             fill
+                                                            sizes="(max-width: 768px) 92vw, 800px"
+                                                            quality={78}
                                                             className="object-contain"
                                                         />
                                                     )}
