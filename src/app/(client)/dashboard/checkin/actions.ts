@@ -127,9 +127,17 @@ export async function uploadCheckinPhoto(formData: FormData) {
         }
 
         const timestamp = Date.now()
-        // Sanitize filename
         const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
-        const filename = `${user.id}/${timestamp}-${safeName}`
+        const baseName = safeName.replace(/\.[^/.]+$/, '') || 'checkin'
+        const fileExt =
+            file.type === 'image/webp'
+                ? 'webp'
+                : file.type === 'image/jpeg'
+                    ? 'jpg'
+                    : file.type === 'image/png'
+                        ? 'png'
+                        : (safeName.split('.').pop() || 'webp')
+        const filename = `${user.id}/${timestamp}-${baseName}.${fileExt}`
         const bucket = 'checkin-images'
 
         // Convert file to ArrayBuffer
@@ -142,7 +150,8 @@ export async function uploadCheckinPhoto(formData: FormData) {
         const { error } = await adminSupabase.storage
             .from(bucket)
             .upload(filename, buffer, {
-                contentType: file.type,
+                contentType: file.type || 'image/webp',
+                cacheControl: '31536000',
                 upsert: false
             })
 
@@ -154,7 +163,12 @@ export async function uploadCheckinPhoto(formData: FormData) {
         // Create Signed URL for immediate preview (valid for 1 hour)
         const { data: signedData, error: signError } = await adminSupabase.storage
             .from(bucket)
-            .createSignedUrl(filename, 3600)
+            .createSignedUrl(filename, 3600, {
+                transform: {
+                    width: 1280,
+                    quality: 72,
+                },
+            })
 
         if (signError || !signedData?.signedUrl) {
             console.error('Error signing URL:', signError)

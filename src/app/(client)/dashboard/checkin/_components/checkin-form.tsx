@@ -136,7 +136,7 @@ export function CheckinForm({ initialWeight, gender = 'male', height }: CheckinF
 
         try {
             // Compress client-side
-            const compressedFile = await compressImage(file, 0.8, 1600)
+            const compressedFile = await compressImage(file, 0.74, 1280, 450 * 1024)
 
             const uploadData = new FormData()
             uploadData.append('file', compressedFile)
@@ -397,6 +397,7 @@ export function CheckinForm({ initialWeight, gender = 'male', height }: CheckinF
                                             alt={slot.label}
                                             fill
                                             sizes="(max-width: 768px) 50vw, 33vw"
+                                            quality={72}
                                             className="object-cover"
                                         />
                                         <button

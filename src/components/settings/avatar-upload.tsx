@@ -1,11 +1,10 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Upload, Loader2 } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import { compressImage } from '@/lib/image-utils'
 import { toast } from 'sonner'
 
@@ -21,6 +20,10 @@ export function AvatarUpload({ userId, currentAvatarUrl, userInitials, onUploadC
     const [avatarUrl, setAvatarUrl] = useState<string | null>(currentAvatarUrl || null)
     const fileInputRef = useRef<HTMLInputElement>(null)
     const supabase = createClient()
+
+    useEffect(() => {
+        setAvatarUrl(currentAvatarUrl || null)
+    }, [currentAvatarUrl])
 
     const uploadAvatar = async (file: File) => {
         try {
@@ -72,6 +75,7 @@ export function AvatarUpload({ userId, currentAvatarUrl, userInitials, onUploadC
 
             setAvatarUrl(publicUrl)
             onUploadComplete?.(publicUrl)
+            toast.success('Foto de perfil actualizada')
 
         } catch (error) {
             console.error('Error uploading avatar:', error)

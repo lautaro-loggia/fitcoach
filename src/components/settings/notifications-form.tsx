@@ -5,26 +5,45 @@ import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { Button } from '@/components/ui/button'
-import { Bell, BellOff, Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Bell, Loader2 } from 'lucide-react'
 import { usePushNotifications } from '@/hooks/use-push-notifications'
 import { toast } from 'sonner'
 
+type NotificationsPreferences = {
+    checkin_completed: boolean
+    workout_completed: boolean
+    payment_registered: boolean
+    new_client: boolean
+    coach_urgent_alert: boolean
+    coach_retention_alert: boolean
+    coach_weekly_milestone: boolean
+    checkin_reminder: boolean
+    workout_assigned: boolean
+    coach_feedback: boolean
+    meal_photo_reminder: boolean
+    reminder_time_desayuno: string
+    reminder_time_almuerzo: string
+    reminder_time_merienda: string
+    reminder_time_cena: string
+}
+
 interface NotificationsFormProps {
     userId: string
-    initialEnabled: boolean
-    initialPreferences: any
+    initialPreferences: Partial<NotificationsPreferences>
     role?: 'coach' | 'client'
 }
 
-export function NotificationsForm({ userId, initialEnabled, initialPreferences, role = 'coach' }: NotificationsFormProps) {
+export function NotificationsForm({ userId, initialPreferences, role = 'coach' }: NotificationsFormProps) {
     const supabase = createClient()
     const { isSupported, permission, subscription, subscribe, unsubscribe, isLoading } = usePushNotifications()
-    const [preferences, setPreferences] = useState({
+    const [preferences, setPreferences] = useState<NotificationsPreferences>({
         checkin_completed: true,
         workout_completed: true,
         payment_registered: true,
         new_client: true,
+        coach_urgent_alert: true,
+        coach_retention_alert: true,
+        coach_weekly_milestone: true,
         checkin_reminder: true,
         workout_assigned: true,
         coach_feedback: true,
@@ -58,15 +77,20 @@ export function NotificationsForm({ userId, initialEnabled, initialPreferences, 
                     .update({ notifications_enabled: true })
                     .eq('id', userId)
 
-            } catch (error) {
+            } catch {
                 toast.error('No se pudieron activar las notificaciones. Verifica los permisos del navegador.')
             }
         }
     }
 
-    const handlePreferenceChange = async (key: string, value: boolean | string) => {
+    const handlePreferenceChange = async <K extends keyof NotificationsPreferences>(
+        key: K,
+        value: NotificationsPreferences[K]
+    ) => {
+        const previousValue = preferences[key]
+
         // Optimistic update
-        setPreferences((prev: any) => ({ ...prev, [key]: value }))
+        setPreferences((prev) => ({ ...prev, [key]: value }))
 
         const { error } = await supabase
             .from('notification_preferences')
@@ -81,19 +105,8 @@ export function NotificationsForm({ userId, initialEnabled, initialPreferences, 
             console.error('Error updating preferences:', error)
             toast.error('Error al guardar preferencia')
             // Revert
-            setPreferences((prev: any) => ({ ...prev, [key]: preferences[key as keyof typeof preferences] }))
+            setPreferences((prev) => ({ ...prev, [key]: previousValue }))
         }
-    }
-
-    if (!isSupported && !isLoading) {
-        return (
-            <Card>
-                <CardHeader>
-                    <CardTitle>Notificaciones</CardTitle>
-                    <CardDescription>Tu navegador no soporta notificaciones push.</CardDescription>
-                </CardHeader>
-            </Card>
-        )
     }
 
     return (
@@ -101,44 +114,51 @@ export function NotificationsForm({ userId, initialEnabled, initialPreferences, 
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <Bell className="w-5 h-5 text-primary" />
-                    Notificaciones Push
+                    Notificaciones
                 </CardTitle>
                 <CardDescription>
-                    Gestiona las alertas que recibes en tu dispositivo.
+                    Gestiona tus alertas del sistema y las notificaciones push.
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
 
                 {/* Master Switch */}
-                <div className="flex items-center justify-between p-4 border rounded-xl bg-muted/30">
-                    <div className="space-y-1">
-                        <Label className="text-base font-medium">Activar notificaciones</Label>
+                {isSupported ? (
+                    <div className="flex items-center justify-between p-4 border rounded-xl bg-muted/30">
+                        <div className="space-y-1">
+                            <Label className="text-base font-medium">Activar notificaciones push</Label>
+                            <p className="text-sm text-muted-foreground">
+                                {isPushEnabled
+                                    ? 'Recibiendo notificaciones push en este dispositivo.'
+                                    : 'Activa push para recibir avisos fuera de la app.'}
+                            </p>
+                        </div>
+                        {isLoading ? (
+                            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                        ) : (
+                            <Switch
+                                checked={isPushEnabled}
+                                onCheckedChange={handlePushToggle}
+                            />
+                        )}
+                    </div>
+                ) : (
+                    <div className="p-4 border rounded-xl bg-muted/30">
                         <p className="text-sm text-muted-foreground">
-                            {isPushEnabled
-                                ? 'Recibiendo notificaciones en este dispositivo.'
-                                : 'Actívalas para no perderte nada importante.'}
+                            Este navegador no soporta notificaciones push. Las alertas in-app siguen disponibles.
                         </p>
                     </div>
-                    {isLoading ? (
-                        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-                    ) : (
-                        <Switch
-                            checked={isPushEnabled}
-                            onCheckedChange={handlePushToggle}
-                        />
-                    )}
-                </div>
+                )}
 
-                {isPushEnabled && (
-                    <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
-                        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                            <span>Tipos de notificación</span>
-                            <div className="flex-1 h-[1px] bg-border" />
-                        </div>
+                <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
+                    <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                        <span>Tipos de notificación</span>
+                        <div className="flex-1 h-[1px] bg-border" />
+                    </div>
 
-                        <div className="grid gap-4">
-                            {role === 'coach' ? (
-                                <>
+                    <div className="grid gap-4">
+                        {role === 'coach' ? (
+                            <>
                                     <div className="flex items-center justify-between">
                                         <Label htmlFor="checkin_completed" className="flex-1 cursor-pointer">
                                             <span className="block font-medium">Check-ins completados</span>
@@ -186,9 +206,45 @@ export function NotificationsForm({ userId, initialEnabled, initialPreferences, 
                                             onCheckedChange={(c) => handlePreferenceChange('new_client', c)}
                                         />
                                     </div>
-                                </>
-                            ) : (
-                                <>
+
+                                    <div className="flex items-center justify-between">
+                                        <Label htmlFor="coach_urgent_alert" className="flex-1 cursor-pointer">
+                                            <span className="block font-medium">Acciones urgentes del home</span>
+                                            <span className="text-xs text-muted-foreground">Pagos, check-ins y comidas pendientes</span>
+                                        </Label>
+                                        <Switch
+                                            id="coach_urgent_alert"
+                                            checked={preferences.coach_urgent_alert ?? true}
+                                            onCheckedChange={(c) => handlePreferenceChange('coach_urgent_alert', c)}
+                                        />
+                                    </div>
+
+                                    <div className="flex items-center justify-between">
+                                        <Label htmlFor="coach_retention_alert" className="flex-1 cursor-pointer">
+                                            <span className="block font-medium">Alertas de retención</span>
+                                            <span className="text-xs text-muted-foreground">Inactividad o riesgo de abandono</span>
+                                        </Label>
+                                        <Switch
+                                            id="coach_retention_alert"
+                                            checked={preferences.coach_retention_alert ?? true}
+                                            onCheckedChange={(c) => handlePreferenceChange('coach_retention_alert', c)}
+                                        />
+                                    </div>
+
+                                    <div className="flex items-center justify-between">
+                                        <Label htmlFor="coach_weekly_milestone" className="flex-1 cursor-pointer">
+                                            <span className="block font-medium">Hitos semanales</span>
+                                            <span className="text-xs text-muted-foreground">PRs, metas de peso y consistencia</span>
+                                        </Label>
+                                        <Switch
+                                            id="coach_weekly_milestone"
+                                            checked={preferences.coach_weekly_milestone ?? true}
+                                            onCheckedChange={(c) => handlePreferenceChange('coach_weekly_milestone', c)}
+                                        />
+                                    </div>
+                            </>
+                        ) : (
+                            <>
                                     <div className="flex items-center justify-between">
                                         <Label htmlFor="checkin_reminder" className="flex-1 cursor-pointer">
                                             <span className="block font-medium">Recordatorios de Check-in</span>
@@ -289,11 +345,10 @@ export function NotificationsForm({ userId, initialEnabled, initialPreferences, 
                                             </div>
                                         )}
                                     </div>
-                                </>
-                            )}
-                        </div>
+                            </>
+                        )}
                     </div>
-                )}
+                </div>
             </CardContent>
         </Card>
     )

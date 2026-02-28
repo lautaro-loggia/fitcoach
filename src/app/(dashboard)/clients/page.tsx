@@ -7,6 +7,14 @@ interface ClientsPageProps {
     searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
+type PresentialWorkoutRow = {
+    id: string
+    created_at: string
+    valid_until: string | null
+    scheduled_days: string[] | null
+    client: { id: string; full_name: string; avatar_url: string | null } | Array<{ id: string; full_name: string; avatar_url: string | null }> | null
+}
+
 export default async function ClientsPage({ searchParams: searchParamsPromise }: ClientsPageProps) {
     const searchParams = await searchParamsPromise
     const supabase = await createClient()
@@ -24,6 +32,7 @@ export default async function ClientsPage({ searchParams: searchParamsPromise }:
       ),
       plan:plans(name)
     `)
+        .eq('trainer_id', user.id)
         .order('created_at', { ascending: false })
 
     if (error) {
@@ -51,13 +60,19 @@ export default async function ClientsPage({ searchParams: searchParamsPromise }:
         .eq('trainer_id', user.id)
         .eq('is_presential', true)
 
-    const typedPresentialWorkouts: Workout[] = presentialWorkouts?.map((w: any) => ({
-        id: w.id,
-        created_at: w.created_at,
-        valid_until: w.valid_until,
-        scheduled_days: w.scheduled_days || [],
-        client: Array.isArray(w.client) ? w.client[0] : w.client
-    })) || []
+    const typedPresentialWorkouts: Workout[] = ((presentialWorkouts || []) as PresentialWorkoutRow[])
+        .map((w) => {
+            const client = Array.isArray(w.client) ? w.client[0] : w.client
+            if (!client) return null
+            return {
+                id: w.id,
+                created_at: w.created_at,
+                valid_until: w.valid_until,
+                scheduled_days: w.scheduled_days || [],
+                client
+            }
+        })
+        .filter((item): item is Workout => !!item)
 
 
     return (

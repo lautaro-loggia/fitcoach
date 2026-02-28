@@ -95,7 +95,7 @@ export function MealLogger({ clientId, mealName, existingLogs }: MealLoggerProps
             setAiData(null)
             try {
                 // Compress for AI to save tokens and speed up
-                const compressedForAI = await compressImage(file, 0.6, 800)
+                const compressedForAI = await compressImage(file, 0.55, 768, 220 * 1024)
                 const base64 = await fileToBase64(compressedForAI)
                 const result = await analyzeMealWithAI(base64, compressedForAI.type)
                 if (result.success && result.data) {
@@ -137,7 +137,7 @@ export function MealLogger({ clientId, mealName, existingLogs }: MealLoggerProps
 
         try {
             // Compress client-side
-            const compressedFile = await compressImage(selectedFile, 0.8, 1600)
+            const compressedFile = await compressImage(selectedFile, 0.72, 1280, 420 * 1024)
             formData.append('file', compressedFile)
 
             if (aiData) {
@@ -233,6 +233,8 @@ export function MealLogger({ clientId, mealName, existingLogs }: MealLoggerProps
                                 src={log.signedUrl || '/placeholder.png'}
                                 alt="Comida registrada"
                                 fill
+                                sizes="64px"
+                                quality={66}
                                 className="object-cover"
                             />
                             <button
@@ -297,6 +299,8 @@ export function MealLogger({ clientId, mealName, existingLogs }: MealLoggerProps
                                     src={previewUrl}
                                     alt="Preview"
                                     fill
+                                    sizes="(max-width: 768px) 92vw, 520px"
+                                    quality={72}
                                     className={cn(
                                         "object-cover transition-transform duration-[1500ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
                                         (!isAnalyzing && aiData) ? "scale-[1.03]" : "scale-100"

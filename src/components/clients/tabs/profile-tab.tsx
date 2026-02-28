@@ -140,7 +140,12 @@ export function ProfileTab({ client }: ProfileTabProps) {
                         if (storagePath) {
                             const { data } = await supabase.storage
                                 .from(bucketName)
-                                .createSignedUrl(storagePath, 3600)
+                                .createSignedUrl(storagePath, 3600 * 24, {
+                                    transform: {
+                                        width: 1280,
+                                        quality: 72,
+                                    },
+                                })
                             if (data?.signedUrl) signedUrl = data.signedUrl
                         }
                         return { ...p, signedUrl }
@@ -431,7 +436,14 @@ export function ProfileTab({ client }: ProfileTabProps) {
                                             <div className="flex gap-3 items-center cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors group">
                                                 <div className="relative h-12 w-12 rounded-md overflow-hidden bg-muted flex-shrink-0 border border-gray-100">
                                                     {photo.displayUrl ? (
-                                                        <Image src={photo.displayUrl} alt="Progress" fill className="object-cover" />
+                                                        <Image
+                                                            src={photo.displayUrl}
+                                                            alt="Progress"
+                                                            fill
+                                                            sizes="48px"
+                                                            quality={64}
+                                                            className="object-cover"
+                                                        />
                                                     ) : (
                                                         <div className="flex items-center justify-center h-full w-full bg-gray-100">
                                                             <Image01Icon className="h-4 w-4 text-gray-400" />
@@ -464,7 +476,14 @@ export function ProfileTab({ client }: ProfileTabProps) {
                                                     <div key={idx} className="space-y-2">
                                                         <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-muted border">
                                                             {p.signedUrl ? (
-                                                                <Image src={p.signedUrl} alt={p.type} fill className="object-cover" />
+                                                                <Image
+                                                                    src={p.signedUrl}
+                                                                    alt={p.type}
+                                                                    fill
+                                                                    sizes="(max-width: 640px) 44vw, (max-width: 1024px) 30vw, 260px"
+                                                                    quality={72}
+                                                                    className="object-cover"
+                                                                />
                                                             ) : (
                                                                 <div className="flex items-center justify-center h-full text-xs text-muted-foreground">No imagen</div>
                                                             )}

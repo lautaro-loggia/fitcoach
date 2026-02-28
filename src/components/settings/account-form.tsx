@@ -1,15 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { DeleteAccountDialog } from './delete-account-dialog'
+import { AvatarUpload } from './avatar-upload'
 import { Loader2, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
+import { useRouter } from 'next/navigation'
 
 interface AccountFormProps {
     userId: string
@@ -17,7 +18,7 @@ interface AccountFormProps {
 
 export function AccountForm({ userId }: AccountFormProps) {
     const supabase = createClient()
-    const [loading, setLoading] = useState(true)
+    const router = useRouter()
     const [saving, setSaving] = useState(false)
 
     const [fullName, setFullName] = useState('')
@@ -27,17 +28,13 @@ export function AccountForm({ userId }: AccountFormProps) {
 
     const [currentPassword, setCurrentPassword] = useState('')
     const [newPassword, setNewPassword] = useState('')
+    const [confirmPassword, setConfirmPassword] = useState('')
+    const [updatingPassword, setUpdatingPassword] = useState(false)
 
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 
-    useEffect(() => {
-        loadUserData()
-    }, [])
-
-    const loadUserData = async () => {
+    const loadUserData = useCallback(async () => {
         try {
-            setLoading(true)
-
             // Get auth user email
             const { data: { user } } = await supabase.auth.getUser()
             if (user?.email) {
@@ -60,10 +57,12 @@ export function AccountForm({ userId }: AccountFormProps) {
             }
         } catch (error) {
             console.error('Error loading user data:', error)
-        } finally {
-            setLoading(false)
         }
-    }
+    }, [supabase, userId])
+
+    useEffect(() => {
+        loadUserData()
+    }, [loadUserData])
 
     const handleSave = async () => {
         try {
@@ -88,6 +87,61 @@ export function AccountForm({ userId }: AccountFormProps) {
         }
     }
 
+    const handlePasswordUpdate = async () => {
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            toast.error('Completá todos los campos de contraseña')
+            return
+        }
+
+        if (!email) {
+            toast.error('No se pudo validar el usuario autenticado')
+            return
+        }
+
+        if (newPassword.length < 6) {
+            toast.error('La contraseña debe tener al menos 6 caracteres')
+            return
+        }
+
+        if (newPassword !== confirmPassword) {
+            toast.error('Las contraseñas no coinciden')
+            return
+        }
+
+        try {
+            setUpdatingPassword(true)
+
+            const { error: signInError } = await supabase.auth.signInWithPassword({
+                email,
+                password: currentPassword,
+            })
+
+            if (signInError) {
+                toast.error('La contraseña actual es incorrecta')
+                return
+            }
+
+            const { error } = await supabase.auth.updateUser({
+                password: newPassword,
+                data: { needs_password: false },
+            })
+
+            if (error) {
+                throw error
+            }
+
+            toast.success('Contraseña actualizada correctamente')
+            setCurrentPassword('')
+            setNewPassword('')
+            setConfirmPassword('')
+        } catch (error) {
+            console.error('Error updating password:', error)
+            toast.error('No se pudo actualizar la contraseña')
+        } finally {
+            setUpdatingPassword(false)
+        }
+    }
+
     const getUserInitials = () => {
         if (!fullName) return '?'
         const names = fullName.split(' ')
@@ -108,13 +162,15 @@ export function AccountForm({ userId }: AccountFormProps) {
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <div className="flex justify-center pb-4 border-b">
-                        <div className="flex flex-col items-center gap-2">
-                            <Avatar className="h-24 w-24">
-                                <AvatarImage src={avatarUrl || undefined} alt="Avatar" />
-                                <AvatarFallback className="text-2xl">{getUserInitials()}</AvatarFallback>
-                            </Avatar>
-                            <p className="text-xs text-muted-foreground">La foto de perfil se gestiona desde la app.</p>
-                        </div>
+                        <AvatarUpload
+                            userId={userId}
+                            currentAvatarUrl={avatarUrl}
+                            userInitials={getUserInitials()}
+                            onUploadComplete={(url) => {
+                                setAvatarUrl(url)
+                                router.refresh()
+                            }}
+                        />
                     </div>
 
                     <div className="space-y-2">
@@ -183,7 +239,7 @@ export function AccountForm({ userId }: AccountFormProps) {
                             value={currentPassword}
                             onChange={(e) => setCurrentPassword(e.target.value)}
                             placeholder="••••••••"
-                            disabled
+                            disabled={updatingPassword}
                         />
                     </div>
 
@@ -195,18 +251,37 @@ export function AccountForm({ userId }: AccountFormProps) {
                             value={newPassword}
                             onChange={(e) => setNewPassword(e.target.value)}
                             placeholder="••••••••"
-                            disabled
+                            disabled={updatingPassword}
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="confirmPassword">Confirmar nueva contraseña</Label>
+                        <Input
+                            id="confirmPassword"
+                            type="password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            placeholder="••••••••"
+                            disabled={updatingPassword}
                         />
                     </div>
 
                     <div className="flex justify-end">
-                        <Button disabled>
-                            Actualizar contraseña
+                        <Button onClick={handlePasswordUpdate} disabled={updatingPassword}>
+                            {updatingPassword ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Actualizando...
+                                </>
+                            ) : (
+                                'Actualizar contraseña'
+                            )}
                         </Button>
                     </div>
 
                     <p className="text-xs text-muted-foreground">
-                        La funcionalidad de cambio de contraseña estará disponible próximamente.
+                        Usá una contraseña de al menos 6 caracteres.
                     </p>
                 </CardContent>
             </Card>

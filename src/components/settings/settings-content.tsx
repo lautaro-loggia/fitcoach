@@ -13,9 +13,12 @@ import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent } from '@/components/ui/card'
 
 interface SettingsContentProps {
-    user: any
-    profile: any
-    preferences: any
+    user: { id: string }
+    profile: {
+        notifications_enabled?: boolean | null
+        whatsapp_message_template?: string | null
+    } | null
+    preferences: Record<string, unknown>
 }
 
 export function SettingsContent({ user, profile, preferences }: SettingsContentProps) {
@@ -49,7 +52,6 @@ export function SettingsContent({ user, profile, preferences }: SettingsContentP
                     <TabsContent value="notifications" className="space-y-4">
                         <NotificationsForm
                             userId={user.id}
-                            initialEnabled={profile?.notifications_enabled ?? false}
                             initialPreferences={preferences}
                         />
                         <WhatsAppSettingsForm
@@ -58,9 +60,8 @@ export function SettingsContent({ user, profile, preferences }: SettingsContentP
                     </TabsContent>
                 </Tabs>
 
-                {/* Mobile Logout Option */}
-                <div className="mt-8 md:hidden">
-                    <Card className="border-muted bg-white/50 backdrop-blur-sm">
+                <div className="mt-8">
+                    <Card className="border-muted bg-white/50 backdrop-blur-sm max-w-md">
                         <CardContent className="p-4">
                             <Button
                                 variant="ghost"
@@ -76,7 +77,7 @@ export function SettingsContent({ user, profile, preferences }: SettingsContentP
                             </Button>
                         </CardContent>
                     </Card>
-                    <p className="text-center text-xs text-muted-foreground mt-4">
+                    <p className="text-xs text-muted-foreground mt-4">
                         Orbit v1.0.0
                     </p>
                 </div>

@@ -104,7 +104,6 @@ export default async function ProfilePage() {
             <div className="pt-2">
                 <NotificationsForm
                     userId={user.id}
-                    initialEnabled={true}
                     initialPreferences={preferences || {}}
                     role="client"
                 />

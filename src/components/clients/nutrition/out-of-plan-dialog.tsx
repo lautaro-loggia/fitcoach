@@ -66,14 +66,14 @@ export function OutOfPlanDialog({ clientId, mealName }: OutOfPlanDialogProps) {
         const file = e.target.files?.[0]
         if (!file) return
         try {
-            const compressedFile = await compressImage(file, 0.8, 1600)
+            const compressedFile = await compressImage(file, 0.72, 1280, 420 * 1024)
             setPhoto(compressedFile)
             setPhotoPreview(URL.createObjectURL(compressedFile))
 
             // Start AI Analysis
             setIsAnalyzing(true)
             try {
-                const compressedForAI = await compressImage(file, 0.6, 800)
+                const compressedForAI = await compressImage(file, 0.55, 768, 220 * 1024)
                 const base64 = await fileToBase64(compressedForAI)
                 const result = await analyzeMealWithAI(base64, compressedForAI.type)
 

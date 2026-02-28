@@ -63,6 +63,13 @@ Deno.serve(async (req) => {
         })
     }
 
+    // Some coach home alerts are in-app only and should not trigger push delivery.
+    if (record.data?.delivery === 'in_app_only') {
+        return new Response(JSON.stringify({ message: 'Skipped push (in-app only notification)' }), {
+            headers: { 'Content-Type': 'application/json' },
+        })
+    }
+
     // 1. Get subscriptions for this user
     const { data: subscriptions } = await supabase
         .from('push_subscriptions')

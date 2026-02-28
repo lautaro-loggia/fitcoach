@@ -103,7 +103,14 @@ export function CheckinTab({ client }: { client: any }) {
                 }
 
                 if (storagePath) {
-                    const { data } = await supabase.storage.from(bucketName).createSignedUrl(storagePath, 3600)
+                    const { data } = await supabase.storage
+                        .from(bucketName)
+                        .createSignedUrl(storagePath, 3600 * 24, {
+                            transform: {
+                                width: 1280,
+                                quality: 72,
+                            },
+                        })
                     if (data?.signedUrl) signedUrl = data.signedUrl
                 }
 

@@ -541,7 +541,14 @@ export async function registerMealLog(clientId: string, mealType: string, formDa
     if (file && file.size > 0) {
         const dateStr = getTodayString()
         const timestamp = Date.now()
-        const fileExt = file.name.split('.').pop() || 'webp'
+        const fileExt =
+            file.type === 'image/webp'
+                ? 'webp'
+                : file.type === 'image/jpeg'
+                    ? 'jpg'
+                    : file.type === 'image/png'
+                        ? 'png'
+                        : (file.name.split('.').pop() || 'webp')
         filePath = `${clientId}/${dateStr}/${timestamp}.${fileExt}`
 
         console.log('registerMealLog: Uploading to storage...', filePath)
@@ -549,8 +556,8 @@ export async function registerMealLog(clientId: string, mealType: string, formDa
         const { error: uploadError } = await adminSupabase.storage
             .from('meal-logs')
             .upload(filePath, file, {
-                contentType: file.type,
-                cacheControl: '3600',
+                contentType: file.type || 'image/webp',
+                cacheControl: '31536000',
                 upsert: false
             })
 
@@ -637,7 +644,14 @@ export async function getDailyMealLogs(clientId: string, date: string) {
         if (!log.image_path || log.image_path === 'no-image') {
             return log
         }
-        const { data } = await adminSupabase.storage.from('meal-logs').createSignedUrl(log.image_path, 3600 * 24) // 24h url
+        const { data } = await adminSupabase.storage
+            .from('meal-logs')
+            .createSignedUrl(log.image_path, 3600 * 24, {
+                transform: {
+                    width: 1280,
+                    quality: 72,
+                },
+            }) // 24h url
         return {
             ...log,
             signedUrl: data?.signedUrl
@@ -738,4 +752,26 @@ export async function getPendingMealLogsCount(clientId: string): Promise<{ count
         return { count: 0 }
     }
     return { count }
+}
+
+export async function markAllPendingMealLogsAsReviewed(clientId: string): Promise<{ success: boolean; error?: string }> {
+    const access = await authorizeClientAccess(clientId, { allowClientSelf: false })
+    if (!access.ok) {
+        return { success: false, error: access.error }
+    }
+
+    const adminSupabase = createAdminClient()
+    const { error } = await adminSupabase
+        .from('meal_logs')
+        .update({ status: 'reviewed' })
+        .eq('client_id', clientId)
+        .eq('status', 'pending')
+
+    if (error) {
+        console.error('Error marking meal logs as reviewed', error)
+        return { success: false, error: 'Error al marcar comidas como revisadas' }
+    }
+
+    revalidatePath(`/clients/${clientId}`)
+    return { success: true }
 }

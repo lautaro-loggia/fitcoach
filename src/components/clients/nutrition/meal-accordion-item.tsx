@@ -142,14 +142,14 @@ export function MealAccordionItem({ meal, log, clientId }: MealAccordionItemProp
         if (!file) return
 
         try {
-            const compressedFile = await compressImage(file, 0.8, 1600)
+            const compressedFile = await compressImage(file, 0.72, 1280, 420 * 1024)
             setPhoto(compressedFile)
             setPhotoPreview(URL.createObjectURL(compressedFile))
             setAiState('analyzing')
             setIsDialogOpen(true) // Expand the modal to show AI flow 
 
             try {
-                const compressedForAI = await compressImage(file, 0.6, 800)
+                const compressedForAI = await compressImage(file, 0.55, 768, 220 * 1024)
                 const base64 = await fileToBase64(compressedForAI)
                 const result = await analyzeMealWithAI(base64, compressedForAI.type)
 
@@ -360,6 +360,8 @@ export function MealAccordionItem({ meal, log, clientId }: MealAccordionItemProp
                                             src={photoPreview}
                                             alt="Preview"
                                             fill
+                                            sizes="(max-width: 768px) 92vw, 520px"
+                                            quality={72}
                                             className={cn(
                                                 "object-cover transition-transform duration-[1500ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
                                                 aiState === 'review' ? "scale-[1.03]" : "scale-100"
@@ -581,6 +583,8 @@ export function MealAccordionItem({ meal, log, clientId }: MealAccordionItemProp
                                         src={log?.signedUrl || meal.items[0].recipe.image_url}
                                         alt={displayTitle}
                                         fill
+                                        sizes="(max-width: 768px) 92vw, 640px"
+                                        quality={72}
                                         className="object-cover"
                                     />
                                 </div>

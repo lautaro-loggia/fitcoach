@@ -10,6 +10,9 @@ export type NotificationType =
     | 'workout_assigned'
     | 'coach_feedback'
     | 'meal_photo_reminder'
+    | 'coach_urgent_alert'
+    | 'coach_retention_alert'
+    | 'coach_weekly_milestone'
 
 interface CreateNotificationParams {
     userId: string
@@ -43,7 +46,7 @@ export async function createNotification({ userId, type, title, body, data }: Cr
         }
 
         // 2. Insert into notifications queue (history)
-        const { data: inserted, error } = await supabase
+        const { error } = await supabase
             .from('notifications')
             .insert({
                 user_id: userId,
@@ -53,8 +56,6 @@ export async function createNotification({ userId, type, title, body, data }: Cr
                 data: data || {},
                 read: false
             })
-            .select('id, user_id, type, title, body, data')
-            .single()
 
         if (error) {
             console.error('[createNotification] Error:', error)
