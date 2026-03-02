@@ -5,7 +5,13 @@ import { Button } from '@/components/ui/button'
 import { CheckCircle2, Sparkles, ArrowRight } from 'lucide-react'
 import confetti from 'canvas-confetti'
 
-export function StepSuccess({ isPreview }: { isPreview?: boolean }) {
+type StepSuccessProps = {
+    isPreview?: boolean
+    isQaMode?: boolean
+    onRestart?: () => void
+}
+
+export function StepSuccess({ isPreview, isQaMode, onRestart }: StepSuccessProps) {
     useEffect(() => {
         const duration = 3 * 1000
         const animationEnd = Date.now() + duration
@@ -13,7 +19,7 @@ export function StepSuccess({ isPreview }: { isPreview?: boolean }) {
 
         const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min
 
-        const interval: any = setInterval(function () {
+        const interval: ReturnType<typeof setInterval> = setInterval(function () {
             const timeLeft = animationEnd - Date.now()
 
             if (timeLeft <= 0) {
@@ -55,13 +61,38 @@ export function StepSuccess({ isPreview }: { isPreview?: boolean }) {
                 </p>
             </div>
 
-            <Button
-                onClick={() => window.location.href = '/dashboard'}
-                className="w-full h-16 text-lg font-bold bg-[#1A1A1A] hover:bg-black text-white shadow-xl rounded-2xl group transition-all"
-            >
-                Ir a mi Dashboard
-                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </Button>
+            {isQaMode ? (
+                <div className="w-full space-y-3">
+                    <Button
+                        onClick={() => onRestart?.()}
+                        className="w-full h-16 text-lg font-bold bg-[#1A1A1A] hover:bg-black text-white shadow-xl rounded-2xl group transition-all"
+                    >
+                        Reiniciar onboarding
+                        <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    </Button>
+                    <Button
+                        variant="outline"
+                        onClick={() => window.location.href = '/dashboard'}
+                        className="w-full h-12 font-bold border-gray-200 text-gray-600 hover:bg-gray-50 rounded-xl"
+                    >
+                        Ir a mi Dashboard
+                    </Button>
+                </div>
+            ) : (
+                <Button
+                    onClick={() => window.location.href = '/dashboard'}
+                    className="w-full h-16 text-lg font-bold bg-[#1A1A1A] hover:bg-black text-white shadow-xl rounded-2xl group transition-all"
+                >
+                    Ir a mi Dashboard
+                    <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </Button>
+            )}
+
+            {isPreview && (
+                <p className="text-[10px] uppercase font-bold tracking-widest text-amber-500">
+                    Modo vista previa activo
+                </p>
+            )}
 
             <p className="text-[10px] uppercase font-bold tracking-widest text-gray-300">
                 Prepárate para el cambio

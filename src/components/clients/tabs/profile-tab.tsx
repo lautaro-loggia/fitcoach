@@ -46,9 +46,15 @@ const activityTranslations: { [key: string]: string } = {
 }
 
 const workTypeTranslations: { [key: string]: string } = {
+    home_office: "Oficina / Sedentario",
     sedentary: "Oficina / Sedentario",
     mixed: "Mixto (Parado/Sentado)",
-    physical: "Físico / Activo"
+    physical: "Físico / Activo",
+    no_work: "No trabaja actualmente",
+    student: "Estudiante",
+    retired: "Jubilado/a",
+    homemaker: "Trabajo doméstico / cuidados",
+    other: "Otro"
 }
 
 const timeframeTranslations: { [key: string]: string } = {

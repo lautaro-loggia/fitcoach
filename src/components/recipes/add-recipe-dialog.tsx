@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -40,14 +40,28 @@ interface SelectedIngredient {
 interface AddRecipeDialogProps {
     open?: boolean
     onOpenChange?: (open: boolean) => void
-    onSuccess?: (recipe: any) => void
+    onSuccess?: (recipe: { id: string; servings: number | null }) => void
     defaultMealType?: string
+}
+
+interface IngredientOption {
+    id: string
+    name: string
+    kcal_100g: number
+    protein_100g: number
+    carbs_100g: number
+    fat_100g: number
+    fiber_100g: number
+    valid_units?: Record<string, number>
 }
 
 export function AddRecipeDialog({ open: controlledOpen, onOpenChange, onSuccess, defaultMealType }: AddRecipeDialogProps = {}) {
     const [internalOpen, setInternalOpen] = useState(false)
     const isControlled = controlledOpen !== undefined
-    const open = isControlled ? controlledOpen : internalOpen
+    const router = useRouter()
+    const searchParams = useSearchParams()
+    const shouldOpenFromQuery = !isControlled && searchParams.get('new') === 'true'
+    const open = isControlled ? controlledOpen : (internalOpen || shouldOpenFromQuery)
     const setOpen = isControlled ? onOpenChange! : setInternalOpen
 
     const [loading, setLoading] = useState(false)
@@ -75,9 +89,27 @@ export function AddRecipeDialog({ open: controlledOpen, onOpenChange, onSuccess,
     const [manualMacros, setManualMacros] = useState({ kcal: 0, protein: 0, carbs: 0, fat: 0 })
     const [servingUnit, setServingUnit] = useState('') // e.g., "1 taza", "300ml"
 
-    const router = useRouter()
+    const setDialogOpen = (newOpen: boolean) => {
+        setOpen(newOpen)
 
-    const handleAddIngredient = (ingredient: any, grams: number, unit: string, quantity: number) => {
+        if (!newOpen) {
+            resetForm()
+
+            if (!isControlled) {
+                const params = new URLSearchParams(window.location.search)
+                const hadNew = params.has('new')
+                const hadOnboardingStep = params.has('onboardingStep')
+                if (hadNew || hadOnboardingStep) {
+                    params.delete('new')
+                    params.delete('onboardingStep')
+                    const nextQuery = params.toString()
+                    router.replace(nextQuery ? `${window.location.pathname}?${nextQuery}` : window.location.pathname)
+                }
+            }
+        }
+    }
+
+    const handleAddIngredient = (ingredient: IngredientOption, grams: number, unit: string, quantity: number) => {
         setSelectedIngredients([...selectedIngredients, {
             id: ingredient.id,
             name: ingredient.name,
@@ -158,9 +190,10 @@ export function AddRecipeDialog({ open: controlledOpen, onOpenChange, onSuccess,
                 .getPublicUrl(fileName)
 
             setImageUrl(publicUrl)
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Upload error:', error)
-            toast.error(`Error al subir la imagen: ${error.message}`)
+            const message = error instanceof Error ? error.message : 'Error desconocido'
+            toast.error(`Error al subir la imagen: ${message}`)
         } finally {
             setIsUploading(false)
         }
@@ -208,8 +241,16 @@ export function AddRecipeDialog({ open: controlledOpen, onOpenChange, onSuccess,
             toast.error(result.error)
         } else if (result.recipe) {
             toast.success('Receta creada con éxito')
-            setOpen(false) // Close first
-            resetForm() // Then reset
+            const onboardingStep = searchParams.get('onboardingStep')
+            if (onboardingStep && !isControlled) {
+                setInternalOpen(false)
+                resetForm()
+                router.push(`/?coachOnboardingStep=${encodeURIComponent(onboardingStep)}`)
+                setLoading(false)
+                return
+            }
+
+            setDialogOpen(false)
             if (onSuccess) {
                 onSuccess(result.recipe)
             }
@@ -255,10 +296,7 @@ export function AddRecipeDialog({ open: controlledOpen, onOpenChange, onSuccess,
     }
 
     return (
-        <Dialog open={open} onOpenChange={(newOpen) => {
-            setOpen(newOpen)
-            if (!newOpen) resetForm()
-        }}>
+        <Dialog open={open} onOpenChange={setDialogOpen}>
             {!isControlled && (
                 <DialogTrigger asChild>
                     <Button className="bg-primary hover:bg-primary/90 text-white px-3 sm:px-4">

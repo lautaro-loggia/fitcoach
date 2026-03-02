@@ -54,6 +54,7 @@ export function ExerciseCheckinMobile({
     const [restEnabled, setRestEnabled] = useState(false)
     const [restSeconds, setRestSeconds] = useState(90)
     const [sets, setSets] = useState(exercise.sets_detail || [])
+    const plannedSetsCount = exercise.sets_detail?.length ?? 0
     const [loading, setLoading] = useState(true)
     const [autoStartTimer, setAutoStartTimer] = useState(false)
     const { confirm, ConfirmDialog } = useConfirm()
@@ -184,7 +185,7 @@ export function ExerciseCheckinMobile({
     }
 
     return (
-        <div className="min-h-screen bg-background pb-24">
+        <div className="min-h-screen bg-background pb-36">
             {/* Header */}
             <div className="sticky top-0 z-10 bg-background border-b">
                 <div className="flex items-center justify-between p-4">
@@ -264,6 +265,7 @@ export function ExerciseCheckinMobile({
                     seconds={restSeconds}
                     onSettingsChange={handleRestSettingsChange}
                     autoStart={autoStartTimer}
+                    variant="bottom-toast"
                 />
 
                 {/* Sets Table */}
@@ -284,6 +286,7 @@ export function ExerciseCheckinMobile({
                         {sets.map((set, index) => {
                             const setNumber = index + 1
                             const existingLog = getSetLog(setNumber)
+                            const isUserAddedSet = setNumber > plannedSetsCount
                             return (
                                 <SetRow
                                     key={setNumber}
@@ -297,7 +300,8 @@ export function ExerciseCheckinMobile({
                                     onSave={(reps, weight, isCompleted) =>
                                         handleSaveSet(setNumber, reps, weight, isCompleted)
                                     }
-                                    onDelete={existingLog
+                                    canDelete={isUserAddedSet}
+                                    onDelete={isUserAddedSet && existingLog
                                         ? () => handleDeleteSet(existingLog.id, setNumber)
                                         : undefined
                                     }

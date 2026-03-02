@@ -90,29 +90,48 @@ export function useCoachOnboarding() {
                 let hasChanges = false
 
                 // Actualizar tareas basadas en datos reales
-                if (status.hasClients) {
+                if (status.hasClients && !newState.tasks.clientInvited) {
                     newState.tasks.clientInvited = true
-                    // Si ya tiene clientes, asumimos que es un usuario activo y completamos todo el onboarding
-                    // para evitar que le aparezca el checklist o el modal
+                    hasChanges = true
+                }
+                if (status.hasWorkouts && !newState.tasks.workoutCreated) {
                     newState.tasks.workoutCreated = true
+                    hasChanges = true
+                }
+                if (status.hasRecipes && !newState.tasks.recipeCreated) {
                     newState.tasks.recipeCreated = true
-                    newState.tasks.paymentsReviewed = true
+                    hasChanges = true
+                }
+
+                // Solo tratamos al usuario como "coach legacy activo" si el estado local está intacto.
+                // Si ya empezó el onboarding en este dispositivo, no lo cerramos automáticamente.
+                const isPristineLocalState =
+                    !localState.modalCompleted &&
+                    !Object.values(localState.tasks).some(Boolean)
+
+                // Coach activo legacy: tiene operación real y nunca inició onboarding local.
+                const appearsActiveCoach =
+                    isPristineLocalState &&
+                    status.hasClients &&
+                    status.hasWorkouts &&
+                    status.hasRecipes
+                if (appearsActiveCoach && !newState.modalCompleted) {
                     newState.modalCompleted = true
                     hasChanges = true
-                } else {
-                    // Si no tiene clientes, verificamos los otros estados individualmente
-                    if (status.hasWorkouts) {
+                }
+
+                // Si parece coach activo, completamos el resto del checklist para no mostrar onboarding legacy.
+                if (appearsActiveCoach) {
+                    if (!newState.tasks.workoutCreated) {
                         newState.tasks.workoutCreated = true
                         hasChanges = true
                     }
-                    if (status.hasRecipes) {
+                    if (!newState.tasks.recipeCreated) {
                         newState.tasks.recipeCreated = true
                         hasChanges = true
                     }
-
-                    // Si tiene alguna actividad pero no clientes, marcamos el modal como visto pero dejamos el checklist
-                    if (status.hasWorkouts || status.hasRecipes) {
-                        newState.modalCompleted = true
+                    if (!newState.tasks.paymentsReviewed) {
+                        newState.tasks.paymentsReviewed = true
                         hasChanges = true
                     }
                 }

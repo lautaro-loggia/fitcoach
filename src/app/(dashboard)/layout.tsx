@@ -2,7 +2,7 @@ import { Sidebar } from '@/components/layout/sidebar'
 import { SidebarProvider } from '@/components/layout/sidebar-context'
 import { BottomNav } from '@/components/layout/bottom-nav'
 import { createClient } from '@/lib/supabase/server'
-import { PushNotificationPrompt } from '@/components/notifications/push-notification-prompt'
+import { PushNotificationPromptGuard } from '@/components/notifications/push-notification-prompt-guard'
 
 export default async function DashboardLayout({
     children,
@@ -40,7 +40,7 @@ export default async function DashboardLayout({
 
     return (
         <SidebarProvider>
-            <PushNotificationPrompt />
+            <PushNotificationPromptGuard />
             <div className="fixed inset-0 flex overflow-hidden bg-background">
                 <Sidebar coachProfile={coachProfile} />
                 <div className="flex flex-col flex-1 min-w-0 h-full overflow-hidden">

@@ -1,5 +1,6 @@
 import * as React from "react"
 import { DayPicker } from "react-day-picker"
+import { format } from "date-fns"
 import { es } from "date-fns/locale"
 
 import { cn } from "@/lib/utils"
@@ -16,28 +17,30 @@ function Calendar({
     return (
         <DayPicker
             showOutsideDays={showOutsideDays}
+            weekStartsOn={1}
+            navLayout="around"
             className={cn("p-3", className)}
             locale={es}
             classNames={{
                 months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
-                month: "space-y-4 w-full",
-                month_caption: "flex justify-center pt-1 relative items-center",
+                month: "space-y-4 w-full relative",
+                month_caption: "flex h-9 items-center justify-center",
                 caption_label: "text-sm font-medium capitalize",
-                nav: "space-x-1 flex items-center",
+                nav: "flex items-center",
                 button_previous: cn(
                     buttonVariants({ variant: "outline" }),
-                    "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 absolute left-1"
+                    "absolute left-1 top-1 h-7 w-7 bg-transparent p-0 opacity-70 hover:opacity-100 z-10"
                 ),
                 button_next: cn(
                     buttonVariants({ variant: "outline" }),
-                    "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 absolute right-1"
+                    "absolute right-1 top-1 h-7 w-7 bg-transparent p-0 opacity-70 hover:opacity-100 z-10"
                 ),
-                month_grid: "w-full border-collapse space-y-1 block", // Table as block
-                weekdays: "grid grid-cols-7 mb-1 w-full", // Thead tr as grid
-                weekday: "text-muted-foreground rounded-md w-full font-normal text-[0.8rem] capitalize flex justify-center", // Th as flex center
-                weeks: "block w-full", // Tbody as block
-                week: "grid grid-cols-7 w-full mt-2", // Tr as grid
-                day: "h-9 w-full text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20 flex justify-center items-center",
+                month_grid: "w-full border-collapse",
+                weekdays: "grid grid-cols-7 gap-1 mb-1",
+                weekday: "text-muted-foreground h-8 w-8 rounded-md text-xs font-medium capitalize flex items-center justify-center",
+                weeks: "grid gap-1",
+                week: "grid grid-cols-7 gap-1 w-full",
+                day: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20 flex justify-center items-center",
                 day_button: cn(
                     buttonVariants({ variant: "ghost" }),
                     "h-9 w-9 p-0 font-normal aria-selected:opacity-100 rounded-md transition-none"
@@ -56,8 +59,8 @@ function Calendar({
             }}
             formatters={{
                 formatWeekdayName: (date) => {
-                    const days = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá']
-                    return days[date.getDay()]
+                    const weekday = format(date, "EEEEEE", { locale: es })
+                    return weekday.charAt(0).toUpperCase() + weekday.slice(1)
                 }
             }}
             {...props}

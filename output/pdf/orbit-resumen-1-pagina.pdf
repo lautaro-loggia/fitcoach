@@ -1,0 +1,597 @@
+%PDF-1.3
+%ºß¬à
+3 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/MediaBox [0 0 595.2799999999999727 841.8899999999999864]
+/Contents 4 0 R
+>>
+endobj
+4 0 obj
+<<
+/Length 6374
+>>
+stream
+0.200025 w
+0 G
+BT
+/F2 18 Tf
+20.6999999999999993 TL
+0 g
+42. 799.8899999999999864 Td
+(Orbit - Resumen de la app \(1 pagina\)) Tj
+ET
+BT
+/F2 12 Tf
+13.7999999999999989 TL
+0 g
+42. 775.8899999999999864 Td
+(Que es) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+42. 760.8899999999999864 Td
+(Orbit es una app web SaaS para entrenadores que tambien ofrece una experiencia separada para clientes. El) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+42. 748.3899999999999864 Td
+(producto centraliza seguimiento de entrenamiento, nutricion, check-ins y alertas en un solo flujo de trabajo.) Tj
+ET
+BT
+/F2 12 Tf
+13.7999999999999989 TL
+0 g
+42. 732.8899999999999864 Td
+(Para quien es) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+42. 717.8899999999999864 Td
+(Persona principal: coach/entrenador que administra multiples asesorados \(online y presencial\) y necesita operar su) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+42. 705.3899999999999864 Td
+(seguimiento diario. Persona secundaria: cliente final que ejecuta su plan desde un dashboard propio.) Tj
+ET
+BT
+/F2 12 Tf
+13.7999999999999989 TL
+0 g
+42. 689.8899999999999864 Td
+(Que hace \(features clave\)) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+42. 674.8899999999999864 Td
+(-) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+54. 674.8899999999999864 Td
+(Autenticacion con Supabase y flujo de invitacion de clientes por email con callback de cuenta.) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+42. 661.6900000000000546 Td
+(-) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+54. 661.6900000000000546 Td
+(Onboarding por rol: setup para coach y wizard de onboarding para cliente.) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+42. 648.4900000000000091 Td
+(-) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+54. 648.4900000000000091 Td
+(Dashboard del coach con metricas, alertas urgentes, cumplimiento, retencion y milestones semanales.) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+42. 635.2899999999999636 Td
+(-) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+54. 635.2899999999999636 Td
+(Gestion de clientes: perfil, check-ins con medidas/fotos, historial y asignacion de planes de entrenamiento y) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+54. 623.0900000000000318 Td
+(comida.) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+42. 609.8899999999999864 Td
+(-) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+54. 609.8899999999999864 Td
+(App del cliente con rutina del dia, check-in, progreso semanal y plan de nutricion.) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+42. 596.6900000000000546 Td
+(-) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+54. 596.6900000000000546 Td
+(Analisis de foto de comida con IA \(Gemini\) para extraer macros e ingredientes con rate limiting.) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+42. 583.4900000000000091 Td
+(-) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+54. 583.4900000000000091 Td
+(Notificaciones in-app y push web \(suscripciones, preferencias, Edge Function de envio\).) Tj
+ET
+BT
+/F2 12 Tf
+13.7999999999999989 TL
+0 g
+42. 566.2899999999999636 Td
+(Como funciona \(arquitectura compacta\)) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+42. 551.2899999999999636 Td
+(-) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+54. 551.2899999999999636 Td
+(Frontend: Next.js App Router \(grupos de rutas para auth, dashboard coach y dashboard cliente en src/app\).) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+42. 538.0900000000000318 Td
+(-) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+54. 538.0900000000000318 Td
+(Capa de negocio: Server Components + Server Actions que ejecutan consultas y mutaciones.) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+42. 524.8900000000001 Td
+(-) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+54. 524.8900000000001 Td
+(Datos: Supabase Postgres + Storage + RLS, con esquema versionado en supabase/migrations.) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+42. 511.6900000000000546 Td
+(-) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+54. 511.6900000000000546 Td
+(Sesion y autorizacion: middleware global refresca sesion y redirige por estado/rol.) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+42. 498.4900000000000659 Td
+(-) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+54. 498.4900000000000659 Td
+(Flujo de notificaciones: createNotification inserta en notifications; webhook DB dispara supabase/functions/push;) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+54. 486.2900000000000773 Td
+(se envia Web Push a endpoints en push_subscriptions.) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+42. 473.0900000000000887 Td
+(-) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+54. 473.0900000000000887 Td
+(Arquitectura de infraestructura \(red, colas, observabilidad, topologia cloud\): Not found in repo.) Tj
+ET
+BT
+/F2 12 Tf
+13.7999999999999989 TL
+0 g
+42. 455.8900000000001 Td
+(Como correrlo \(minimo\)) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+42. 440.8900000000001 Td
+(-) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+54. 440.8900000000001 Td
+(Instalar dependencias: npm install) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+42. 427.6900000000001114 Td
+(-) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+54. 427.6900000000001114 Td
+(Crear .env.local con claves requeridas vistas en codigo: NEXT_PUBLIC_SUPABASE_URL,) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+54. 415.4900000000001228 Td
+(NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY.) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+42. 402.2900000000001342 Td
+(-) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+54. 402.2900000000001342 Td
+(Si se usa push: agregar NEXT_PUBLIC_VAPID_PUBLIC_KEY/VAPID_PUBLIC_KEY y VAPID_PRIVATE_KEY. Si) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+54. 390.0900000000001455 Td
+(se usa IA de comidas: GEMINI_API_KEY.) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+42. 376.8900000000001569 Td
+(-) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+54. 376.8900000000001569 Td
+(Levantar entorno local: npm run dev) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+42. 363.6900000000001683 Td
+(-) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+54. 363.6900000000001683 Td
+(Abrir http://localhost:3000) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+42. 350.4900000000001796 Td
+(-) Tj
+ET
+BT
+/F1 9.8 Tf
+11.2699999999999996 TL
+0 g
+54. 350.4900000000001796 Td
+(Guia oficial para levantar Supabase local \(comandos exactos\): Not found in repo.) Tj
+ET
+endstream
+endobj
+1 0 obj
+<</Type /Pages
+/Kids [3 0 R ]
+/Count 1
+>>
+endobj
+5 0 obj
+<<
+/Type /Font
+/BaseFont /Helvetica
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+6 0 obj
+<<
+/Type /Font
+/BaseFont /Helvetica-Bold
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+7 0 obj
+<<
+/Type /Font
+/BaseFont /Helvetica-Oblique
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+8 0 obj
+<<
+/Type /Font
+/BaseFont /Helvetica-BoldOblique
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+9 0 obj
+<<
+/Type /Font
+/BaseFont /Courier
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+10 0 obj
+<<
+/Type /Font
+/BaseFont /Courier-Bold
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+11 0 obj
+<<
+/Type /Font
+/BaseFont /Courier-Oblique
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+12 0 obj
+<<
+/Type /Font
+/BaseFont /Courier-BoldOblique
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+13 0 obj
+<<
+/Type /Font
+/BaseFont /Times-Roman
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+14 0 obj
+<<
+/Type /Font
+/BaseFont /Times-Bold
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+15 0 obj
+<<
+/Type /Font
+/BaseFont /Times-Italic
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+16 0 obj
+<<
+/Type /Font
+/BaseFont /Times-BoldItalic
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+17 0 obj
+<<
+/Type /Font
+/BaseFont /ZapfDingbats
+/Subtype /Type1
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+18 0 obj
+<<
+/Type /Font
+/BaseFont /Symbol
+/Subtype /Type1
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+2 0 obj
+<<
+/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]
+/Font <<
+/F1 5 0 R
+/F2 6 0 R
+/F3 7 0 R
+/F4 8 0 R
+/F5 9 0 R
+/F6 10 0 R
+/F7 11 0 R
+/F8 12 0 R
+/F9 13 0 R
+/F10 14 0 R
+/F11 15 0 R
+/F12 16 0 R
+/F13 17 0 R
+/F14 18 0 R
+>>
+/XObject <<
+>>
+>>
+endobj
+19 0 obj
+<<
+/Producer (jsPDF 3.0.4)
+/CreationDate (D:20260301161234-03'00')
+>>
+endobj
+20 0 obj
+<<
+/Type /Catalog
+/Pages 1 0 R
+/OpenAction [3 0 R /FitH null]
+/PageLayout /OneColumn
+>>
+endobj
+xref
+0 21
+0000000000 65535 f 
+0000006578 00000 n 
+0000008395 00000 n 
+0000000015 00000 n 
+0000000152 00000 n 
+0000006635 00000 n 
+0000006760 00000 n 
+0000006890 00000 n 
+0000007023 00000 n 
+0000007160 00000 n 
+0000007283 00000 n 
+0000007412 00000 n 
+0000007544 00000 n 
+0000007680 00000 n 
+0000007808 00000 n 
+0000007935 00000 n 
+0000008064 00000 n 
+0000008197 00000 n 
+0000008299 00000 n 
+0000008643 00000 n 
+0000008729 00000 n 
+trailer
+<<
+/Size 21
+/Root 20 0 R
+/Info 19 0 R
+/ID [ <2ED1B5FABD03836F91FCC8DF4CFDB6D2> <2ED1B5FABD03836F91FCC8DF4CFDB6D2> ]
+>>
+startxref
+8833
+%%EOF

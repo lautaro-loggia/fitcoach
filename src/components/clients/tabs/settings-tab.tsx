@@ -24,6 +24,17 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
+const WORK_TYPE_OPTIONS = [
+    { id: 'sedentary', label: 'Escritorio / Sentado' },
+    { id: 'mixed', label: 'Mixto (Parado/Sentado)' },
+    { id: 'physical', label: 'Físico / Activo' },
+    { id: 'no_work', label: 'No trabajo actualmente' },
+    { id: 'student', label: 'Estudiante' },
+    { id: 'retired', label: 'Jubilado/a' },
+    { id: 'homemaker', label: 'Trabajo doméstico / cuidados' },
+    { id: 'other', label: 'Otro' },
+]
+
 export function SettingsTab({ client }: { client: any }) {
     const router = useRouter()
     const [loading, setLoading] = useState(false)
@@ -237,9 +248,11 @@ export function SettingsTab({ client }: { client: any }) {
                                             <SelectValue placeholder="Seleccionar" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="sedentary">Escritorio / Sentado</SelectItem>
-                                            <SelectItem value="mixed">Mixto (Parado/Sentado)</SelectItem>
-                                            <SelectItem value="physical">Físico / Activo</SelectItem>
+                                            {WORK_TYPE_OPTIONS.map((option) => (
+                                                <SelectItem key={option.id} value={option.id}>
+                                                    {option.label}
+                                                </SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                 </div>

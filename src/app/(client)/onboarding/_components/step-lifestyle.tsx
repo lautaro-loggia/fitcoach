@@ -16,6 +16,17 @@ const ACTIVITY_LEVELS = [
     { id: 'active', label: 'Muy Activo', desc: '12,000+ pasos. Trabajo físico intenso o entrenamiento diario exigente.', icon: Zap, color: 'text-orange-500' },
 ]
 
+const WORK_TYPE_OPTIONS = [
+    { id: 'sedentary', label: 'Escritorio / Sentado' },
+    { id: 'mixed', label: 'Mixto (Parado/Sentado)' },
+    { id: 'physical', label: 'Físico (Esfuerzo constante)' },
+    { id: 'no_work', label: 'No trabajo actualmente' },
+    { id: 'student', label: 'Estudiante' },
+    { id: 'retired', label: 'Jubilado/a' },
+    { id: 'homemaker', label: 'Trabajo doméstico / cuidados' },
+    { id: 'other', label: 'Otro' },
+]
+
 export function StepLifestyle({ client, onNext, onPrev, isPreview }: { client: any, onNext: () => void, onPrev: () => void, isPreview?: boolean }) {
     const [loading, setLoading] = useState(false)
 
@@ -128,9 +139,11 @@ export function StepLifestyle({ client, onNext, onPrev, isPreview }: { client: a
                                 <SelectValue placeholder="Seleccioná..." />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="sedentary">Escritorio / Sentado</SelectItem>
-                                <SelectItem value="mixed">Mixto (Pies / Movimiento)</SelectItem>
-                                <SelectItem value="physical">Físico (Esfuerzo constante)</SelectItem>
+                                {WORK_TYPE_OPTIONS.map((option) => (
+                                    <SelectItem key={option.id} value={option.id}>
+                                        {option.label}
+                                    </SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                     </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 // This key should be in env vars. If missing in client bundle, we fetch a runtime fallback from API.
@@ -15,9 +15,8 @@ export function usePushNotifications() {
     const [isLoading, setIsLoading] = useState(true)
     const [publicVapidKey, setPublicVapidKey] = useState(BUILD_TIME_VAPID_KEY)
 
-    const supabase = useMemo(() => createClient(), [])
-
     const syncSubscriptionToDb = useCallback(async (sub: PushSubscription) => {
+        const supabase = createClient()
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return
 
@@ -39,7 +38,7 @@ export function usePushNotifications() {
             console.error('Error syncing subscription to DB:', error.message || error)
             // We log the error but do not throw to prevent unhandled rejections during background syncs
         }
-    }, [supabase])
+    }, [])
 
     useEffect(() => {
         const registerServiceWorker = async () => {
@@ -234,6 +233,8 @@ export function usePushNotifications() {
         try {
             setIsLoading(true)
             await subscription.unsubscribe()
+
+            const supabase = createClient()
 
             // Remove from DB
             const serializedSub = JSON.parse(JSON.stringify(subscription))

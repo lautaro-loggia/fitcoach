@@ -75,19 +75,24 @@ export function WorkoutDialog({
         return () => window.removeEventListener('resize', checkMobile)
     }, [])
 
-    useEffect(() => {
-        if (searchParams.get('new') === 'true' && !existingWorkout) {
-            setInternalOpen(true)
-        }
-    }, [searchParams, existingWorkout])
-
     // Derived state for open status
-    const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen
+    const shouldOpenFromQuery = searchParams.get('new') === 'true' && !existingWorkout
+    const isOpen = controlledOpen !== undefined ? controlledOpen : (internalOpen || shouldOpenFromQuery)
     const setOpen = (val: boolean) => {
-        setInternalOpen(val)
+        if (controlledOpen === undefined) {
+            setInternalOpen(val)
+        }
         if (setControlledOpen) setControlledOpen(val)
         if (!val) {
-            // Reset on close if needed, but usually useEffect handles it when reopening with different props
+            const params = new URLSearchParams(window.location.search)
+            const hadNew = params.has('new')
+            const hadOnboardingStep = params.has('onboardingStep')
+            if (hadNew || hadOnboardingStep) {
+                params.delete('new')
+                params.delete('onboardingStep')
+                const nextQuery = params.toString()
+                router.replace(nextQuery ? `${window.location.pathname}?${nextQuery}` : window.location.pathname)
+            }
         }
     }
 
@@ -164,9 +169,17 @@ export function WorkoutDialog({
         if (result?.error) {
             toast.error(result.error)
         } else {
-            setOpen(false)
             resetForm()
             router.refresh()
+            const onboardingStep = searchParams.get('onboardingStep')
+            if (onboardingStep && !existingWorkout) {
+                setInternalOpen(false)
+                router.push(`/?coachOnboardingStep=${encodeURIComponent(onboardingStep)}`)
+                setLoading(false)
+                return
+            }
+
+            setOpen(false)
         }
         setLoading(false)
     }

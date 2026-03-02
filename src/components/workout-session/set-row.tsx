@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Check, Pencil, Trash2 } from 'lucide-react'
+import { Check, Pencil, RotateCcw, Trash2 } from 'lucide-react'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -21,6 +21,7 @@ interface SetRowProps {
     currentReps?: number
     isCompleted: boolean
     onSave: (reps: number, weight: number, isCompleted: boolean) => void
+    canDelete?: boolean
     onDelete?: () => void
 }
 
@@ -33,6 +34,7 @@ export function SetRow({
     currentReps,
     isCompleted: initialCompleted,
     onSave,
+    canDelete = false,
     onDelete,
 }: SetRowProps) {
     const [weight, setWeight] = useState<string>((currentWeight ?? defaultWeight).toString())
@@ -58,6 +60,14 @@ export function SetRow({
     const handleEdit = () => {
         setIsEditing(true)
         setIsCompleted(false)
+    }
+
+    const handleReset = () => {
+        setWeight(defaultWeight.toString())
+        setReps(defaultReps.toString())
+        setIsEditing(true)
+        setIsCompleted(false)
+        onSave(defaultReps, defaultWeight, false)
     }
 
     const handleWeightChange = (value: string) => {
@@ -165,7 +175,11 @@ export function SetRow({
                                 <Pencil className="h-4 w-4 mr-2" />
                                 Editar
                             </DropdownMenuItem>
-                            {onDelete && (
+                            <DropdownMenuItem onClick={handleReset}>
+                                <RotateCcw className="h-4 w-4 mr-2" />
+                                Reiniciar
+                            </DropdownMenuItem>
+                            {canDelete && onDelete && (
                                 <DropdownMenuItem
                                     onClick={onDelete}
                                     className="text-destructive"

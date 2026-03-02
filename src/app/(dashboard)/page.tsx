@@ -11,7 +11,21 @@ import { CoachComplianceCard } from '@/components/dashboard/coach-compliance-car
 import { CoachRetentionAlerts } from '@/components/dashboard/coach-retention-alerts'
 import { CoachWeeklyMilestones } from '@/components/dashboard/coach-weekly-milestones'
 
-export default async function DashboardPage() {
+const LAST_ONBOARDING_STEP = 5
+
+function normalizeCoachOnboardingStep(value: string | string[] | undefined) {
+    const raw = Array.isArray(value) ? value[0] : value
+    const parsed = Number.parseInt(raw ?? '0', 10)
+    if (!Number.isFinite(parsed)) return 0
+    return Math.min(Math.max(parsed, 0), LAST_ONBOARDING_STEP)
+}
+
+export default async function DashboardPage(props: {
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
+    const searchParams = await props.searchParams
+    const coachOnboardingStep = normalizeCoachOnboardingStep(searchParams.coachOnboardingStep)
+
     const supabase = await createClient()
     const {
         data: { user }
@@ -62,7 +76,7 @@ export default async function DashboardPage() {
                     </Link>
                 </header>
 
-                <CoachOnboardingWrapper />
+                <CoachOnboardingWrapper initialStep={coachOnboardingStep} />
 
                 <CoachMetricCards metrics={homeData.metrics} />
 
