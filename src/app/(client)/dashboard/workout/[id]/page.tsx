@@ -75,7 +75,7 @@ export default async function Page({
                 <div className="fixed top-0 left-0 right-0 z-30 bg-background/80 backdrop-blur-md border-b px-4 py-4 md:static md:border-b-0 md:bg-transparent md:mb-6 md:p-0">
                     <div className="flex items-center justify-between max-w-md mx-auto">
                         <div className="flex items-center gap-3">
-                            <WorkoutBackButton />
+                            <WorkoutBackButton shouldConfirmExit={hasStartedTraining} />
                             <div>
                                 <h1 className="text-lg font-bold">{workout?.name}</h1>
                                 <p className="text-sm text-muted-foreground">Tu entrenamiento</p>
