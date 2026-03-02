@@ -15,11 +15,19 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 
-export function WorkoutBackButton() {
+interface WorkoutBackButtonProps {
+    shouldConfirmExit: boolean
+}
+
+export function WorkoutBackButton({ shouldConfirmExit }: WorkoutBackButtonProps) {
     const [showWarning, setShowWarning] = useState(false)
     const router = useRouter()
 
     const handleBackClick = () => {
+        if (!shouldConfirmExit) {
+            router.push('/dashboard/workout')
+            return
+        }
         setShowWarning(true)
     }
 
