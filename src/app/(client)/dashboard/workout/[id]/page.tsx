@@ -24,8 +24,15 @@ type SessionExercise = {
     }
 }
 
-export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+export default async function Page({
+    params,
+    searchParams,
+}: {
+    params: Promise<{ id: string }>
+    searchParams: Promise<{ started?: string }>
+}) {
     const { id } = await params
+    const resolvedSearchParams = await searchParams
 
     // Preview mode by default: entering this screen should not start a session automatically.
     const { session, workout, error } = await getOrCreateSession(id, false)
@@ -46,6 +53,11 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         exercise_index: number
         set_logs?: Array<{ is_completed?: boolean | null }> | null
     }>
+    const hasRecordedActivity = typedCheckins.some(
+        (checkin) => (checkin.set_logs?.length || 0) > 0
+    )
+    const hasUserStartedThisVisit = resolvedSearchParams.started === '1'
+    const hasStartedTraining = Boolean(session) && (hasRecordedActivity || hasUserStartedThisVisit)
 
     const initialCompletedIndices = session
         ? typedCheckins
@@ -69,7 +81,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                                 <p className="text-sm text-muted-foreground">Tu entrenamiento</p>
                             </div>
                         </div>
-                        {session ? (
+                        {session && hasStartedTraining ? (
                             <FinishWorkoutButton sessionId={session.id} />
                         ) : (
                             <StartWorkoutButton
@@ -87,7 +99,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 
                 {/* Exercise List */}
                 <div className="p-4 pt-2 flex-1">
-                    {!session && (
+                    {!hasStartedTraining && (
                         <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
                             Estás viendo la rutina en modo vista previa. Tocá <span className="font-semibold">Comenzar</span> para iniciar el entrenamiento y registrar tus series.
                         </div>
@@ -96,7 +108,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                         sessionId={session?.id}
                         exercises={exercises}
                         initialCheckins={existingCheckins}
-                        isReadOnly={!session}
+                        isReadOnly={!hasStartedTraining}
                     />
                 </div>
             </div>

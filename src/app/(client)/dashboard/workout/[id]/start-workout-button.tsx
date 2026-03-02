@@ -31,7 +31,7 @@ export function StartWorkoutButton({
         }
 
         toast.success('Entrenamiento iniciado')
-        router.refresh()
+        router.push(`/dashboard/workout/${workoutId}?started=1`)
     }
 
     return (
