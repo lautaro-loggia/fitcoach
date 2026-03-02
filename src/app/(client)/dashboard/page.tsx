@@ -25,8 +25,8 @@ import {
     normalizeText
 } from '@/lib/utils'
 import { estimateWorkoutDurationMinutes } from '@/lib/workout-time-estimate'
-import { WorkoutStartDialog } from '@/components/clients/workout-start-dialog'
 import { AdvisedDashboardMenu } from '@/components/clients/advised-dashboard-menu'
+import { MotionEnter, MotionScrollReveal } from '@/components/motion/orbit-motion'
 
 export default async function ClientDashboard() {
     const supabase = await createClient()
@@ -189,32 +189,35 @@ export default async function ClientDashboard() {
         <div className="min-h-screen bg-gray-50/30 p-6 flex flex-col gap-4 font-sans">
 
             {/* 1. Header Strict Layout */}
-            <header className="flex items-center justify-between mt-2">
-                <div className="flex items-center gap-4">
-                    <Avatar className="h-14 w-14 border-2 border-white shadow-sm ring-1 ring-gray-100">
-                        <AvatarImage src={client.avatar_url || ""} />
-                        <AvatarFallback className="bg-gray-800 text-white font-bold text-sm">
-                            {client.full_name?.substring(0, 2).toUpperCase() || "OR"}
-                        </AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col gap-1">
-                        <h1 className="text-xl font-bold text-gray-900 leading-none tracking-tight">
-                            Hola, {client.full_name?.split(' ')[0] || 'Usuario'}
-                        </h1>
-                        <div className="flex items-center gap-2">
-                            <span className={`h-2 w-2 rounded-full ${client.status === 'active' ? 'bg-green-500' : 'bg-gray-300'}`} />
-                            <span className="text-xs font-semibold text-gray-500 tracking-tight">
-                                {client.status === 'active' ? 'Plan activo' : 'Inactivo'}
-                            </span>
+            <MotionEnter preset="page">
+                <header className="flex items-center justify-between mt-2">
+                    <div className="flex items-center gap-4">
+                        <Avatar className="h-14 w-14 border-2 border-white shadow-sm ring-1 ring-gray-100">
+                            <AvatarImage src={client.avatar_url || ""} />
+                            <AvatarFallback className="bg-gray-800 text-white font-bold text-sm">
+                                {client.full_name?.substring(0, 2).toUpperCase() || "OR"}
+                            </AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col gap-1">
+                            <h1 className="text-xl font-bold text-gray-900 leading-none tracking-tight">
+                                Hola, {client.full_name?.split(' ')[0] || 'Usuario'}
+                            </h1>
+                            <div className="flex items-center gap-2">
+                                <span className={`h-2 w-2 rounded-full ${client.status === 'active' ? 'bg-green-500' : 'bg-gray-300'}`} />
+                                <span className="text-xs font-semibold text-gray-500 tracking-tight">
+                                    {client.status === 'active' ? 'Plan activo' : 'Inactivo'}
+                                </span>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <AdvisedDashboardMenu />
-            </header>
+                    <AdvisedDashboardMenu />
+                </header>
+            </MotionEnter>
 
             {/* 2. Main Section: "Tu día hoy" */}
-            <section className="flex flex-col gap-4">
+            <MotionEnter index={1}>
+                <section className="flex flex-col gap-4">
                 <div className="flex items-center justify-between px-1">
                     <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest">
                         TU DÍA HOY
@@ -286,17 +289,12 @@ export default async function ClientDashboard() {
                                 </div>
                             </div>
 
-                            <WorkoutStartDialog
-                                workoutId={todayWorkout.id}
-                                workoutName={todayWorkout.name}
-                                exercisesCount={todayWorkout.structure?.length || 0}
-                                estimatedTime={`${todayWorkoutEstimatedMinutes} min`}
-                            >
+                            <Link href={`/dashboard/workout/${todayWorkout.id}`} className="block">
                                 <Button className="w-full h-16 bg-gray-950 hover:bg-black text-white rounded-[1.2rem] text-[15px] font-bold shadow-xl shadow-gray-900/10 flex items-center justify-center gap-3 transition-all active:scale-[0.98]">
                                     Comenzar entrenamiento
                                     <ArrowRight className="h-5 w-5" />
                                 </Button>
-                            </WorkoutStartDialog>
+                            </Link>
                         </div>
                     </Card>
                 ) : (
@@ -335,10 +333,12 @@ export default async function ClientDashboard() {
                         </div>
                     </Card>
                 )}
-            </section>
+                </section>
+            </MotionEnter>
 
             {/* 3. Grid Section 2x2 */}
-            <section className="grid grid-cols-2 gap-4">
+            <MotionScrollReveal index={2}>
+                <section className="grid grid-cols-2 gap-4">
 
                 {/* 1. Weekly Progress */}
                 <Card className="p-6 border border-gray-200 shadow-none rounded-[1.5rem] bg-white flex flex-col justify-between h-44 transition-colors">
@@ -427,7 +427,8 @@ export default async function ClientDashboard() {
                     </div>
                 </Card>
 
-            </section>
+                </section>
+            </MotionScrollReveal>
         </div>
     )
 }

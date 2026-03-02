@@ -32,6 +32,7 @@ interface WorkoutStartDialogProps {
     workoutName: string
     exercisesCount: number
     estimatedTime?: string
+    onStart?: () => Promise<void> | void
 }
 
 export function WorkoutStartDialog({
@@ -39,7 +40,8 @@ export function WorkoutStartDialog({
     workoutId,
     workoutName,
     exercisesCount,
-    estimatedTime = "60 min aprox."
+    estimatedTime = "60 min aprox.",
+    onStart
 }: WorkoutStartDialogProps) {
     const router = useRouter()
     const [open, setOpen] = useState(false)
@@ -52,9 +54,19 @@ export function WorkoutStartDialog({
         }
     }, [open])
 
-    const handleStart = () => {
+    const handleStart = async () => {
         setIsLoading(true)
-        router.push(`/dashboard/workout/${workoutId}`)
+        try {
+            if (onStart) {
+                await onStart()
+                setOpen(false)
+                return
+            }
+
+            router.push(`/dashboard/workout/${workoutId}`)
+        } finally {
+            setIsLoading(false)
+        }
     }
 
     return (

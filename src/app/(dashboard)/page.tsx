@@ -10,6 +10,7 @@ import { CoachUrgentActionsTable } from '@/components/dashboard/coach-urgent-act
 import { CoachComplianceCard } from '@/components/dashboard/coach-compliance-card'
 import { CoachRetentionAlerts } from '@/components/dashboard/coach-retention-alerts'
 import { CoachWeeklyMilestones } from '@/components/dashboard/coach-weekly-milestones'
+import { MotionEnter, MotionStagger } from '@/components/motion/orbit-motion'
 
 const LAST_ONBOARDING_STEP = 5
 
@@ -60,8 +61,9 @@ export default async function DashboardPage(props: {
 
     return (
         <div className="min-h-full bg-[#f9f9fa] px-4 py-6 md:px-8 md:py-8">
-            <div className="space-y-4 md:space-y-6">
-                <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <MotionStagger className="space-y-4 md:space-y-6">
+                <MotionEnter preset="page">
+                    <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-[30px] leading-[36px] tracking-[-0.75px] text-[#0e0e0e]">
                             {homeData.greeting}, <span className="font-bold">{homeData.coachName}</span>
@@ -74,22 +76,31 @@ export default async function DashboardPage(props: {
                             Nuevo asesorado
                         </Button>
                     </Link>
-                </header>
+                    </header>
+                </MotionEnter>
 
-                <CoachOnboardingWrapper initialStep={coachOnboardingStep} />
+                <MotionEnter index={1}>
+                    <CoachOnboardingWrapper initialStep={coachOnboardingStep} />
+                </MotionEnter>
 
-                <CoachMetricCards metrics={homeData.metrics} />
+                <MotionEnter index={2}>
+                    <CoachMetricCards metrics={homeData.metrics} />
+                </MotionEnter>
 
-                <section className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-6">
-                    <CoachUrgentActionsTable actions={homeData.urgentActions} />
-                    <CoachComplianceCard compliance={homeData.compliance} />
-                </section>
+                <MotionEnter index={3}>
+                    <section className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-6">
+                        <CoachUrgentActionsTable actions={homeData.urgentActions} />
+                        <CoachComplianceCard compliance={homeData.compliance} />
+                    </section>
+                </MotionEnter>
 
-                <section className="grid grid-cols-1 xl:grid-cols-2 gap-6 pb-4">
-                    <CoachRetentionAlerts alerts={homeData.retentionAlerts} />
-                    <CoachWeeklyMilestones milestones={homeData.weeklyMilestones} />
-                </section>
-            </div>
+                <MotionEnter index={4}>
+                    <section className="grid grid-cols-1 xl:grid-cols-2 gap-6 pb-4">
+                        <CoachRetentionAlerts alerts={homeData.retentionAlerts} />
+                        <CoachWeeklyMilestones milestones={homeData.weeklyMilestones} />
+                    </section>
+                </MotionEnter>
+            </MotionStagger>
         </div>
     )
 }

@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { motion } from 'framer-motion'
 import { MoreHorizontal, Edit, Trash2, Utensils } from 'lucide-react'
 import {
     DropdownMenu,
@@ -10,20 +10,46 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Badge } from '@/components/ui/badge'
+import { useOrbitMotion } from '@/components/motion/orbit-motion-provider'
+import { getHoverGesture, getMotionPresetVariants, getTapGesture, orbitMotionTransitions } from '@/lib/motion/presets'
 
 interface DietCardProps {
-    diet: any
+    diet: {
+        name: string
+        data?: {
+            ingredients?: Array<{
+                name: string
+                grams?: number
+                quantity_grams?: number
+            }>
+            macros?: {
+                total_calories?: number
+                total_proteins?: number
+                total_carbs?: number
+                total_fats?: number
+            }
+        }
+    }
     onEdit: () => void
     onDelete: () => void
 }
 
 export function DietCard({ diet, onEdit, onDelete }: DietCardProps) {
+    const { level, isMotionEnabled } = useOrbitMotion()
+    const hoverGesture = getHoverGesture(level)
+    const tapGesture = getTapGesture(level)
     const ingredients = diet.data?.ingredients || []
     const macros = diet.data?.macros || { total_calories: 0, total_proteins: 0, total_carbs: 0, total_fats: 0 }
 
     return (
-        <Card className="hover:shadow-md transition-shadow">
+        <motion.div
+            layout
+            variants={isMotionEnabled ? getMotionPresetVariants(level, 'list-item') : undefined}
+            whileHover={hoverGesture}
+            whileTap={tapGesture}
+            transition={orbitMotionTransitions.fast}
+        >
+            <Card className="hover:shadow-md transition-shadow">
             <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
                 <div className="space-y-1">
                     <CardTitle className="text-base font-bold flex items-center gap-2">
@@ -72,7 +98,7 @@ export function DietCard({ diet, onEdit, onDelete }: DietCardProps) {
                 </div>
 
                 <div className="space-y-1">
-                    {ingredients.slice(0, 3).map((ing: any, i: number) => (
+                    {ingredients.slice(0, 3).map((ing, i: number) => (
                         <div key={i} className="text-xs flex justify-between">
                             <span>{ing.name}</span>
                             <span className="text-muted-foreground">{ing.grams || ing.quantity_grams}g</span>
@@ -85,6 +111,7 @@ export function DietCard({ diet, onEdit, onDelete }: DietCardProps) {
                     )}
                 </div>
             </CardContent>
-        </Card>
+            </Card>
+        </motion.div>
     )
 }

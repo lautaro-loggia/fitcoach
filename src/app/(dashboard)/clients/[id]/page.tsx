@@ -11,6 +11,7 @@ import { DietTab } from '@/components/clients/tabs/diet-tab'
 import { SettingsTab } from '@/components/clients/tabs/settings-tab'
 import { TrainingActionsWrapper } from '@/components/clients/training-actions-wrapper'
 import { MealPlanActionsWrapper } from '@/components/clients/meal-plan-actions-wrapper'
+import { MotionEnter } from '@/components/motion/orbit-motion'
 
 const sectionHeaders: Record<string, { title: string, subtitle: string }> = {
     profile: {
@@ -73,7 +74,7 @@ export default async function ClientNotesPage({
             activeTab={defaultTab}
         >
             {/* Cabecera de la sección actual (Título y Acciones) */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-4 px-1 mb-2 md:mb-8 overflow-hidden">
+            <MotionEnter className="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-4 px-1 mb-2 md:mb-8 overflow-hidden" preset="page">
                 <div className="space-y-1">
                     <h1 className="text-3xl font-bold tracking-tight text-gray-900">{currentHeader.title}</h1>
                     <p className="text-gray-500 font-medium leading-none">{currentHeader.subtitle}</p>
@@ -102,16 +103,16 @@ export default async function ClientNotesPage({
                         )}
                     </div>
                 )}
-            </div>
+            </MotionEnter>
 
             {/* Contenido dinámico según el tab activo */}
-            <div className="mt-2 md:mt-6">
+            <MotionEnter className="mt-2 md:mt-6" index={1}>
                 {defaultTab === 'profile' && <ProfileTab client={client} />}
                 {defaultTab === 'checkin' && <CheckinTab client={client} />}
                 {defaultTab === 'training' && <TrainingTab client={client} />}
                 {defaultTab === 'diet' && <DietTab client={client} />}
                 {defaultTab === 'settings' && <SettingsTab client={client} />}
-            </div>
+            </MotionEnter>
         </AdvisedProfileLayout>
     )
 }

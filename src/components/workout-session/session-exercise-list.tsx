@@ -12,8 +12,6 @@ import { AddExtraExercise } from './add-extra-exercise'
 import { useConfirm } from '@/hooks/use-confirm'
 import { toast } from 'sonner'
 import {
-    getOrCreateExerciseCheckin,
-    getExerciseCheckinWithSets,
     saveSetLog,
     deleteSetLog,
     updateExerciseNotes,
@@ -47,10 +45,12 @@ interface ExerciseCardProps {
     initialCheckin: ExerciseCheckin | null
 }
 
+type ExerciseCheckinWithSetLogs = ExerciseCheckin & { set_logs?: SetLog[] }
+
 function ExerciseCard({ sessionId, exerciseIndex, exercise, initialCheckin }: ExerciseCardProps) {
     // If initialCheckin is provided, we use it directly. Otherwise null (lazy create)
     const [checkin, setCheckin] = useState<ExerciseCheckin | null>(initialCheckin)
-    const [setLogs, setSetLogs] = useState<SetLog[]>((initialCheckin as any)?.set_logs || [])
+    const [setLogs, setSetLogs] = useState<SetLog[]>((initialCheckin as ExerciseCheckinWithSetLogs | null)?.set_logs || [])
 
     // Initialize state from existing checkin if present
     const [notes, setNotes] = useState(initialCheckin?.notes || '')
@@ -62,7 +62,7 @@ function ExerciseCard({ sessionId, exerciseIndex, exercise, initialCheckin }: Ex
 
     // We assume data is loaded if we have initialCheckin OR if we're just starting empty (lazy)
     // No more loading spinner needed per card because data comes from parent
-    const [loading, setLoading] = useState(false)
+    const [loading] = useState(false)
 
     // autoStartTimer state can be kept if we want to auto-open the rest modal, 
     // but the design just shows "Descanso: APAGADO". We will keep the prop connected.
@@ -355,14 +355,78 @@ function CardioExerciseCard({ exercise }: CardioExerciseCardProps) {
 }
 
 interface SessionExerciseListProps {
-    sessionId: string
+    sessionId?: string
     exercises: Exercise[]
-    clientName: string
-    workoutName: string
     initialCheckins: ExerciseCheckin[]
+    isReadOnly?: boolean
 }
 
-export function SessionExerciseList({ sessionId, exercises: scheduledExercises, clientName, workoutName, initialCheckins }: SessionExerciseListProps) {
+function ReadOnlyExerciseCard({ exercise }: { exercise: Exercise }) {
+    const plannedSets = exercise.sets_detail || []
+
+    return (
+        <div className="bg-card border rounded-2xl shadow-sm p-4 space-y-4">
+            <div className="flex items-center justify-between">
+                <h3 className="font-bold text-lg leading-none">{exercise.name}</h3>
+                <ExerciseInfoDialog
+                    name={exercise.name}
+                    gifUrl={exercise.gif_url}
+                    instructions={exercise.instructions}
+                    trigger={
+                        <button
+                            type="button"
+                            aria-label={`Ver cómo se realiza ${exercise.name}`}
+                            className="h-11 w-11 rounded-full overflow-hidden border border-border/60 bg-muted shadow-sm hover:opacity-90 transition-opacity shrink-0"
+                        >
+                            {exercise.gif_url ? (
+                                <img
+                                    src={exercise.gif_url}
+                                    alt={`Miniatura de ${exercise.name}`}
+                                    className="h-full w-full object-cover"
+                                />
+                            ) : (
+                                <span className="h-full w-full flex items-center justify-center text-muted-foreground">
+                                    <Info className="h-4 w-4" />
+                                </span>
+                            )}
+                        </button>
+                    }
+                />
+            </div>
+
+            {plannedSets.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Sin series planificadas.</p>
+            ) : (
+                <div className="border rounded-lg border-border/60 overflow-hidden bg-background">
+                    <div className="grid grid-cols-[56px_1fr_1fr_1fr] gap-2 py-2 px-3 text-[10px] font-medium text-muted-foreground uppercase text-center border-b border-border/50">
+                        <span>Serie</span>
+                        <span>KG</span>
+                        <span>Reps</span>
+                        <span>Desc.</span>
+                    </div>
+                    {plannedSets.map((set, index) => (
+                        <div
+                            key={`${exercise.name}-${index}`}
+                            className="grid grid-cols-[56px_1fr_1fr_1fr] gap-2 py-2 px-3 text-sm text-center border-b border-border/50 last:border-0"
+                        >
+                            <span className="font-semibold">{index + 1}</span>
+                            <span>{set.weight || '-'}</span>
+                            <span>{set.reps || '-'}</span>
+                            <span>{set.rest ? `${set.rest}s` : '-'}</span>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    )
+}
+
+export function SessionExerciseList({
+    sessionId,
+    exercises: scheduledExercises,
+    initialCheckins,
+    isReadOnly = false,
+}: SessionExerciseListProps) {
     // Combine scheduled exercises with any extra exercises already in checkins
     const [extraExercises, setExtraExercises] = useState<Exercise[]>(() => {
         const extras = initialCheckins.filter(c => c.exercise_index >= scheduledExercises.length)
@@ -372,13 +436,42 @@ export function SessionExerciseList({ sessionId, exercises: scheduledExercises, 
         }))
     })
 
-    const handleAddExtra = (exercise: any) => {
+    const handleAddExtra = (exercise: Exercise) => {
         // Add one default set detail so it shows up in the UI
         const newExercise: Exercise = {
             ...exercise,
             sets_detail: [{ reps: '10', weight: '0', rest: '60' }]
         }
         setExtraExercises(prev => [...prev, newExercise])
+    }
+
+    if (isReadOnly) {
+        return (
+            <div className="space-y-6 pb-8">
+                {scheduledExercises.map((exercise, index) => {
+                    const isCardio = exercise.category === 'Cardio'
+                    if (isCardio) {
+                        return (
+                            <CardioExerciseCard
+                                key={index}
+                                exercise={exercise}
+                            />
+                        )
+                    }
+
+                    return (
+                        <ReadOnlyExerciseCard
+                            key={index}
+                            exercise={exercise}
+                        />
+                    )
+                })}
+            </div>
+        )
+    }
+
+    if (!sessionId) {
+        return null
     }
 
     return (

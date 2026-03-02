@@ -3,10 +3,15 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Home01Icon, Dumbbell01Icon, KitchenUtensilsIcon, ChartIncreaseIcon } from "hugeicons-react"
+import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
+import { useOrbitMotion } from "@/components/motion/orbit-motion-provider"
+import { getTapGesture, orbitMotionTransitions } from "@/lib/motion/presets"
 
 export function MobileNav() {
     const pathname = usePathname()
+    const { level } = useOrbitMotion()
+    const tapGesture = getTapGesture(level)
 
     // No mostrar el navbar durante el onboarding o entrenamientos activos
     if (pathname?.startsWith("/onboarding")) return null
@@ -49,23 +54,36 @@ export function MobileNav() {
                             key={item.href}
                             href={item.href}
                             className={cn(
-                                "flex flex-col items-center justify-center space-y-1 transition-all duration-200 active:scale-95",
+                                "relative flex flex-col items-center justify-center space-y-1 transition-all duration-200 active:scale-95",
                                 "flex-1 min-w-[44px]"
                             )}
                         >
-                            <item.icon
-                                className={cn(
-                                    "h-5 w-5 transition-all duration-300",
+                            {active && (
+                                <motion.span
+                                    layoutId="client-mobile-nav-active"
+                                    className="absolute -top-1 h-1 w-6 rounded-full bg-primary/80"
+                                    transition={orbitMotionTransitions.fast}
+                                />
+                            )}
+                            <motion.span
+                                className="flex flex-col items-center justify-center space-y-1"
+                                whileTap={tapGesture}
+                                transition={orbitMotionTransitions.fast}
+                            >
+                                <item.icon
+                                    className={cn(
+                                        "h-5 w-5 transition-all duration-300",
+                                        active ? "text-primary" : "text-muted-foreground"
+                                    )}
+                                    strokeWidth={active ? 2.5 : 2}
+                                />
+                                <span className={cn(
+                                    "text-[10px] font-bold leading-none transition-colors duration-200",
                                     active ? "text-primary" : "text-muted-foreground"
-                                )}
-                                strokeWidth={active ? 2.5 : 2}
-                            />
-                            <span className={cn(
-                                "text-[10px] font-bold leading-none transition-colors duration-200",
-                                active ? "text-primary" : "text-muted-foreground"
-                            )}>
-                                {item.label}
-                            </span>
+                                )}>
+                                    {item.label}
+                                </span>
+                            </motion.span>
                         </Link>
                     )
                 })}
@@ -73,4 +91,3 @@ export function MobileNav() {
         </div>
     )
 }
-

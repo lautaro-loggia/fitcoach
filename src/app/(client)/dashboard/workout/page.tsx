@@ -7,8 +7,7 @@ import { ChevronRight, Dumbbell, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { getNormalizedARTWeekday, getTodayString, normalizeText } from '@/lib/utils'
-import { WorkoutStartDialog } from '@/components/clients/workout-start-dialog'
-import { formatEstimatedWorkoutDuration } from '@/lib/workout-time-estimate'
+import { MotionEnter, MotionStagger, MotionStaggerItem } from '@/components/motion/orbit-motion'
 
 export default async function WorkoutPage() {
     const supabase = await createClient()
@@ -25,31 +24,16 @@ export default async function WorkoutPage() {
 
     if (!client) return <div>Error cargando cliente</div>
 
-    // Get all workouts
     const { data: workouts } = await adminClient
         .from('assigned_workouts')
         .select('id, name, structure, scheduled_days')
         .eq('client_id', client.id)
 
-    // Check for today's workout to auto-redirect or highlight
-    // Actually, asking the user to click again might be better than auto-redirect if they want to browse.
-    // But let's verify requirements. "2. Entrenamiento - Rutina del día" implies this IS the workout screen.
-    // If I redirect, the URL changes.
-    // Maybe show "Rutina de Hoy" big card, and other routines below?
-
-    // Let's match existing dash style: 
-    // If there is ONLY ONE workout active schedule, just show it? 
-    // Implementing a list view for now to satisfy "Lista de ejercicios" (which is inside the specific routine).
-
     const todayName = getNormalizedARTWeekday()
-    const todayWorkout = workouts?.find(w =>
-        w.scheduled_days?.some((d: string) => normalizeText(d) === todayName)
+    const todayWorkout = workouts?.find((workout) =>
+        workout.scheduled_days?.some((day: string) => normalizeText(day) === todayName)
     )
-    const todayWorkoutEstimatedTime = todayWorkout
-        ? formatEstimatedWorkoutDuration(todayWorkout.structure)
-        : undefined
 
-    // Check if today's workout is completed
     let isTodayCompleted = false
     if (todayWorkout) {
         const todayStr = getTodayString()
@@ -66,24 +50,21 @@ export default async function WorkoutPage() {
 
     return (
         <div className="p-6 space-y-6 flex-1">
-            <div className="flex items-center gap-2">
-                <Link href="/dashboard">
-                    <Button variant="ghost" size="icon" className="-ml-2 h-8 w-8">
-                        <ArrowLeft className="h-5 w-5" />
-                    </Button>
-                </Link>
-                <h1 className="text-xl font-bold">Mis Rutinas</h1>
-            </div>
+            <MotionEnter preset="page">
+                <div className="flex items-center gap-2">
+                    <Link href="/dashboard">
+                        <Button variant="ghost" size="icon" className="-ml-2 h-8 w-8">
+                            <ArrowLeft className="h-5 w-5" />
+                        </Button>
+                    </Link>
+                    <h1 className="text-xl font-bold">Mis Rutinas</h1>
+                </div>
+            </MotionEnter>
 
             {todayWorkout && !isTodayCompleted && (
-                <div className="mb-6">
+                <MotionEnter className="mb-6" index={1}>
                     <p className="text-sm text-gray-500 font-medium mb-2 uppercase tracking-wide">Hoy</p>
-                    <WorkoutStartDialog
-                        workoutId={todayWorkout.id}
-                        workoutName={todayWorkout.name}
-                        exercisesCount={todayWorkout.structure?.length || 0}
-                        estimatedTime={todayWorkoutEstimatedTime}
-                    >
+                    <Link href={`/dashboard/workout/${todayWorkout.id}`} className="block">
                         <Card className="p-5 bg-blue-600 text-white shadow-none cursor-pointer transition-transform active:scale-[0.98]">
                             <div className="flex justify-between items-center">
                                 <div>
@@ -95,40 +76,38 @@ export default async function WorkoutPage() {
                                 </div>
                             </div>
                         </Card>
-                    </WorkoutStartDialog>
-                </div>
+                    </Link>
+                </MotionEnter>
             )}
 
-            <p className="text-sm text-gray-500 font-medium uppercase tracking-wide">Todas las rutinas</p>
-            <div className="flex flex-col gap-4">
-                {workouts?.map(workout => (
-                    <WorkoutStartDialog
-                        key={workout.id}
-                        workoutId={workout.id}
-                        workoutName={workout.name}
-                        exercisesCount={workout.structure?.length || 0}
-                        estimatedTime={formatEstimatedWorkoutDuration(workout.structure)}
-                    >
-                        <Card className="p-4 flex flex-row items-center justify-between hover:bg-gray-50 rounded-2xl border border-gray-200 shadow-none transition-all cursor-pointer">
-                            <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 bg-gray-100 rounded-full flex items-center justify-center">
-                                    <Dumbbell className="h-5 w-5 text-gray-500" />
-                                </div>
-                                <div>
-                                    <h3 className="font-semibold text-gray-900">{workout.name}</h3>
-                                    <p className="text-xs text-gray-500">
-                                        {workout.scheduled_days?.join(', ') || "Sin días fijos"}
-                                    </p>
-                                </div>
-                            </div>
-                            <ChevronRight className="h-5 w-5 text-gray-400" />
-                        </Card>
-                    </WorkoutStartDialog>
-                ))}
-            </div>
+            <MotionEnter index={2}>
+                <p className="text-sm text-gray-500 font-medium uppercase tracking-wide">Todas las rutinas</p>
+                <MotionStagger className="flex flex-col gap-4 mt-4">
+                    {workouts?.map((workout, index) => (
+                        <MotionStaggerItem key={workout.id} index={index}>
+                            <Link href={`/dashboard/workout/${workout.id}`} className="block">
+                                <Card className="p-4 flex flex-row items-center justify-between hover:bg-gray-50 rounded-2xl border border-gray-200 shadow-none transition-all cursor-pointer">
+                                    <div className="flex items-center gap-3">
+                                        <div className="h-10 w-10 bg-gray-100 rounded-full flex items-center justify-center">
+                                            <Dumbbell className="h-5 w-5 text-gray-500" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-semibold text-gray-900">{workout.name}</h3>
+                                            <p className="text-xs text-gray-500">
+                                                {workout.scheduled_days?.join(', ') || 'Sin días fijos'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <ChevronRight className="h-5 w-5 text-gray-400" />
+                                </Card>
+                            </Link>
+                        </MotionStaggerItem>
+                    ))}
+                </MotionStagger>
+            </MotionEnter>
 
             {(!workouts || workouts.length === 0) && (
-                <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                <MotionEnter className="flex flex-col items-center justify-center py-12 px-4 text-center" index={3}>
                     <div className="relative w-full max-w-[280px] aspect-square mb-6">
                         <Image
                             src="/images/training-empty-state.png"
@@ -142,7 +121,7 @@ export default async function WorkoutPage() {
                     <p className="text-gray-500 max-w-[250px]">
                         Tu coach todavía no te asignó rutinas. ¡Pronto aparecerán acá!
                     </p>
-                </div>
+                </MotionEnter>
             )}
         </div>
     )

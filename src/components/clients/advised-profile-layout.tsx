@@ -1,6 +1,7 @@
 'use client'
 
 import { AdvisedTopBar } from './advised-top-bar'
+import { MotionTabTransition } from '@/components/motion/orbit-motion'
 
 interface AdvisedProfileLayoutProps {
     client: {
@@ -26,9 +27,9 @@ export function AdvisedProfileLayout({ client, allClients, activeTab, children }
         <div className="flex flex-col bg-background">
             <AdvisedTopBar client={client} allClients={allClients} activeTab={activeTab} />
             <div className="flex-1 w-full max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8">
-                <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+                <MotionTabTransition tabKey={activeTab}>
                     {children}
-                </div>
+                </MotionTabTransition>
             </div>
         </div>
     )

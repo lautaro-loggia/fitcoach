@@ -21,8 +21,11 @@ import { es } from 'date-fns/locale'
 import { cn, normalizeText } from '@/lib/utils'
 import { Switch } from '@/components/ui/switch'
 import { toast } from 'sonner'
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle, Sparkles } from 'lucide-react'
 import { formatInjuryWarningMessage, getActiveInjuries } from '@/lib/injury-risk-utils'
+import { AIWorkoutBriefDialog } from '@/components/workouts/ai-workout-brief-dialog'
+import { getClientWorkoutDraftDefaultsAction } from '@/app/(dashboard)/workouts/ai-workout-actions'
+import type { AIGeneratedWorkoutDraft, AIWorkoutBriefDefaults } from '@/lib/ai/workout-ai-types'
 
 // Helper to convert string to Title Case
 const toTitleCase = (str: string) => {
@@ -114,6 +117,10 @@ export function AssignWorkoutDialog({
     const [startTime, setStartTime] = useState<string>('')
     const [endTime, setEndTime] = useState<string>('')
     const [clientInjuries, setClientInjuries] = useState<any[]>([])
+    const [aiDialogOpen, setAiDialogOpen] = useState(false)
+    const [aiDefaults, setAiDefaults] = useState<AIWorkoutBriefDefaults | undefined>(undefined)
+    const [aiDraftQueue, setAiDraftQueue] = useState<AIGeneratedWorkoutDraft[]>([])
+    const [aiDraftIndex, setAiDraftIndex] = useState(0)
 
     // Exercise Form State
     const [editingExerciseIndex, setEditingExerciseIndex] = useState<number | null>(null)
@@ -138,6 +145,7 @@ export function AssignWorkoutDialog({
                 fetchTemplates()
                 setStep('select')
                 resetEditor()
+                loadAIDefaults()
             }
 
             fetchClientInjuries()
@@ -159,6 +167,16 @@ export function AssignWorkoutDialog({
         }
 
         setClientInjuries(getActiveInjuries(data?.injuries))
+    }
+
+    const loadAIDefaults = async () => {
+        const result = await getClientWorkoutDraftDefaultsAction(clientId)
+        if (!result.success || !result.defaults) {
+            setAiDefaults(undefined)
+            return
+        }
+
+        setAiDefaults(result.defaults)
     }
 
     const fetchTemplates = async () => {
@@ -190,14 +208,12 @@ export function AssignWorkoutDialog({
         setIsPresential(false)
         setStartTime('')
         setEndTime('')
+        setAiDraftQueue([])
+        setAiDraftIndex(0)
     }
 
     const toggleDay = (day: string) => {
-        setScheduledDays(prev =>
-            prev.includes(day)
-                ? prev.filter(d => d !== day)
-                : [...prev, day]
-        )
+        setScheduledDays(prev => (prev.includes(day) ? [] : [day]))
     }
 
     const handleSelectTemplate = () => {
@@ -207,6 +223,8 @@ export function AssignWorkoutDialog({
             setWorkoutName(template.name)
             const exList = Array.isArray(template.structure) ? template.structure : []
             setExercises(JSON.parse(JSON.stringify(exList)))
+            setAiDraftQueue([])
+            setAiDraftIndex(0)
             setStep('edit')
         }
     }
@@ -215,7 +233,147 @@ export function AssignWorkoutDialog({
         setWorkoutName('Nuevo Entrenamiento')
         setExercises([])
         setSelectedTemplateId('')
+        setAiDraftQueue([])
+        setAiDraftIndex(0)
         setStep('edit')
+    }
+
+    const applyDraftToEditor = (draft: AIGeneratedWorkoutDraft) => {
+        setWorkoutName(draft.name)
+        setExercises(Array.isArray(draft.exercises) ? JSON.parse(JSON.stringify(draft.exercises)) : [])
+        setSelectedTemplateId('')
+        setStep('edit')
+
+        if (Array.isArray(draft.scheduled_days) && draft.scheduled_days.length > 0) {
+            setScheduledDays([draft.scheduled_days[0]])
+        } else {
+            setScheduledDays([])
+        }
+
+        if (draft.valid_until) {
+            const parsedDate = parse(draft.valid_until, 'yyyy-MM-dd', new Date())
+            if (!Number.isNaN(parsedDate.getTime())) {
+                setValidUntil(parsedDate)
+            }
+        }
+
+        // Las notas son responsabilidad del coach; no precargamos texto generado por IA.
+        setNotes('')
+    }
+
+    const getRoutineFocusLabel = (exercise: any) => {
+        const rawMuscleGroup = typeof exercise?.muscle_group === 'string' ? exercise.muscle_group : ''
+        const normalized = normalizeText(rawMuscleGroup)
+
+        if (!normalized) return 'General'
+        if (normalized.includes('pecho')) return 'Pecho'
+        if (normalized.includes('espalda') || normalized.includes('dorsal') || normalized.includes('trapec')) return 'Espalda'
+        if (normalized.includes('hombro') || normalized.includes('deltoid')) return 'Hombros'
+        if (normalized.includes('bicep')) return 'Bíceps'
+        if (normalized.includes('tricep')) return 'Tríceps'
+        if (
+            normalized.includes('pierna') ||
+            normalized.includes('cuadri') ||
+            normalized.includes('isquio') ||
+            normalized.includes('glute') ||
+            normalized.includes('pantorr') ||
+            normalized.includes('aductor') ||
+            normalized.includes('abductor')
+        ) {
+            return 'Piernas'
+        }
+        if (normalized.includes('abd') || normalized.includes('core')) return 'Core'
+        if (normalized.includes('cardio')) return 'Cardio'
+
+        return rawMuscleGroup.trim() || 'General'
+    }
+
+    const splitAIDraftIntoIndividualRoutines = (draft: AIGeneratedWorkoutDraft): AIGeneratedWorkoutDraft[] => {
+        const days = Array.isArray(draft.scheduled_days) && draft.scheduled_days.length > 0
+            ? [...new Set(draft.scheduled_days)]
+            : ['Lunes']
+
+        if (days.length === 1) {
+            return [{ ...draft, scheduled_days: [days[0]] }]
+        }
+
+        const sourceExercises = Array.isArray(draft.exercises) ? draft.exercises : []
+        if (sourceExercises.length === 0) {
+            return days.map((day, index) => ({
+                ...draft,
+                name: `Rutina ${index + 1} - ${day}`,
+                exercises: [],
+                scheduled_days: [day],
+            }))
+        }
+
+        const byFocus = new Map<string, any[]>()
+        sourceExercises.forEach((exercise) => {
+            const focus = getRoutineFocusLabel(exercise)
+            if (!byFocus.has(focus)) {
+                byFocus.set(focus, [])
+            }
+            byFocus.get(focus)?.push(exercise)
+        })
+
+        const focusBuckets = Array.from(byFocus.entries())
+            .map(([focus, exercises]) => ({ focus, exercises: [...exercises] }))
+            .sort((a, b) => b.exercises.length - a.exercises.length)
+
+        const maxRoutinesByExercises = Math.max(1, sourceExercises.length)
+        const targetCount = Math.min(days.length, maxRoutinesByExercises)
+        const routines: Array<{ focus: string; exercises: any[] }> = []
+
+        focusBuckets.forEach((bucket) => {
+            if (routines.length < targetCount) {
+                routines.push({ focus: bucket.focus, exercises: [...bucket.exercises] })
+                return
+            }
+
+            const targetIndex = routines.reduce((bestIndex, current, index, arr) => {
+                return current.exercises.length < arr[bestIndex].exercises.length ? index : bestIndex
+            }, 0)
+            routines[targetIndex].exercises.push(...bucket.exercises)
+        })
+
+        while (routines.length < targetCount) {
+            const splitIndex = routines.findIndex((routine) => routine.exercises.length > 1)
+            if (splitIndex === -1) break
+
+            const source = routines[splitIndex]
+            const splitPoint = Math.ceil(source.exercises.length / 2)
+            const moved = source.exercises.splice(splitPoint)
+            if (moved.length === 0) break
+            routines.push({ focus: source.focus, exercises: moved })
+        }
+
+        return routines
+            .filter((routine) => routine.exercises.length > 0)
+            .map((routine, index) => {
+                const day = days[index] || days[days.length - 1]
+                const focus = routine.focus || `Rutina ${index + 1}`
+                return {
+                    ...draft,
+                    name: `${focus} - ${day}`,
+                    exercises: routine.exercises,
+                    scheduled_days: [day],
+                }
+            })
+    }
+
+    const handleAIDraftGenerated = (payload: { draft: AIGeneratedWorkoutDraft; warnings: string[] }) => {
+        const { draft, warnings } = payload
+        const individualDrafts = splitAIDraftIntoIndividualRoutines(draft)
+        setAiDraftQueue(individualDrafts)
+        setAiDraftIndex(0)
+        applyDraftToEditor(individualDrafts[0])
+
+        if (warnings.length > 0) {
+            toast.info(`Revisá ${warnings.length} advertencia${warnings.length > 1 ? 's' : ''} antes de asignar.`)
+        }
+        if (individualDrafts.length > 1) {
+            toast.success(`Se dividió el plan en ${individualDrafts.length} rutinas individuales (una por día).`)
+        }
     }
 
     const getPresetReviewDate = (weeks: number) => {
@@ -333,6 +491,15 @@ export function AssignWorkoutDialog({
         if (result?.error) {
             toast.error(result.error)
         } else {
+            if (!existingWorkout && aiDraftQueue.length > 1 && aiDraftIndex < aiDraftQueue.length - 1) {
+                const nextIndex = aiDraftIndex + 1
+                setAiDraftIndex(nextIndex)
+                applyDraftToEditor(aiDraftQueue[nextIndex])
+                toast.success(`Rutina ${nextIndex} de ${aiDraftQueue.length} lista. Completá y guardá la siguiente.`)
+                setLoading(false)
+                return
+            }
+
             setOpen(false)
         }
         setLoading(false)
@@ -353,7 +520,7 @@ export function AssignWorkoutDialog({
             </DialogTrigger>
 
             <DialogContent className={cn(
-                "grid-rows-[auto,minmax(0,1fr)] max-h-[95vh] overflow-hidden",
+                "max-h-[95vh] overflow-y-auto",
                 step === 'select' && !existingWorkout ? "sm:max-w-[500px]" : "sm:max-w-[850px]",
                 // Bottom-sheet effect on mobile
                 "max-sm:fixed max-sm:inset-0 max-sm:top-0 max-sm:left-0 max-sm:translate-x-0 max-sm:translate-y-0 max-sm:w-screen max-sm:max-w-none max-sm:h-[100dvh] max-sm:max-h-[100dvh] max-sm:rounded-none max-sm:border-0 max-sm:p-4 max-sm:pt-5"
@@ -384,7 +551,7 @@ export function AssignWorkoutDialog({
                     )}
                 </DialogHeader>
 
-                <div className="min-h-0 overflow-y-auto pr-1 max-sm:-mr-1">
+                <div className="pr-1 max-sm:-mr-1 pb-4">
                 {isEditingExercise ? (
                     <div className="animate-in fade-in slide-in-from-right-4 duration-200">
                         <ExerciseForm
@@ -471,6 +638,17 @@ export function AssignWorkoutDialog({
                                             O crear rutina desde cero
                                         </Button>
                                     </div>
+
+                                    <div className="flex justify-center">
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => setAiDialogOpen(true)}
+                                            className="w-full border-dashed border-2 text-primary hover:text-primary flex items-center gap-2"
+                                        >
+                                            <Sparkles className="h-4 w-4" />
+                                            Generar con IA
+                                        </Button>
+                                    </div>
                                 </div>
                             </div>
                         ) : (
@@ -537,6 +715,12 @@ export function AssignWorkoutDialog({
                                     </div>
                                 </div>
 
+                                {aiDraftQueue.length > 1 && (
+                                    <div className="rounded-lg border bg-primary/5 text-primary px-3 py-2 text-sm font-medium">
+                                        Rutina {aiDraftIndex + 1} de {aiDraftQueue.length}. Se guardarán como rutinas separadas.
+                                    </div>
+                                )}
+
                                 {isPresential && (
                                     <div className="flex gap-4 animate-in slide-in-from-top-2">
                                         <div className="flex-1 space-y-2">
@@ -562,7 +746,7 @@ export function AssignWorkoutDialog({
                                 <div className="space-y-2">
                                     <div className="flex items-center gap-2">
                                         <Label>Días asignados</Label>
-                                        <span className="text-xs text-muted-foreground font-normal">(Selecciona un dia)</span>
+                                        <span className="text-xs text-muted-foreground font-normal">(Un solo día por rutina)</span>
                                     </div>
                                     <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                                         {DAYS.map(day => (
@@ -584,7 +768,7 @@ export function AssignWorkoutDialog({
                                 </div>
 
                                 <div className="space-y-4">
-                                    <div className="border rounded-lg overflow-auto bg-background max-h-[55vh] sm:max-h-[350px] custom-scrollbar">
+                                    <div className="border rounded-lg overflow-x-auto bg-background custom-scrollbar">
                                         <Table className="min-w-[640px] sm:min-w-0">
                                             <TableHeader>
                                                 <TableRow className="bg-muted/50 hover:bg-muted/50">
@@ -683,11 +867,12 @@ export function AssignWorkoutDialog({
                                         value={notes}
                                         onChange={(e) => setNotes(e.target.value)}
                                         placeholder="Agregar notas o instrucciones especiales..."
-                                        rows={3}
+                                        rows={5}
+                                        className="min-h-[180px]"
                                     />
                                 </div>
 
-                                <div className="sticky bottom-0 z-10 flex flex-col-reverse gap-2 border-t bg-background/95 pt-4 pb-1 backdrop-blur sm:static sm:flex-row sm:justify-end sm:bg-transparent sm:pb-0 sm:backdrop-blur-0">
+                                <div className="max-sm:sticky max-sm:bottom-0 z-10 flex flex-col-reverse gap-2 border-t bg-background/95 pt-4 pb-3 backdrop-blur sm:static sm:flex-row sm:justify-end sm:bg-transparent sm:pb-0 sm:backdrop-blur-0">
                                     <Button className="w-full sm:w-auto" variant="outline" onClick={() => setOpen(false)}>Cerrar</Button>
                                     <Button
                                         className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white"
@@ -696,7 +881,7 @@ export function AssignWorkoutDialog({
                                         }}
                                         disabled={loading || !workoutName || !validUntil || scheduledDays.length === 0}
                                     >
-                                        {loading ? 'Asignando...' : 'Asignar rutina'}
+                                        {loading ? 'Asignando...' : (aiDraftQueue.length > 1 ? `Guardar y seguir (${aiDraftIndex + 1}/${aiDraftQueue.length})` : 'Asignar rutina')}
                                     </Button>
                                 </div>
                             </div>
@@ -741,6 +926,16 @@ export function AssignWorkoutDialog({
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            <AIWorkoutBriefDialog
+                mode="client"
+                open={aiDialogOpen}
+                onOpenChange={setAiDialogOpen}
+                clientId={clientId}
+                defaults={aiDefaults}
+                injuries={clientInjuries}
+                onGenerated={handleAIDraftGenerated}
+            />
         </>
     )
 }

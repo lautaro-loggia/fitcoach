@@ -20,6 +20,20 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Motion Runtime
+
+Orbit includes a performance-first Motion layer that can be controlled with:
+
+```bash
+NEXT_PUBLIC_MOTION_LEVEL=off|minimal|full
+```
+
+- `off`: disables Motion animations at runtime.
+- `minimal`: default preset, subtle transforms and opacity only.
+- `full`: richer transitions for supported components.
+
+Detailed performance gates and baseline checks are documented in `docs/performance/motion-baseline.md`.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

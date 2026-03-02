@@ -405,6 +405,7 @@ export interface Plan {
     routine_frequency: 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'biannual' | null
     calls_frequency: 'none' | 'monthly' | 'weekly' | null
     includes_nutrition: boolean
+    includes_presential: boolean
     created_at: string
     updated_at: string
 }
@@ -434,6 +435,7 @@ export async function createPlan(plan: {
     routine_frequency: 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'biannual'
     calls_frequency: 'none' | 'monthly' | 'weekly'
     includes_nutrition: boolean
+    includes_presential: boolean
 }) {
     try {
         const supabase = await createClient()
@@ -450,7 +452,8 @@ export async function createPlan(plan: {
                 description: plan.description || null,
                 routine_frequency: plan.routine_frequency,
                 calls_frequency: plan.calls_frequency,
-                includes_nutrition: plan.includes_nutrition
+                includes_nutrition: plan.includes_nutrition,
+                includes_presential: plan.includes_presential
             })
 
         if (error) {
@@ -474,6 +477,7 @@ export async function updatePlan(planId: string, updates: {
     routine_frequency?: 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'biannual'
     calls_frequency?: 'none' | 'monthly' | 'weekly'
     includes_nutrition?: boolean
+    includes_presential?: boolean
     notifyClients?: boolean
 }) {
     try {

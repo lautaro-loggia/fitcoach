@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Plus, Edit, Trash2, Users, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { getPlans, deletePlan, getClientCountByPlan, createPlan, updatePlan, type Plan } from '@/app/(dashboard)/pagos/actions'
+import { getPlans, deletePlan, getClientCountByPlan, type Plan } from '@/app/(dashboard)/pagos/actions'
 import { PlanDialog } from '@/components/plans/plan-dialog'
 import { useConfirm } from '@/hooks/use-confirm'
 
@@ -193,6 +192,12 @@ export function PlanesTab() {
                                     <span className="text-muted-foreground">Nutrición</span>
                                     <span className={`font-medium px-2 py-0.5 rounded ${plan.includes_nutrition ? 'bg-green-100 text-green-700' : 'bg-secondary text-muted-foreground'}`}>
                                         {plan.includes_nutrition ? 'Incluida' : 'No'}
+                                    </span>
+                                </div>
+                                <div className="text-xs flex items-center justify-between">
+                                    <span className="text-muted-foreground">Entrenamiento presencial</span>
+                                    <span className={`font-medium px-2 py-0.5 rounded ${plan.includes_presential ? 'bg-blue-100 text-blue-700' : 'bg-secondary text-muted-foreground'}`}>
+                                        {plan.includes_presential ? 'Incluido' : 'No'}
                                     </span>
                                 </div>
                             </div>

@@ -487,10 +487,10 @@ export async function getCoachHomeData(): Promise<CoachHomeData> {
     const checkins = ((checkinsResult.data || []) as DashboardCheckin[])
         .filter((item) => clientIds.has(item.client_id))
 
-    const workoutSessions = ((workoutSessionsResult.data || []) as DashboardWorkoutSession[])
+    const workoutSessionsRaw = ((workoutSessionsResult.data || []) as DashboardWorkoutSession[])
         .filter((item) => clientIds.has(item.client_id))
 
-    const workoutLogs = ((workoutLogsResult.data || []) as DashboardWorkoutLog[])
+    const workoutLogsRaw = ((workoutLogsResult.data || []) as DashboardWorkoutLog[])
         .filter((item) => clientIds.has(item.client_id))
 
     const assignedWorkouts = ((assignedWorkoutsResult.data || []) as DashboardAssignedWorkout[])
@@ -500,9 +500,48 @@ export async function getCoachHomeData(): Promise<CoachHomeData> {
     const mealPlans = ((mealPlansResult.data || []) as DashboardMealPlan[])
         .filter((item) => clientIds.has(item.client_id))
 
-    const completedSessionIds = new Set(workoutSessions.map((session) => session.id))
+    const completedSessionIds = new Set(workoutSessionsRaw.map((session) => session.id))
     const exerciseCheckins = ((exerciseCheckinsResult.data || []) as DashboardExerciseCheckin[])
         .filter((item) => completedSessionIds.has(item.session_id))
+
+    const sessionIdsWithCompletedSets = new Set(
+        exerciseCheckins
+            .filter((item) => (item.set_logs || []).some((setLog) => !!setLog.is_completed))
+            .map((item) => item.session_id)
+    )
+
+    const workoutSessions = workoutSessionsRaw
+        .filter((item) => sessionIdsWithCompletedSets.has(item.id))
+
+    const validSessionSignatures = new Set(
+        workoutSessions
+            .map((session) => {
+                const day = toDateStringFromTimestamp(session.ended_at || session.started_at)
+                if (!day) return null
+                return `${session.client_id}:${day}:${session.assigned_workout_id || 'log'}`
+            })
+            .filter((signature): signature is string => !!signature)
+    )
+
+    const invalidSessionSignatures = new Set(
+        workoutSessionsRaw
+            .filter((session) => !sessionIdsWithCompletedSets.has(session.id))
+            .map((session) => {
+                const day = toDateStringFromTimestamp(session.ended_at || session.started_at)
+                if (!day) return null
+                return `${session.client_id}:${day}:${session.assigned_workout_id || 'log'}`
+            })
+            .filter((signature): signature is string => !!signature)
+    )
+
+    const invalidOnlySessionSignatures = new Set(
+        [...invalidSessionSignatures].filter((signature) => !validSessionSignatures.has(signature))
+    )
+
+    const workoutLogs = workoutLogsRaw.filter((log) => {
+        const signature = `${log.client_id}:${log.date}:${log.workout_id || 'log'}`
+        return !invalidOnlySessionSignatures.has(signature)
+    })
 
     const workoutsByClient = new Map<string, DashboardAssignedWorkout[]>()
     for (const workout of assignedWorkouts) {
