@@ -16,6 +16,7 @@ import { generateWorkoutPDF } from '@/lib/pdf-utils'
 import { TrainingSummarySidebar } from '../training-summary-sidebar'
 import { Badge } from '@/components/ui/badge'
 import { useConfirm } from '@/hooks/use-confirm'
+import { Loader2 } from 'lucide-react'
 
 interface TrainingTabProps {
     client: any
@@ -23,6 +24,8 @@ interface TrainingTabProps {
 
 export function TrainingTab({ client }: TrainingTabProps) {
     const [workouts, setWorkouts] = useState<any[]>([])
+    const [loadingWorkouts, setLoadingWorkouts] = useState(true)
+    const [hasLoadedWorkouts, setHasLoadedWorkouts] = useState(false)
     const [viewMode, setViewMode] = useState<'cards' | 'calendar'>('cards')
     const [editingWorkout, setEditingWorkout] = useState<any>(null)
     const [viewingWorkout, setViewingWorkout] = useState<any>(null)
@@ -31,28 +34,34 @@ export function TrainingTab({ client }: TrainingTabProps) {
 
     const fetchAssignedWorkouts = useCallback(async () => {
         const supabase = createClient()
+        setLoadingWorkouts(true)
 
-        // Fetch assigned workouts
-        const { data: workoutsData } = await supabase
-            .from('assigned_workouts')
-            .select('*')
-            .eq('client_id', client.id)
-            .order('created_at', { ascending: false })
+        try {
+            // Fetch assigned workouts
+            const { data: workoutsData } = await supabase
+                .from('assigned_workouts')
+                .select('*')
+                .eq('client_id', client.id)
+                .order('created_at', { ascending: false })
 
-        if (workoutsData) setWorkouts(workoutsData)
+            if (workoutsData) setWorkouts(workoutsData)
 
-        // Fetch today's completed logs
-        const { startISO, endISO } = getARTDayBounds()
+            // Fetch today's completed logs
+            const { startISO, endISO } = getARTDayBounds()
 
-        const { data: logsData } = await supabase
-            .from('workout_logs')
-            .select('workout_id')
-            .eq('client_id', client.id)
-            .gte('completed_at', startISO)
-            .lt('completed_at', endISO)
+            const { data: logsData } = await supabase
+                .from('workout_logs')
+                .select('workout_id')
+                .eq('client_id', client.id)
+                .gte('completed_at', startISO)
+                .lt('completed_at', endISO)
 
-        if (logsData) {
-            setTodaySessions(logsData.map(l => ({ assigned_workout_id: l.workout_id })))
+            if (logsData) {
+                setTodaySessions(logsData.map(l => ({ assigned_workout_id: l.workout_id })))
+            }
+        } finally {
+            setLoadingWorkouts(false)
+            setHasLoadedWorkouts(true)
         }
     }, [client.id])
 
@@ -185,6 +194,12 @@ export function TrainingTab({ client }: TrainingTabProps) {
                         <div className="flex-1">
                             {viewMode === 'cards' && (
                                 <div className="grid gap-6 md:grid-cols-2">
+                                    {loadingWorkouts && !hasLoadedWorkouts && (
+                                        <div className="col-span-full flex flex-col items-center justify-center py-12 px-4 text-center border-2 border-dashed rounded-3xl bg-gray-50/50 border-gray-200">
+                                            <Loader2 className="h-5 w-5 animate-spin text-gray-400 mb-3" />
+                                            <p className="text-gray-400 font-medium text-sm">Cargando rutinas...</p>
+                                        </div>
+                                    )}
                                     {workouts.map(workout => (
                                         <WorkoutCard
                                             key={workout.id}
@@ -195,7 +210,7 @@ export function TrainingTab({ client }: TrainingTabProps) {
                                             onDownload={() => generateWorkoutPDF({ workout, client })}
                                         />
                                     ))}
-                                    {workouts.length === 0 && (
+                                    {!loadingWorkouts && hasLoadedWorkouts && workouts.length === 0 && (
                                         <div className="col-span-full flex flex-col items-center justify-center py-12 px-4 text-center border-2 border-dashed rounded-3xl bg-gray-50/50 border-gray-200">
                                             <div className="relative w-full max-w-[200px] aspect-square mb-4">
                                                 <img

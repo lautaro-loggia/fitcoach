@@ -47,13 +47,14 @@ function DumbbellIcon({ className }: { className?: string }) {
 
 function NutritionIcon({ className }: { className?: string }) {
     return (
-        <svg className={className} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <ellipse cx="24" cy="30" rx="16" ry="8" stroke="#4139CF" strokeWidth="2" fill="none" />
-            <path d="M8 30c0-8.837 7.163-16 16-16s16 7.163 16 16" stroke="#4139CF" strokeWidth="2" fill="none" opacity="0.4" />
-            <circle cx="20" cy="28" r="2" fill="#4139CF" opacity="0.5" />
-            <circle cx="28" cy="26" r="1.5" fill="#4139CF" opacity="0.5" />
-            <circle cx="24" cy="32" r="1.5" fill="#4139CF" opacity="0.3" />
-        </svg>
+        <div
+            className={cn(
+                'inline-flex items-center justify-center rounded-full border border-[#4139CF]/25 bg-[#4139CF]/10',
+                className
+            )}
+        >
+            <Utensils className="h-7 w-7 text-[#4139CF]" strokeWidth={2} />
+        </div>
     )
 }
 
@@ -73,7 +74,15 @@ function PaymentIcon({ className }: { className?: string }) {
 interface StepProps {
     onNext: () => void
     onSkip?: () => void
-    onAction?: (action: string) => void
+}
+
+interface StepPaymentsProps {
+    onGoPaymentsNow: () => void
+    onSkip: () => void
+}
+
+interface StepCompleteProps {
+    onDone: () => void
 }
 
 // ─── Steps ─────────────────────────────────────────────────────────────
@@ -165,7 +174,7 @@ function StepInvite({ onNext, onSkip }: StepProps) {
             <InviteIcon className="w-14 h-14 mb-6" />
 
             <p className="text-xs font-medium tracking-widest uppercase mb-2" style={{ color: '#4139CF' }}>
-                Paso 1 de 4
+                Paso 1 de 5
             </p>
             <h2 className="text-xl font-semibold text-foreground tracking-tight">
                 Invitá a tu primer asesorado
@@ -204,7 +213,7 @@ function StepWorkout({ onNext }: StepProps) {
             <DumbbellIcon className="w-14 h-14 mb-6" />
 
             <p className="text-xs font-medium tracking-widest uppercase mb-2" style={{ color: '#4139CF' }}>
-                Paso 2 de 4
+                Paso 2 de 5
             </p>
             <h2 className="text-xl font-semibold text-foreground tracking-tight">
                 Creá un plan de entrenamiento
@@ -218,8 +227,8 @@ function StepWorkout({ onNext }: StepProps) {
                 Podés crearlo desde el perfil del asesorado o crear uno general en &ldquo;Mis entrenamientos&rdquo; para reutilizar con varios.
             </p>
 
-            <div className="rounded-xl border border-border bg-muted/50 p-3 mt-4 w-full">
-                <p className="text-[12px] text-muted-foreground leading-relaxed">
+            <div className="rounded-xl border border-[#CACAFF] bg-[#F1F1FF] p-3 mt-4 w-full">
+                <p className="text-[12px] text-[#2C2CA4] font-semibold leading-relaxed">
                     💡 Un mismo plan puede asignarse a varios asesorados y adaptarse según sus necesidades.
                 </p>
             </div>
@@ -240,7 +249,7 @@ function StepNutrition({ onNext }: StepProps) {
             <NutritionIcon className="w-14 h-14 mb-6" />
 
             <p className="text-xs font-medium tracking-widest uppercase mb-2" style={{ color: '#4139CF' }}>
-                Paso 3 de 4
+                Paso 3 de 5
             </p>
             <h2 className="text-xl font-semibold text-foreground tracking-tight">
                 Cargá tus recetas de nutrición
@@ -261,13 +270,13 @@ function StepNutrition({ onNext }: StepProps) {
     )
 }
 
-function StepPayments({ onNext }: StepProps) {
+function StepPayments({ onGoPaymentsNow, onSkip }: StepPaymentsProps) {
     return (
         <div className="flex flex-col items-center text-center">
             <PaymentIcon className="w-14 h-14 mb-6" />
 
             <p className="text-xs font-medium tracking-widest uppercase mb-2" style={{ color: '#4139CF' }}>
-                Paso 4 de 4
+                Paso 4 de 5
             </p>
             <h2 className="text-xl font-semibold text-foreground tracking-tight">
                 Organizá tus ingresos
@@ -292,11 +301,48 @@ function StepPayments({ onNext }: StepProps) {
                 </li>
             </ul>
 
+            <div className="flex flex-col gap-2 w-full mt-8">
+                <Button
+                    onClick={onGoPaymentsNow}
+                    className="w-full h-11 text-[15px] font-medium rounded-xl bg-foreground hover:bg-foreground/90 text-background"
+                >
+                    Configurar pagos ahora
+                </Button>
+                <Button
+                    variant="ghost"
+                    onClick={onSkip}
+                    className="w-full h-10 text-[13px] text-muted-foreground hover:text-foreground"
+                >
+                    Lo hago después
+                </Button>
+            </div>
+        </div>
+    )
+}
+
+function StepComplete({ onDone }: StepCompleteProps) {
+    return (
+        <div className="flex flex-col items-center text-center">
+            <div className="w-14 h-14 rounded-full bg-[#4139CF]/10 border border-[#4139CF]/20 flex items-center justify-center mb-6">
+                <CheckCircle className="w-8 h-8 text-[#4139CF]" />
+            </div>
+
+            <p className="text-xs font-medium tracking-widest uppercase mb-2" style={{ color: '#4139CF' }}>
+                Paso 5 de 5
+            </p>
+            <h2 className="text-2xl font-semibold text-foreground tracking-tight">
+                ¡Perfecto! Ya podés empezar
+            </h2>
+
+            <p className="text-muted-foreground mt-3 text-[15px] leading-relaxed max-w-md">
+                Tu espacio de coach ya está configurado. Ya podés invitar asesorados, crear entrenamientos y cargar recetas.
+            </p>
+
             <Button
-                onClick={onNext}
-                className="mt-8 w-full h-11 text-[15px] font-medium rounded-xl bg-foreground hover:bg-foreground/90 text-background"
+                onClick={onDone}
+                className="w-full h-11 text-[15px] font-medium rounded-xl bg-foreground hover:bg-foreground/90 text-background mt-8"
             >
-                Ir a Pagos
+                Ir al Inicio
             </Button>
         </div>
     )
@@ -308,40 +354,36 @@ interface CoachOnboardingModalProps {
     open: boolean
     onComplete: () => void
     onTaskAction?: (action: string) => void
+    testMode?: boolean
+    initialStep?: number
 }
 
-const TOTAL_STEPS = 5
+const TOTAL_STEPS = 6
+const LAST_STEP = TOTAL_STEPS - 1
 
-export function CoachOnboardingModal({ open, onComplete, onTaskAction }: CoachOnboardingModalProps) {
-    const [currentStep, setCurrentStep] = useState(0)
+function clampInitialStep(value: number) {
+    return Math.min(Math.max(value, 0), LAST_STEP)
+}
+
+export function CoachOnboardingModal({
+    open,
+    onComplete,
+    onTaskAction,
+    testMode = false,
+    initialStep = 0,
+}: CoachOnboardingModalProps) {
+    const [currentStep, setCurrentStep] = useState(() => clampInitialStep(initialStep))
     const [direction, setDirection] = useState<'forward' | 'backward'>('forward')
     const [isAnimating, setIsAnimating] = useState(false)
     const router = useRouter()
 
-    const goNext = useCallback(() => {
+    const goNextStep = useCallback(() => {
         if (isAnimating) return
-        if (currentStep >= TOTAL_STEPS - 1) {
-            // Último paso
-            onComplete()
-            onTaskAction?.('paymentsReviewed')
-            router.push('/pagos')
-            return
-        }
 
         setDirection('forward')
         setIsAnimating(true)
         setTimeout(() => {
-            setCurrentStep(prev => prev + 1)
-            setIsAnimating(false)
-        }, 200)
-    }, [currentStep, isAnimating, onComplete, onTaskAction, router])
-
-    const goSkip = useCallback(() => {
-        if (isAnimating) return
-        setDirection('forward')
-        setIsAnimating(true)
-        setTimeout(() => {
-            setCurrentStep(prev => prev + 1)
+            setCurrentStep(prev => Math.min(prev + 1, LAST_STEP))
             setIsAnimating(false)
         }, 200)
     }, [isAnimating])
@@ -350,40 +392,76 @@ export function CoachOnboardingModal({ open, onComplete, onTaskAction }: CoachOn
         onTaskAction?.(action)
     }, [onTaskAction])
 
+    const finishOnboarding = useCallback(() => {
+        onComplete()
+
+        if (!testMode) {
+            router.push('/')
+        }
+    }, [onComplete, router, testMode])
+
+    const goNext = useCallback(() => {
+        goNextStep()
+    }, [goNextStep])
+
+    const goSkip = useCallback(() => {
+        goNextStep()
+    }, [goNextStep])
+
+    const handlePaymentsChoice = useCallback((openPaymentsNow: boolean) => {
+        if (openPaymentsNow) {
+            handleAction('paymentsReviewed')
+        }
+        goNextStep()
+    }, [goNextStep, handleAction])
+
     // Mapear acciones del CTA al router
     const handleStepAction = useCallback((step: number) => {
+        if (testMode) {
+            switch (step) {
+                case 1:
+                    handleAction('clientInvited')
+                    break
+                case 2:
+                    handleAction('workoutCreated')
+                    break
+                case 3:
+                    handleAction('recipeCreated')
+                    break
+            }
+            goNextStep()
+            return
+        }
+
         switch (step) {
             case 1: // Invitar
                 handleAction('clientInvited')
-                router.push('/clients?new=true')
-                onComplete()
+                router.push('/clients?new=true&onboardingStep=2')
                 break
             case 2: // Workout
-                handleAction('workoutCreated')
-                router.push('/workouts')
-                onComplete()
+                router.push('/workouts?new=true&onboardingStep=3')
                 break
             case 3: // Nutrition
-                handleAction('recipeCreated')
-                router.push('/recipes')
-                onComplete()
-                break
-            case 4: // Pagos
-                handleAction('paymentsReviewed')
-                router.push('/pagos')
-                onComplete()
+                router.push('/recipes?new=true&onboardingStep=4')
                 break
         }
-    }, [handleAction, router, onComplete])
+    }, [handleAction, router, testMode, goNextStep])
 
     const progressPercent = ((currentStep + 1) / TOTAL_STEPS) * 100
-
     const steps: React.ReactNode[] = [
         <StepWelcome key="welcome" onNext={goNext} />,
         <StepInvite key="invite" onNext={() => handleStepAction(1)} onSkip={goSkip} />,
         <StepWorkout key="workout" onNext={() => handleStepAction(2)} />,
         <StepNutrition key="nutrition" onNext={() => handleStepAction(3)} />,
-        <StepPayments key="payments" onNext={() => handleStepAction(4)} />,
+        <StepPayments
+            key="payments"
+            onGoPaymentsNow={() => handlePaymentsChoice(true)}
+            onSkip={() => handlePaymentsChoice(false)}
+        />,
+        <StepComplete
+            key="complete"
+            onDone={finishOnboarding}
+        />,
     ]
 
     return (

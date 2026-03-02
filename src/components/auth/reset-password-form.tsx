@@ -49,6 +49,7 @@ export function ResetPasswordForm() {
                             placeholder="************"
                             required
                             disabled={loading}
+                            autoComplete="new-password"
                             className="h-11 px-4 pr-11 rounded-xl border-[#E5E5E5] bg-white text-foreground placeholder:text-[#A3A3A3]"
                         />
                         <button
@@ -77,6 +78,7 @@ export function ResetPasswordForm() {
                             placeholder="************"
                             required
                             disabled={loading}
+                            autoComplete="new-password"
                             className="h-11 px-4 pr-11 rounded-xl border-[#E5E5E5] bg-white text-foreground placeholder:text-[#A3A3A3]"
                         />
                         <button

@@ -4,7 +4,7 @@ import { CoachOnboardingModal } from '@/components/onboarding/coach-onboarding-m
 import { CoachSetupChecklist } from '@/components/onboarding/coach-setup-checklist'
 import { useCoachOnboarding, type CoachOnboardingState } from '@/hooks/use-coach-onboarding'
 
-export function CoachOnboardingWrapper() {
+export function CoachOnboardingWrapper({ initialStep = 0 }: { initialStep?: number }) {
     const {
         state,
         shouldShowModal,
@@ -24,6 +24,7 @@ export function CoachOnboardingWrapper() {
                 open={shouldShowModal}
                 onComplete={completeModal}
                 onTaskAction={handleTaskAction}
+                initialStep={initialStep}
             />
 
             {/* Checklist persistente en el dashboard */}

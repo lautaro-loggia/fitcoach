@@ -12,6 +12,77 @@ export type MealConfig = {
     included: boolean
 }
 
+function normalizeMealLogImagePath(imagePath: unknown): string | null {
+    if (typeof imagePath !== 'string') return null
+
+    const rawValue = imagePath.trim()
+    if (!rawValue || rawValue === 'no-image') return null
+
+    const valueWithoutQuery = rawValue.split('?')[0]
+
+    // Legacy data may include full URLs (public or signed). Extract path after /meal-logs/.
+    if (/^https?:\/\//i.test(valueWithoutQuery)) {
+        try {
+            const parsed = new URL(valueWithoutQuery)
+            const decodedPath = decodeURIComponent(parsed.pathname)
+            const marker = '/meal-logs/'
+            const markerIndex = decodedPath.indexOf(marker)
+            if (markerIndex >= 0) {
+                return decodedPath.slice(markerIndex + marker.length).replace(/^\/+/, '')
+            }
+            return null
+        } catch {
+            return null
+        }
+    }
+
+    const normalized = decodeURIComponent(valueWithoutQuery)
+    const marker = '/meal-logs/'
+    if (normalized.includes(marker)) {
+        const [, rest] = normalized.split(marker)
+        return rest?.replace(/^\/+/, '') || null
+    }
+
+    return normalized.replace(/^\/+/, '').replace(/^meal-logs\//, '')
+}
+
+async function createMealLogSignedUrl(
+    adminSupabase: ReturnType<typeof createAdminClient>,
+    imagePath: string
+): Promise<string | null> {
+    const bucket = adminSupabase.storage.from('meal-logs')
+
+    // Primary path: transformed image for faster rendering
+    const { data: transformedData, error: transformedError } = await bucket.createSignedUrl(imagePath, 3600 * 24, {
+        transform: {
+            width: 1280,
+            quality: 72,
+        },
+    })
+
+    if (transformedData?.signedUrl) {
+        return transformedData.signedUrl
+    }
+
+    // Fallback: sign without transforms (works when image transforms are disabled/unsupported)
+    const { data: signedData, error: signError } = await bucket.createSignedUrl(imagePath, 3600 * 24)
+    if (signedData?.signedUrl) {
+        return signedData.signedUrl
+    }
+
+    if (transformedError || signError) {
+        console.warn('getDailyMealLogs: could not sign image URL', {
+            imagePath,
+            transformedError: transformedError?.message,
+            signError: signError?.message,
+        })
+    }
+
+    // Final fallback for public buckets.
+    const { data: publicData } = bucket.getPublicUrl(imagePath)
+    return publicData?.publicUrl ?? null
+}
+
 async function authorizeClientAccess(
     clientId: string,
     options?: { allowClientSelf?: boolean }
@@ -641,20 +712,22 @@ export async function getDailyMealLogs(clientId: string, date: string) {
     // Generate public URLs for images
     // adminSupabase is already defined above
     const logsWithUrls = await Promise.all((logs || []).map(async (log) => {
-        if (!log.image_path || log.image_path === 'no-image') {
-            return log
+        const normalizedPath = normalizeMealLogImagePath(log.image_path)
+        const existingUrl = typeof log.image_path === 'string' && /^https?:\/\//i.test(log.image_path)
+            ? log.image_path
+            : null
+
+        if (!normalizedPath) {
+            return existingUrl
+                ? { ...log, signedUrl: existingUrl }
+                : log
         }
-        const { data } = await adminSupabase.storage
-            .from('meal-logs')
-            .createSignedUrl(log.image_path, 3600 * 24, {
-                transform: {
-                    width: 1280,
-                    quality: 72,
-                },
-            }) // 24h url
+
+        const signedUrl = await createMealLogSignedUrl(adminSupabase, normalizedPath)
         return {
             ...log,
-            signedUrl: data?.signedUrl
+            image_path: normalizedPath,
+            signedUrl: signedUrl || existingUrl || undefined,
         }
     }))
 

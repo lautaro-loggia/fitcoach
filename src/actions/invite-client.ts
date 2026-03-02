@@ -3,9 +3,9 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
+import { calculateNextDueDate, calculatePaymentStatus } from '@/lib/payments/payment-cycle'
 
-export async function inviteClient(prevState: any, formData: FormData) {
+export async function inviteClient(_prevState: unknown, formData: FormData) {
     try {
         const supabase = await createClient()
 
@@ -18,12 +18,32 @@ export async function inviteClient(prevState: any, formData: FormData) {
             return { error: 'No autorizado - Intenta iniciar sesión nuevamente', success: false }
         }
 
-        const email = formData.get('email') as string
-        const fullName = formData.get('fullName') as string
-        const phone = formData.get('phone') as string
+        const email = ((formData.get('email') as string) || '').trim().toLowerCase()
+        const fullName = ((formData.get('fullName') as string) || '').trim()
+        const phone = ((formData.get('phone') as string) || '').trim()
+        const paymentSetupRaw = (formData.get('paymentSetup') as string) || 'pending'
+        const paymentSetup = paymentSetupRaw === 'paid' ? 'paid' : 'pending'
+        const planId = ((formData.get('planId') as string) || '').trim() || null
+        const paymentAmountRaw = ((formData.get('paymentAmount') as string) || '').trim()
+        const paidAt = ((formData.get('paidAt') as string) || '').trim()
+        const firstDueDate = ((formData.get('firstDueDate') as string) || '').trim()
+        const paymentMethodRaw = ((formData.get('paymentMethod') as string) || 'bank_transfer').trim()
+        const paymentAmount = Number(paymentAmountRaw)
+
+        const validMethods = new Set(['cash', 'bank_transfer', 'mercado_pago', 'other'])
+        const paymentMethod = validMethods.has(paymentMethodRaw) ? paymentMethodRaw : 'other'
 
         if (!email || !fullName) {
             return { error: 'Faltan campos requeridos', success: false }
+        }
+        if (!paymentAmountRaw || Number.isNaN(paymentAmount) || paymentAmount <= 0) {
+            return { error: 'El monto inicial debe ser mayor a 0', success: false }
+        }
+        if (paymentSetup === 'paid' && !paidAt) {
+            return { error: 'La fecha de pago inicial es obligatoria', success: false }
+        }
+        if (paymentSetup === 'pending' && !firstDueDate) {
+            return { error: 'El primer vencimiento es obligatorio', success: false }
         }
 
         // 2. Check for existing client (Enforce 1-Client-1-Coach policy)
@@ -46,6 +66,8 @@ export async function inviteClient(prevState: any, formData: FormData) {
             }
             // Client exists with THIS coach -> Allow Re-invite logic (update name? currently just invite)
         }
+        const existingClientId = existingClients?.[0]?.id ?? null
+        const isReinvite = Boolean(existingClientId)
 
         // 3. Send Supabase Auth Invite
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://orbit-fit.vercel.app'
@@ -66,7 +88,8 @@ export async function inviteClient(prevState: any, formData: FormData) {
             }
         }
 
-        let { data: inviteData, error: inviteError } = await adminSupabase.auth.admin.inviteUserByEmail(email, inviteOptions)
+        const { data: initialInviteData, error: inviteError } = await adminSupabase.auth.admin.inviteUserByEmail(email, inviteOptions)
+        let inviteData = initialInviteData
 
         let userId: string | null = null
 
@@ -111,7 +134,7 @@ export async function inviteClient(prevState: any, formData: FormData) {
         // NOTE: We manually handle Update vs Insert because the 'email' column 
         // effectively requires uniqueness for 'upsert' to work with ON CONFLICT, 
         // but we skipped adding that constraint to the DB.
-        const clientData = {
+        const clientData: Record<string, unknown> = {
             trainer_id: user.id,
             email: email,
             full_name: fullName,
@@ -121,36 +144,98 @@ export async function inviteClient(prevState: any, formData: FormData) {
             user_id: userId // Link immediately or defer check on callback
         }
 
-        let dbError
+        if (!isReinvite) {
+            const billingFrequency = 'monthly'
+            if (paymentSetup === 'paid') {
+                const nextDueDate = calculateNextDueDate(paidAt, billingFrequency)
+                clientData.plan_id = planId
+                clientData.billing_frequency = billingFrequency
+                clientData.price_monthly = paymentAmount
+                clientData.last_paid_at = paidAt
+                clientData.next_due_date = nextDueDate
+                clientData.payment_status = calculatePaymentStatus(nextDueDate)
+            } else {
+                clientData.plan_id = planId
+                clientData.billing_frequency = billingFrequency
+                clientData.price_monthly = paymentAmount
+                clientData.last_paid_at = null
+                clientData.next_due_date = firstDueDate
+                clientData.payment_status = calculatePaymentStatus(firstDueDate)
+            }
+        }
 
-        if (existingClients && existingClients.length > 0) {
+        let dbError
+        let targetClientId = existingClientId
+
+        if (isReinvite && existingClientId) {
             // Update existing
-            const { error } = await adminSupabase
+            const { data: updatedClient, error } = await adminSupabase
                 .from('clients')
                 .update(clientData)
-                .eq('id', existingClients[0].id)
+                .eq('id', existingClientId)
+                .select('id')
+                .single()
             dbError = error
+            targetClientId = updatedClient?.id || existingClientId
         } else {
             // Insert new
-            const { error } = await adminSupabase
+            const { data: insertedClient, error } = await adminSupabase
                 .from('clients')
                 .insert(clientData)
+                .select('id')
+                .single()
             dbError = error
+            targetClientId = insertedClient?.id || null
         }
 
         if (dbError) {
             console.error('DB Error upserting client:', dbError)
-            return { msg: 'Invitación enviada, pero hubo error guardando en base de datos.', success: false }
+            return { error: 'Invitación enviada, pero hubo error guardando en base de datos.', success: false }
         }
-        revalidatePath('/dashboard/clients')
-        return { success: true, message: 'Invitación enviada correctamente' }
 
-    } catch (err: any) {
+        if (!targetClientId) {
+            return { error: 'No se pudo identificar el asesorado creado para inicializar pagos', success: false }
+        }
+
+        let warning: string | null = null
+
+        if (!isReinvite && paymentSetup === 'paid') {
+            const { error: paymentInsertError } = await adminSupabase
+                .from('payments')
+                .insert({
+                    trainer_id: user.id,
+                    client_id: targetClientId,
+                    paid_at: paidAt,
+                    amount: paymentAmount,
+                    method: paymentMethod,
+                    note: 'Pago inicial registrado durante la invitación'
+                })
+
+            if (paymentInsertError) {
+                console.error('Error creating initial payment on invite:', paymentInsertError)
+                warning = 'La invitación se envió, pero el pago inicial no se pudo registrar automáticamente.'
+            }
+        }
+
+        revalidatePath('/dashboard/clients')
+        revalidatePath('/clients')
+        revalidatePath('/pagos')
+
+        return {
+            success: true,
+            warning,
+            message: isReinvite
+                ? 'Invitación reenviada correctamente'
+                : 'Invitación enviada y estado de pago inicial registrado'
+        }
+
+    } catch (err: unknown) {
         console.error('Unexpected error in inviteClient:', err)
+        const errorMessage = err instanceof Error ? err.message : 'Desconocido'
         // Check for specific Supabase Env error
-        if (err.message && (err.message.includes('supabaseKey is required') || err.message.includes('service_role'))) {
+        if (errorMessage.includes('supabaseKey is required') || errorMessage.includes('service_role')) {
             return { error: 'Error de configuración del servidor: Falta Service Role Key', success: false }
         }
-        return { error: `Error inesperado: ${err.message || 'Desconocido'}`, success: false }
+        return { error: `Error inesperado: ${errorMessage}`, success: false }
     }
 }

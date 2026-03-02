@@ -58,6 +58,7 @@ function ExerciseCard({ sessionId, exerciseIndex, exercise, initialCheckin }: Ex
     const [restSeconds, setRestSeconds] = useState(initialCheckin?.rest_seconds || 90)
 
     const [sets, setSets] = useState(exercise.sets_detail || [])
+    const plannedSetsCount = exercise.sets_detail?.length ?? 0
 
     // We assume data is loaded if we have initialCheckin OR if we're just starting empty (lazy)
     // No more loading spinner needed per card because data comes from parent
@@ -244,6 +245,7 @@ function ExerciseCard({ sessionId, exerciseIndex, exercise, initialCheckin }: Ex
                     {sets.map((set, index) => {
                         const setNumber = index + 1
                         const existingLog = getSetLog(setNumber)
+                        const isUserAddedSet = setNumber > plannedSetsCount
                         return (
                             <SetRow
                                 key={setNumber}
@@ -257,7 +259,8 @@ function ExerciseCard({ sessionId, exerciseIndex, exercise, initialCheckin }: Ex
                                 onSave={(reps, weight, isCompleted) =>
                                     handleSaveSet(setNumber, reps, weight, isCompleted)
                                 }
-                                onDelete={existingLog
+                                canDelete={isUserAddedSet}
+                                onDelete={isUserAddedSet && existingLog
                                     ? () => handleDeleteSet(existingLog.id, setNumber)
                                     : undefined
                                 }

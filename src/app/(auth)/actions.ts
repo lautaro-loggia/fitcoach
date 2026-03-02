@@ -144,6 +144,23 @@ export async function updatePassword(formData: FormData) {
         return { error: error.message }
     }
 
+    const {
+        data: { user },
+    } = await supabase.auth.getUser()
+
+    if (user) {
+        const { data: client } = await supabase
+            .from('clients')
+            .select('onboarding_status')
+            .eq('user_id', user.id)
+            .maybeSingle()
+
+        if (client) {
+            revalidatePath('/', 'layout')
+            redirect(client.onboarding_status === 'completed' ? '/dashboard' : '/onboarding')
+        }
+    }
+
     revalidatePath('/', 'layout')
     redirect('/')
 }

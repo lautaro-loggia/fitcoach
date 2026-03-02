@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Dialog, DialogClose, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { History, ChevronLeft, ChevronRight, CheckCircle2, X, Camera, UtensilsCrossed } from 'lucide-react'
@@ -61,6 +61,15 @@ type MacroSummary = {
 type ParsedIngredient = {
     name: string
     amount: string
+}
+
+type ImageWithFallbackProps = {
+    src?: string
+    alt: string
+    sizes: string
+    quality?: number
+    className?: string
+    fallback: ReactNode
 }
 
 function toRoundedNumber(value: unknown): number {
@@ -135,6 +144,33 @@ function formatKcalLabel(kcal: number): string {
 
 function formatMacroLabel(value: number): string {
     return value > 0 ? `${value}g` : '--'
+}
+
+function ImageWithFallback({
+    src,
+    alt,
+    sizes,
+    quality = 72,
+    className,
+    fallback,
+}: ImageWithFallbackProps) {
+    const [hasError, setHasError] = useState(false)
+
+    if (!src || hasError) {
+        return <>{fallback}</>
+    }
+
+    return (
+        <Image
+            src={src}
+            alt={alt}
+            fill
+            sizes={sizes}
+            quality={quality}
+            className={className}
+            onError={() => setHasError(true)}
+        />
+    )
 }
 
 export function MealHistoryDialog({ clientId }: MealHistoryDialogProps) {
@@ -255,30 +291,30 @@ export function MealHistoryDialog({ clientId }: MealHistoryDialogProps) {
             </DialogTrigger>
 
             <DialogContent
-                className="h-[min(640px,calc(100vh-120px))] w-[min(1060px,calc(100vw-120px))] !max-w-[min(1060px,calc(100vw-120px))] gap-0 overflow-hidden rounded-[20px] border border-[#E3E8F1] bg-[#F8FAFD] p-0 shadow-[0_20px_56px_rgba(15,23,42,0.2)]"
+                className="gap-0 overflow-hidden bg-[#F8FAFD] p-0 max-sm:fixed max-sm:inset-0 max-sm:top-0 max-sm:left-0 max-sm:h-[100dvh] max-sm:w-screen max-sm:!max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-none max-sm:border-0 max-sm:shadow-none sm:h-[min(640px,calc(100vh-120px))] sm:w-[min(1060px,calc(100vw-120px))] sm:!max-w-[min(1060px,calc(100vw-120px))] sm:rounded-[20px] sm:border sm:border-[#E3E8F1] sm:shadow-[0_20px_56px_rgba(15,23,42,0.2)]"
                 showCloseButton={false}
             >
-                <div className="flex h-[84px] items-center justify-between border-b border-[#E3E8F1] bg-[#F8FAFD] px-6">
-                    <DialogTitle className="whitespace-nowrap text-[30px] leading-none font-semibold tracking-[-0.02em] text-[#0F172A]">
+                <div className="flex min-h-[84px] flex-wrap items-center gap-3 border-b border-[#E3E8F1] bg-[#F8FAFD] px-4 py-3 sm:h-[84px] sm:flex-nowrap sm:justify-between sm:px-6 sm:py-0">
+                    <DialogTitle className="text-[22px] leading-[1.05] font-semibold tracking-[-0.02em] text-[#0F172A] sm:text-[30px] sm:leading-none">
                         Historial de comidas
                     </DialogTitle>
 
-                    <div className="flex items-center gap-4">
-                        <div className="flex h-[64px] w-[300px] items-center justify-between rounded-[14px] border border-[#E2E8F0] bg-[#F3F6FC] px-2.5">
+                    <div className="flex w-full items-center justify-between gap-3 sm:w-auto sm:justify-end sm:gap-4">
+                        <div className="flex h-12 w-[calc(100%-48px)] max-w-[320px] items-center justify-between rounded-[14px] border border-[#E2E8F0] bg-[#F3F6FC] px-2 sm:h-[64px] sm:w-[300px] sm:px-2.5">
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-9 w-9 rounded-full text-[#7F8EA6] hover:bg-[#E9EEF8] hover:text-[#64748B]"
+                                className="h-8 w-8 rounded-full text-[#7F8EA6] hover:bg-[#E9EEF8] hover:text-[#64748B] sm:h-9 sm:w-9"
                                 onClick={() => setDate(subDays(date, 1))}
                             >
-                                <ChevronLeft className="h-5 w-5" />
+                                <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
                             </Button>
 
                             <div className="flex flex-col items-center justify-center">
                                 <span className="text-[10px] font-semibold tracking-[0.18em] text-[#4F46E5] uppercase">
                                     {dayLabel}
                                 </span>
-                                <span className="mt-1 text-[14px] leading-none font-semibold text-[#0F172A]">
+                                <span className="mt-1 text-[12px] leading-none font-semibold text-[#0F172A] sm:text-[14px]">
                                     {formatDisplayDate(date)}
                                 </span>
                             </div>
@@ -286,10 +322,10 @@ export function MealHistoryDialog({ clientId }: MealHistoryDialogProps) {
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-9 w-9 rounded-full text-[#7F8EA6] hover:bg-[#E9EEF8] hover:text-[#64748B]"
+                                className="h-8 w-8 rounded-full text-[#7F8EA6] hover:bg-[#E9EEF8] hover:text-[#64748B] sm:h-9 sm:w-9"
                                 onClick={() => setDate(addDays(date, 1))}
                             >
-                                <ChevronRight className="h-5 w-5" />
+                                <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
                             </Button>
                         </div>
 
@@ -297,7 +333,7 @@ export function MealHistoryDialog({ clientId }: MealHistoryDialogProps) {
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-9 w-9 rounded-full text-[#8A97AD] hover:bg-[#E9EEF8] hover:text-[#64748B]"
+                                className="h-9 w-9 shrink-0 rounded-full text-[#8A97AD] hover:bg-[#E9EEF8] hover:text-[#64748B]"
                             >
                                 <X className="h-6 w-6" />
                             </Button>
@@ -305,8 +341,8 @@ export function MealHistoryDialog({ clientId }: MealHistoryDialogProps) {
                     </div>
                 </div>
 
-                <div className="flex min-h-0 flex-1">
-                    <aside className="flex min-h-0 w-[320px] flex-col border-r border-[#E3E8F1] bg-[#F8FAFD]">
+                <div className="flex min-h-0 flex-1 flex-col sm:flex-row">
+                    <aside className="flex min-h-0 w-full flex-col border-b border-[#E3E8F1] bg-[#F8FAFD] max-sm:max-h-[34dvh] sm:w-[320px] sm:border-r sm:border-b-0">
                         <div className="flex h-[56px] items-center border-b border-[#E3E8F1] px-5">
                             <p className="text-[14px] font-semibold tracking-[0.08em] text-[#95A3BA] uppercase">
                                 Registros del día
@@ -351,20 +387,18 @@ export function MealHistoryDialog({ clientId }: MealHistoryDialogProps) {
                                                 />
 
                                                 <div className="relative h-[60px] w-[60px] overflow-hidden rounded-[12px] bg-[#E2E8F0]">
-                                                    {log.signedUrl ? (
-                                                        <Image
-                                                            src={log.signedUrl}
-                                                            alt={log.meal_type}
-                                                            fill
-                                                            sizes="60px"
-                                                            quality={72}
-                                                            className="object-cover"
-                                                        />
-                                                    ) : (
-                                                        <div className="flex h-full w-full items-center justify-center text-[#A4B1C7]">
-                                                            <History className="h-8 w-8" />
-                                                        </div>
-                                                    )}
+                                                    <ImageWithFallback
+                                                        src={log.signedUrl}
+                                                        alt={log.meal_type}
+                                                        sizes="60px"
+                                                        quality={72}
+                                                        className="object-cover"
+                                                        fallback={(
+                                                            <div className="flex h-full w-full items-center justify-center text-[#A4B1C7]">
+                                                                <History className="h-8 w-8" />
+                                                            </div>
+                                                        )}
+                                                    />
                                                 </div>
 
                                                 <div className="min-w-0">
@@ -400,24 +434,24 @@ export function MealHistoryDialog({ clientId }: MealHistoryDialogProps) {
                         )}
                     </aside>
 
-                    <section className="grid min-h-0 flex-1 content-start grid-cols-[minmax(0,1.08fr)_minmax(300px,0.92fr)] gap-4 px-4 pt-2 pb-4">
+                    <section className="grid min-h-0 flex-1 content-start grid-cols-1 gap-3 px-3 pt-3 pb-4 sm:grid-cols-[minmax(0,1.08fr)_minmax(300px,0.92fr)] sm:gap-4 sm:px-4 sm:pt-2">
                         <div className="min-h-0 overflow-y-auto pr-1">
                             {loading ? (
                                 <MealDetailSkeleton />
                             ) : selectedLog ? (
                                 <MealDetailContent log={selectedLog} />
                             ) : (
-                                <div className="flex h-full min-h-[420px] flex-col items-center justify-center rounded-[20px] border border-dashed border-[#D8E0EB] bg-[#F5F8FD] px-8 text-center">
+                                <div className="flex h-full min-h-[260px] flex-col items-center justify-center rounded-[20px] border border-dashed border-[#D8E0EB] bg-[#F5F8FD] px-6 text-center sm:min-h-[420px] sm:px-8">
                                     <UtensilsCrossed className="h-12 w-12 text-[#A4B1C7]" />
-                                    <h3 className="mt-4 text-[24px] font-semibold text-[#334155]">Sin platos para este día</h3>
-                                    <p className="mt-2 text-lg text-[#6B7C95]">
+                                    <h3 className="mt-4 text-[20px] font-semibold text-[#334155] sm:text-[24px]">Sin platos para este día</h3>
+                                    <p className="mt-2 text-base text-[#6B7C95] sm:text-lg">
                                         Cambiá la fecha o esperá a que el asesorado cargue nuevas comidas.
                                     </p>
                                 </div>
                             )}
                         </div>
 
-                        <div className="flex min-h-0 items-stretch">
+                        <div className="flex min-h-0 items-stretch max-sm:h-[240px]">
                             <MealPhotoPanel log={selectedLog} loading={loading} />
                         </div>
                     </section>
@@ -513,20 +547,18 @@ function MealPhotoPanel({ log, loading }: { log: MealLog | null; loading: boolea
 
     return (
         <div className="relative h-full w-full overflow-hidden rounded-[22px] border border-[#E2E8F1] bg-[#E2E8F0]">
-            {log.signedUrl ? (
-                <Image
-                    src={log.signedUrl}
-                    alt={getMealTitle(log)}
-                    fill
-                    sizes="(max-width: 1600px) 45vw, 640px"
-                    quality={78}
-                    className="object-cover"
-                />
-            ) : (
-                <div className="flex h-full w-full items-center justify-center text-[#9AA9BF]">
-                    <UtensilsCrossed className="h-14 w-14" />
-                </div>
-            )}
+            <ImageWithFallback
+                src={log.signedUrl}
+                alt={getMealTitle(log)}
+                sizes="(max-width: 1600px) 45vw, 640px"
+                quality={78}
+                className="object-cover"
+                fallback={(
+                    <div className="flex h-full w-full items-center justify-center text-[#9AA9BF]">
+                        <UtensilsCrossed className="h-14 w-14" />
+                    </div>
+                )}
+            />
 
             <div className="absolute bottom-3 left-3 inline-flex items-center gap-2 rounded-[12px] border border-white/35 bg-black/35 px-3.5 py-1.5 text-[12px] font-semibold text-white backdrop-blur-[2px]">
                 <Camera className="h-4 w-4" />

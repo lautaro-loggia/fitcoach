@@ -16,7 +16,7 @@ import { Calendar } from '@/components/ui/calendar'
 import { Textarea } from '@/components/ui/textarea'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
-import { format, parse, addWeeks } from 'date-fns'
+import { format, parse, addWeeks, isSameDay } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { cn, normalizeText } from '@/lib/utils'
 import { Switch } from '@/components/ui/switch'
@@ -107,6 +107,7 @@ export function AssignWorkoutDialog({
     const [workoutName, setWorkoutName] = useState('')
     const [exercises, setExercises] = useState<any[]>([])
     const [validUntil, setValidUntil] = useState<Date | undefined>(undefined)
+    const [reviewDatePopoverOpen, setReviewDatePopoverOpen] = useState(false)
     const [scheduledDays, setScheduledDays] = useState<string[]>([])
     const [notes, setNotes] = useState('')
     const [isPresential, setIsPresential] = useState(false)
@@ -181,7 +182,8 @@ export function AssignWorkoutDialog({
         setWorkoutName('')
         setExercises([])
         setSelectedTemplateId('')
-        setValidUntil(undefined)
+        setValidUntil(addWeeks(new Date(), 4))
+        setReviewDatePopoverOpen(false)
         setScheduledDays([])
         setScheduledDays([])
         setNotes('')
@@ -214,6 +216,22 @@ export function AssignWorkoutDialog({
         setExercises([])
         setSelectedTemplateId('')
         setStep('edit')
+    }
+
+    const getPresetReviewDate = (weeks: number) => {
+        const baseDate = new Date()
+        baseDate.setHours(12, 0, 0, 0)
+        return addWeeks(baseDate, weeks)
+    }
+
+    const handleSelectReviewDatePreset = (weeks: number) => {
+        setValidUntil(getPresetReviewDate(weeks))
+        setReviewDatePopoverOpen(false)
+    }
+
+    const isReviewDatePresetSelected = (weeks: number) => {
+        if (!validUntil) return false
+        return isSameDay(validUntil, getPresetReviewDate(weeks))
     }
 
     const applyExerciseChange = (exerciseData: any) => {
@@ -335,10 +353,10 @@ export function AssignWorkoutDialog({
             </DialogTrigger>
 
             <DialogContent className={cn(
-                "max-h-[95vh] overflow-y-auto",
+                "grid-rows-[auto,minmax(0,1fr)] max-h-[95vh] overflow-hidden",
                 step === 'select' && !existingWorkout ? "sm:max-w-[500px]" : "sm:max-w-[850px]",
                 // Bottom-sheet effect on mobile
-                "max-sm:fixed max-sm:bottom-0 max-sm:top-auto max-sm:left-0 max-sm:translate-x-0 max-sm:translate-y-0 max-sm:w-full max-sm:rounded-b-none max-sm:rounded-t-[24px] max-sm:border-x-0 max-sm:border-b-0"
+                "max-sm:fixed max-sm:inset-0 max-sm:top-0 max-sm:left-0 max-sm:translate-x-0 max-sm:translate-y-0 max-sm:w-screen max-sm:max-w-none max-sm:h-[100dvh] max-sm:max-h-[100dvh] max-sm:rounded-none max-sm:border-0 max-sm:p-4 max-sm:pt-5"
             )}>
                 <DialogHeader className={step === 'select' && !existingWorkout ? "text-center pb-2" : ""}>
                     <div className={cn("flex items-center gap-2", step === 'select' && !existingWorkout ? "justify-center" : "justify-start")}>
@@ -366,6 +384,7 @@ export function AssignWorkoutDialog({
                     )}
                 </DialogHeader>
 
+                <div className="min-h-0 overflow-y-auto pr-1 max-sm:-mr-1">
                 {isEditingExercise ? (
                     <div className="animate-in fade-in slide-in-from-right-4 duration-200">
                         <ExerciseForm
@@ -467,23 +486,43 @@ export function AssignWorkoutDialog({
                                     </div>
 
                                     <div className="flex-1 space-y-2 w-full">
-                                        <div className="flex justify-between items-center">
+                                        <div className="flex flex-wrap items-center justify-between gap-2">
                                             <Label>Fecha de revisión *</Label>
-                                            <div className="flex gap-1">
-                                                <button type="button" onClick={() => setValidUntil(addWeeks(new Date(), 4))} className="text-[10px] text-muted-foreground hover:text-primary">4s</button>
-                                                <button type="button" onClick={() => setValidUntil(addWeeks(new Date(), 8))} className="text-[10px] text-muted-foreground hover:text-primary">8s</button>
-                                                <button type="button" onClick={() => setValidUntil(addWeeks(new Date(), 12))} className="text-[10px] text-muted-foreground hover:text-primary">12s</button>
+                                            <div className="flex shrink-0 gap-1 rounded-lg bg-muted/50 p-1">
+                                                {[4, 8, 12].map((weeks) => (
+                                                    <Button
+                                                        key={weeks}
+                                                        type="button"
+                                                        variant={isReviewDatePresetSelected(weeks) ? "secondary" : "ghost"}
+                                                        size="sm"
+                                                        className="h-7 px-2 text-[11px] font-medium"
+                                                        onClick={() => handleSelectReviewDatePreset(weeks)}
+                                                    >
+                                                        {weeks} sem
+                                                    </Button>
+                                                ))}
                                             </div>
                                         </div>
-                                        <Popover>
+                                        <Popover open={reviewDatePopoverOpen} onOpenChange={setReviewDatePopoverOpen}>
                                             <PopoverTrigger asChild>
                                                 <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !validUntil && "text-muted-foreground")}>
                                                     <Calendar03Icon className="mr-2 h-4 w-4 shrink-0" />
-                                                    <span className="truncate">{validUntil ? format(validUntil, "d 'de' MMMM", { locale: es }) : "Seleccionar *"}</span>
+                                                    <span className="truncate">{validUntil ? format(validUntil, "d 'de' MMMM, yyyy", { locale: es }) : "Seleccionar *"}</span>
                                                 </Button>
                                             </PopoverTrigger>
                                             <PopoverContent className="w-auto p-0" align="start">
-                                                <Calendar mode="single" selected={validUntil} onSelect={setValidUntil} initialFocus />
+                                                <Calendar
+                                                    mode="single"
+                                                    selected={validUntil}
+                                                    defaultMonth={validUntil}
+                                                    fromDate={new Date()}
+                                                    onSelect={(date) => {
+                                                        if (!date) return
+                                                        setValidUntil(date)
+                                                        setReviewDatePopoverOpen(false)
+                                                    }}
+                                                    initialFocus
+                                                />
                                             </PopoverContent>
                                         </Popover>
                                     </div>
@@ -525,7 +564,7 @@ export function AssignWorkoutDialog({
                                         <Label>Días asignados</Label>
                                         <span className="text-xs text-muted-foreground font-normal">(Selecciona un dia)</span>
                                     </div>
-                                    <div className="flex flex-wrap gap-2">
+                                    <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                                         {DAYS.map(day => (
                                             <Button
                                                 key={day}
@@ -534,6 +573,7 @@ export function AssignWorkoutDialog({
                                                 size="sm"
                                                 onClick={() => toggleDay(day)}
                                                 className={cn(
+                                                    "w-full sm:w-auto",
                                                     scheduledDays.includes(day) ? "bg-primary hover:bg-primary/90 text-white" : ""
                                                 )}
                                             >
@@ -544,8 +584,8 @@ export function AssignWorkoutDialog({
                                 </div>
 
                                 <div className="space-y-4">
-                                    <div className="border rounded-lg overflow-y-auto bg-background max-h-[350px] custom-scrollbar">
-                                        <Table>
+                                    <div className="border rounded-lg overflow-auto bg-background max-h-[55vh] sm:max-h-[350px] custom-scrollbar">
+                                        <Table className="min-w-[640px] sm:min-w-0">
                                             <TableHeader>
                                                 <TableRow className="bg-muted/50 hover:bg-muted/50">
                                                     <TableHead className="w-[40%] font-bold text-foreground">Ejercicio</TableHead>
@@ -647,14 +687,14 @@ export function AssignWorkoutDialog({
                                     />
                                 </div>
 
-                                <div className="flex justify-end gap-3 pt-4 border-t">
-                                    <Button variant="outline" onClick={() => setOpen(false)}>Cerrar</Button>
+                                <div className="sticky bottom-0 z-10 flex flex-col-reverse gap-2 border-t bg-background/95 pt-4 pb-1 backdrop-blur sm:static sm:flex-row sm:justify-end sm:bg-transparent sm:pb-0 sm:backdrop-blur-0">
+                                    <Button className="w-full sm:w-auto" variant="outline" onClick={() => setOpen(false)}>Cerrar</Button>
                                     <Button
+                                        className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white"
                                         onClick={() => {
                                             void handleSave()
                                         }}
                                         disabled={loading || !workoutName || !validUntil || scheduledDays.length === 0}
-                                        className="bg-primary hover:bg-primary/90 text-white"
                                     >
                                         {loading ? 'Asignando...' : 'Asignar rutina'}
                                     </Button>
@@ -663,6 +703,7 @@ export function AssignWorkoutDialog({
                         )}
                     </>
                 )}
+                </div>
             </DialogContent>
             </Dialog>
 
