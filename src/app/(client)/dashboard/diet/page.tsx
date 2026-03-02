@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { getDailyMealLogs } from '@/app/(dashboard)/clients/[id]/meal-plan-actions'
 import { getARTDayOfWeek, getTodayString } from '@/lib/utils'
 import { NutritionView } from '@/components/clients/nutrition/nutrition-view'
+import { MotionEnter, MotionScrollReveal } from '@/components/motion/orbit-motion'
 
 export default async function DietPage() {
     const supabase = await createClient()
@@ -37,7 +38,7 @@ export default async function DietPage() {
     const jsDay = getARTDayOfWeek()
     const dbDay = jsDay === 0 ? 7 : jsDay
 
-    const todayPlan = mealPlan?.days?.find((d: any) => d.day_of_week === dbDay)
+    const todayPlan = mealPlan?.days?.find((day: { day_of_week: number; meals: unknown[] }) => day.day_of_week === dbDay)
 
     // Fetch Daily Logs using ART date string
     const todayStr = getTodayString()
@@ -50,20 +51,24 @@ export default async function DietPage() {
     return (
         <div className="p-6 space-y-6">
             {/* Header */}
-            <div className="flex items-center gap-2 mb-2">
-                <Link href="/dashboard">
-                    <Button variant="ghost" size="icon" className="-ml-2 h-8 w-8 hover:bg-gray-100 rounded-full transition-colors">
-                        <ArrowLeft className="h-5 w-5 text-gray-700" />
-                    </Button>
-                </Link>
-                <h1 className="text-xl font-bold text-gray-900 tracking-tight">Nutrición</h1>
-            </div>
+            <MotionEnter preset="page">
+                <div className="flex items-center gap-2 mb-2">
+                    <Link href="/dashboard">
+                        <Button variant="ghost" size="icon" className="-ml-2 h-8 w-8 hover:bg-gray-100 rounded-full transition-colors">
+                            <ArrowLeft className="h-5 w-5 text-gray-700" />
+                        </Button>
+                    </Link>
+                    <h1 className="text-xl font-bold text-gray-900 tracking-tight">Nutrición</h1>
+                </div>
+            </MotionEnter>
 
-            <NutritionView
-                client={client}
-                mealPlan={viewMealPlan}
-                dailyLogs={dailyLogs || []}
-            />
+            <MotionScrollReveal index={1}>
+                <NutritionView
+                    client={client}
+                    mealPlan={viewMealPlan}
+                    dailyLogs={dailyLogs || []}
+                />
+            </MotionScrollReveal>
         </div>
     )
 }

@@ -1,7 +1,8 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import { Card, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { motion } from "framer-motion"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -11,9 +12,17 @@ import {
 import { MoreHorizontalIcon, PencilEdit01Icon, ViewIcon, Delete02Icon, Download01Icon, PlayIcon, Calendar03Icon } from "hugeicons-react"
 import { format, parse } from "date-fns"
 import { es } from "date-fns/locale"
+import { useOrbitMotion } from "@/components/motion/orbit-motion-provider"
+import { getHoverGesture, getMotionPresetVariants, getTapGesture, orbitMotionTransitions } from "@/lib/motion/presets"
 
 interface WorkoutCardProps {
-    workout: any
+    workout: {
+        id: string
+        name: string
+        structure?: unknown[]
+        scheduled_days?: string[]
+        valid_until?: string
+    }
     onEdit: () => void
     onDelete: () => void
     onView?: () => void
@@ -22,6 +31,9 @@ interface WorkoutCardProps {
 }
 
 export function WorkoutCard({ workout, onEdit, onDelete, onView, onDownload, onStart }: WorkoutCardProps) {
+    const { level, isMotionEnabled } = useOrbitMotion()
+    const hoverGesture = getHoverGesture(level)
+    const tapGesture = getTapGesture(level)
     const exercises = Array.isArray(workout.structure) ? workout.structure : []
     const exerciseCount = exercises.length
 
@@ -30,16 +42,18 @@ export function WorkoutCard({ workout, onEdit, onDelete, onView, onDownload, onS
         ? workout.scheduled_days.join(" | ")
         : "Sin dias asignados"
 
-    // Check date string
-    const checkDateString = workout.valid_until
-        ? `Revisar el ${format(parse(workout.valid_until, 'yyyy-MM-dd', new Date()), "d 'de' MMMM, yyyy", { locale: es })}`
-        : "Sin fecha de revisión"
-
     return (
-        <Card
-            className="relative transition-all cursor-pointer group flex flex-col h-full bg-white"
-            onClick={onView}
+        <motion.div
+            layout
+            variants={isMotionEnabled ? getMotionPresetVariants(level, 'list-item') : undefined}
+            whileHover={hoverGesture}
+            whileTap={tapGesture}
+            transition={orbitMotionTransitions.fast}
         >
+            <Card
+                className="relative transition-all cursor-pointer group flex flex-col h-full bg-white"
+                onClick={onView}
+            >
             <CardHeader className="p-4 space-y-0 flex-1">
                 <div className="flex justify-between items-start mb-1">
                     <CardTitle className="text-base font-bold pr-8 leading-tight truncate w-full" title={workout.name}>
@@ -103,6 +117,7 @@ export function WorkoutCard({ workout, onEdit, onDelete, onView, onDownload, onS
                     )}
                 </div>
             </CardHeader>
-        </Card>
+            </Card>
+        </motion.div>
     )
 }

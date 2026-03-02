@@ -8,6 +8,7 @@ import { es } from 'date-fns/locale'
 import { WeightChart } from '@/components/client/progress/weight-chart'
 import { RecentHistoryList } from '@/components/client/progress/recent-history-list'
 import { addDaysToDateString, compareDateStrings, dateOnlyToLocalNoon, getTodayString } from '@/lib/utils'
+import { MotionEnter, MotionScrollReveal } from '@/components/motion/orbit-motion'
 
 export default async function ProgressPage() {
     const supabase = await createClient()
@@ -102,16 +103,18 @@ export default async function ProgressPage() {
         <div className="min-h-screen bg-gray-50/30 font-sans">
             <div className="p-6 space-y-8 max-w-md mx-auto">
                 {/* 1. Header */}
-                <header className="flex justify-between items-start">
-                    <div className="space-y-1">
-                        <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider">Seguimiento de tu evolución</p>
-                        <h1 className="text-[28px] font-bold text-gray-900 leading-tight">Tu Progreso</h1>
-                    </div>
-                </header>
+                <MotionEnter preset="page">
+                    <header className="flex justify-between items-start">
+                        <div className="space-y-1">
+                            <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider">Seguimiento de tu evolución</p>
+                            <h1 className="text-[28px] font-bold text-gray-900 leading-tight">Tu Progreso</h1>
+                        </div>
+                    </header>
+                </MotionEnter>
 
                 {/* 2. Constancia Card */}
                 {/* Custom gradient card to match "violet -> blue" */}
-                <div className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-[#7F56D9] to-[#3B82F6] p-0 shadow-none border border-gray-200/20">
+                <MotionScrollReveal className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-[#7F56D9] to-[#3B82F6] p-0 shadow-none border border-gray-200/20" index={1}>
                     <div className="relative h-full w-full bg-gradient-to-r from-violet-500 to-blue-500 p-7 text-white/90 overflow-hidden">
 
                         {/* Background stylistic flame icon */}
@@ -149,18 +152,20 @@ export default async function ProgressPage() {
                             </div>
                         </div>
                     </div>
-                </div>
+                </MotionScrollReveal>
 
                 {/* 3. Evolución de peso */}
-                <WeightChart
-                    data={chartData}
-                    currentWeight={currentWeight}
-                    startWeight={startWeight}
-                    targetWeight={client.target_weight || null}
-                />
+                <MotionScrollReveal index={2}>
+                    <WeightChart
+                        data={chartData}
+                        currentWeight={currentWeight}
+                        startWeight={startWeight}
+                        targetWeight={client.target_weight || null}
+                    />
+                </MotionScrollReveal>
 
                 {/* 4. Metrics Grid 2x2 */}
-                <div className="grid grid-cols-2 gap-3">
+                <MotionScrollReveal className="grid grid-cols-2 gap-3" index={3}>
                     {/* Card 1: Fase Actual */}
                     <Card className="bg-white p-5 rounded-[28px] border border-gray-200 shadow-none ring-0 aspect-[1.1] flex flex-col justify-between relative overflow-hidden group">
                         <div className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Fase Actual</div>
@@ -208,10 +213,12 @@ export default async function ProgressPage() {
                             </div>
                         </div>
                     </Card>
-                </div>
+                </MotionScrollReveal>
 
                 {/* 5. Historial Reciente */}
-                <RecentHistoryList checkins={checkins || []} />
+                <MotionScrollReveal index={4}>
+                    <RecentHistoryList checkins={checkins || []} />
+                </MotionScrollReveal>
             </div>
         </div>
     )

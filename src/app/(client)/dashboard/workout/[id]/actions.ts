@@ -86,8 +86,28 @@ async function getOwnedSession(
     return session
 }
 
-// Get or create a session for today for the CLIENT
-export async function getOrCreateSession(assignedWorkoutId: string) {
+type AssignedWorkoutSummary = {
+    id: string
+    trainer_id: string
+    client_id: string
+    name: string
+    structure: unknown[]
+}
+
+type SessionWithWorkout = WorkoutSession & {
+    assigned_workouts?: {
+        id: string
+        name: string
+        structure: unknown[]
+    } | {
+        id: string
+        name: string
+        structure: unknown[]
+    }[]
+}
+
+// Get (or optionally create) today's session for the CLIENT
+export async function getOrCreateSession(assignedWorkoutId: string, createIfMissing: boolean = true) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -113,7 +133,7 @@ export async function getOrCreateSession(assignedWorkoutId: string) {
     const [workoutResult, existingSessionResult] = await Promise.all([
         adminSupabase
             .from('assigned_workouts')
-            .select('trainer_id, client_id')
+            .select('id, trainer_id, client_id, name, structure')
             .eq('id', assignedWorkoutId)
             .single(),
         adminSupabase
@@ -135,11 +155,22 @@ export async function getOrCreateSession(assignedWorkoutId: string) {
             .maybeSingle()
     ])
 
-    const workout = workoutResult.data
-    const existingSession = existingSessionResult.data
+    const workout = workoutResult.data as AssignedWorkoutSummary | null
+    const existingSession = existingSessionResult.data as SessionWithWorkout | null
 
     if (existingSession) {
-        return { session: existingSession as WorkoutSession }
+        const sessionWorkout = Array.isArray(existingSession.assigned_workouts)
+            ? existingSession.assigned_workouts[0]
+            : existingSession.assigned_workouts
+
+        return {
+            session: existingSession as WorkoutSession,
+            workout: sessionWorkout || (workout ? {
+                id: workout.id,
+                name: workout.name,
+                structure: workout.structure || [],
+            } : null)
+        }
     }
 
     if (!workout) {
@@ -149,6 +180,17 @@ export async function getOrCreateSession(assignedWorkoutId: string) {
     // SECURITY CHECK: This workout MUST belong to this client
     if (workout.client_id !== client.id) {
         return { error: 'No autorizado para acceder a esta rutina' }
+    }
+
+    if (!createIfMissing) {
+        return {
+            session: null,
+            workout: {
+                id: workout.id,
+                name: workout.name,
+                structure: workout.structure || [],
+            }
+        }
     }
 
     // Create new session
@@ -176,7 +218,33 @@ export async function getOrCreateSession(assignedWorkoutId: string) {
         return { error: 'Error al crear la sesión' }
     }
 
-    return { session: newSession as WorkoutSession }
+    const newSessionWithWorkout = newSession as SessionWithWorkout
+    const newSessionWorkout = Array.isArray(newSessionWithWorkout.assigned_workouts)
+        ? newSessionWithWorkout.assigned_workouts[0]
+        : newSessionWithWorkout.assigned_workouts
+
+    return {
+        session: newSession as WorkoutSession,
+        workout: newSessionWorkout || {
+            id: workout.id,
+            name: workout.name,
+            structure: workout.structure || [],
+        }
+    }
+}
+
+// Explicit start action: only creates session when client confirms "Comenzar"
+export async function startWorkoutSession(assignedWorkoutId: string) {
+    const result = await getOrCreateSession(assignedWorkoutId, true)
+
+    if (result.error || !result.session) {
+        return { error: result.error || 'No se pudo iniciar la sesión' }
+    }
+
+    revalidatePath(`/dashboard/workout/${assignedWorkoutId}`)
+    revalidatePath('/dashboard', 'layout')
+
+    return { session: result.session }
 }
 
 // Get session with workout details for the CLIENT

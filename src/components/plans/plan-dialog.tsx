@@ -25,6 +25,9 @@ interface PlanDialogProps {
     onSuccess: () => void
 }
 
+type RoutineFrequency = 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'biannual'
+type CallsFrequency = 'none' | 'monthly' | 'weekly'
+
 export function PlanDialog({ open, onOpenChange, plan, onSuccess }: PlanDialogProps) {
     const [loading, setLoading] = useState(false)
     const [name, setName] = useState('')
@@ -32,9 +35,10 @@ export function PlanDialog({ open, onOpenChange, plan, onSuccess }: PlanDialogPr
     const [description, setDescription] = useState('')
 
     // New fields state
-    const [routineFrequency, setRoutineFrequency] = useState<'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'biannual'>('monthly')
-    const [callsFrequency, setCallsFrequency] = useState<'none' | 'monthly' | 'weekly'>('none')
+    const [routineFrequency, setRoutineFrequency] = useState<RoutineFrequency>('monthly')
+    const [callsFrequency, setCallsFrequency] = useState<CallsFrequency>('none')
     const [includesNutrition, setIncludesNutrition] = useState<boolean>(false)
+    const [includesPresential, setIncludesPresential] = useState<boolean>(false)
     const [notifyClients, setNotifyClients] = useState<boolean>(false)
 
     // Sync state when plan changes or dialog opens
@@ -47,6 +51,7 @@ export function PlanDialog({ open, onOpenChange, plan, onSuccess }: PlanDialogPr
                 setRoutineFrequency(plan.routine_frequency || 'monthly')
                 setCallsFrequency(plan.calls_frequency || 'none')
                 setIncludesNutrition(plan.includes_nutrition || false)
+                setIncludesPresential(plan.includes_presential || false)
                 setNotifyClients(false) // Reset notification checkbox
             } else {
                 // Reset for create mode
@@ -56,6 +61,7 @@ export function PlanDialog({ open, onOpenChange, plan, onSuccess }: PlanDialogPr
                 setRoutineFrequency('monthly')
                 setCallsFrequency('none')
                 setIncludesNutrition(false)
+                setIncludesPresential(false)
                 setNotifyClients(false)
             }
         }
@@ -97,7 +103,8 @@ export function PlanDialog({ open, onOpenChange, plan, onSuccess }: PlanDialogPr
                 description: description || undefined,
                 routine_frequency: routineFrequency,
                 calls_frequency: callsFrequency,
-                includes_nutrition: includesNutrition
+                includes_nutrition: includesNutrition,
+                includes_presential: includesPresential
             }
 
             const result = isEdit
@@ -121,6 +128,7 @@ export function PlanDialog({ open, onOpenChange, plan, onSuccess }: PlanDialogPr
                 setRoutineFrequency('monthly')
                 setCallsFrequency('none')
                 setIncludesNutrition(false)
+                setIncludesPresential(false)
             }
         } catch (error) {
             console.error('Unexpected error:', error)
@@ -174,7 +182,7 @@ export function PlanDialog({ open, onOpenChange, plan, onSuccess }: PlanDialogPr
                                 <Label>Actualización de rutina</Label>
                                 <Select
                                     value={routineFrequency}
-                                    onValueChange={(v: any) => setRoutineFrequency(v)}
+                                    onValueChange={(value) => setRoutineFrequency(value as RoutineFrequency)}
                                 >
                                     <SelectTrigger>
                                         <SelectValue />
@@ -191,7 +199,7 @@ export function PlanDialog({ open, onOpenChange, plan, onSuccess }: PlanDialogPr
                                 <Label>Llamadas 1:1</Label>
                                 <Select
                                     value={callsFrequency}
-                                    onValueChange={(v: any) => setCallsFrequency(v)}
+                                    onValueChange={(value) => setCallsFrequency(value as CallsFrequency)}
                                 >
                                     <SelectTrigger>
                                         <SelectValue />
@@ -205,18 +213,33 @@ export function PlanDialog({ open, onOpenChange, plan, onSuccess }: PlanDialogPr
                             </div>
                         </div>
 
-                        <div className="flex items-center space-x-2 pt-2">
-                            <Checkbox
-                                id="nutrition"
-                                checked={includesNutrition}
-                                onCheckedChange={(checked) => setIncludesNutrition(checked as boolean)}
-                            />
-                            <Label
-                                htmlFor="nutrition"
-                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                            >
-                                Incluye plan nutricional
-                            </Label>
+                        <div className="space-y-3 pt-2">
+                            <div className="flex items-center space-x-2">
+                                <Checkbox
+                                    id="nutrition"
+                                    checked={includesNutrition}
+                                    onCheckedChange={(checked) => setIncludesNutrition(checked as boolean)}
+                                />
+                                <Label
+                                    htmlFor="nutrition"
+                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                >
+                                    Incluye plan nutricional
+                                </Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <Checkbox
+                                    id="presential-training"
+                                    checked={includesPresential}
+                                    onCheckedChange={(checked) => setIncludesPresential(checked as boolean)}
+                                />
+                                <Label
+                                    htmlFor="presential-training"
+                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                >
+                                    Incluye entrenamiento presencial
+                                </Label>
+                            </div>
                         </div>
 
                         {/* Show notification option only if editing and price changed */}

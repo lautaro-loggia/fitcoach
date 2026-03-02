@@ -14,10 +14,13 @@ import {
     PanelLeftCloseIcon,
     PanelLeftOpenIcon
 } from 'hugeicons-react'
+import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { useSidebar } from './sidebar-context'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { useOrbitMotion } from '@/components/motion/orbit-motion-provider'
+import { getHoverGesture, getTapGesture, orbitMotionTransitions } from '@/lib/motion/presets'
 
 const mainNavigation = [
     { name: 'Inicio', href: '/', icon: Home01Icon },
@@ -60,6 +63,9 @@ function SidebarContent({
     toggleSidebar?: () => void
 }) {
     const pathname = usePathname()
+    const { level } = useOrbitMotion()
+    const hoverGesture = getHoverGesture(level)
+    const tapGesture = getTapGesture(level)
 
     return (
         <div className="h-full flex flex-col bg-white">
@@ -113,15 +119,29 @@ function SidebarContent({
                                 onClick={onNavigate}
                                 title={collapsed ? item.name : undefined}
                                 className={cn(
-                                    'h-10 rounded-lg flex items-center text-sm transition-colors',
+                                    'relative h-10 rounded-lg flex items-center text-sm transition-colors overflow-hidden',
                                     collapsed ? 'justify-center' : 'px-3 gap-3',
                                     isActive
-                                        ? 'bg-[#0e0e0e] text-white'
+                                        ? 'text-white'
                                         : 'text-[#8c929c] hover:bg-[#f4f4f5] hover:text-[#101019]'
                                 )}
                             >
-                                <item.icon className="h-5 w-5" />
-                                {!collapsed && <span className="font-medium">{item.name}</span>}
+                                {isActive && (
+                                    <motion.span
+                                        layoutId={collapsed ? 'coach-sidebar-active-collapsed' : 'coach-sidebar-active'}
+                                        className="absolute inset-0 rounded-lg bg-[#0e0e0e]"
+                                        transition={orbitMotionTransitions.fast}
+                                    />
+                                )}
+                                <motion.span
+                                    className={cn('relative z-10 flex items-center', collapsed ? '' : 'gap-3')}
+                                    whileHover={hoverGesture}
+                                    whileTap={tapGesture}
+                                    transition={orbitMotionTransitions.fast}
+                                >
+                                    <item.icon className="h-5 w-5" />
+                                    {!collapsed && <span className="font-medium">{item.name}</span>}
+                                </motion.span>
                             </Link>
                         )
                     })}
@@ -139,15 +159,29 @@ function SidebarContent({
                             onClick={onNavigate}
                             title={collapsed ? item.name : undefined}
                             className={cn(
-                                'h-10 rounded-lg flex items-center text-sm transition-colors',
+                                'relative h-10 rounded-lg flex items-center text-sm transition-colors overflow-hidden',
                                 collapsed ? 'justify-center' : 'px-3 gap-3',
                                 isActive
-                                    ? 'bg-[#0e0e0e] text-white'
+                                    ? 'text-white'
                                     : 'text-[#8c929c] hover:bg-[#f4f4f5] hover:text-[#101019]'
                             )}
                         >
-                            <item.icon className="h-5 w-5" />
-                            {!collapsed && <span className="font-medium">{item.name}</span>}
+                            {isActive && (
+                                <motion.span
+                                    layoutId={collapsed ? 'coach-sidebar-bottom-active-collapsed' : 'coach-sidebar-bottom-active'}
+                                    className="absolute inset-0 rounded-lg bg-[#0e0e0e]"
+                                    transition={orbitMotionTransitions.fast}
+                                />
+                            )}
+                            <motion.span
+                                className={cn('relative z-10 flex items-center', collapsed ? '' : 'gap-3')}
+                                whileHover={hoverGesture}
+                                whileTap={tapGesture}
+                                transition={orbitMotionTransitions.fast}
+                            >
+                                <item.icon className="h-5 w-5" />
+                                {!collapsed && <span className="font-medium">{item.name}</span>}
+                            </motion.span>
                         </Link>
                     )
                 })}
@@ -180,18 +214,20 @@ export function Sidebar({ coachProfile }: { coachProfile: CoachProfile }) {
 
     return (
         <>
-            <div
+            <motion.div
+                layout
                 className={cn(
                     'hidden md:flex h-full border-r border-border bg-white transition-all duration-300 ease-in-out',
                     collapsed ? 'w-20' : 'w-[207px]'
                 )}
+                transition={orbitMotionTransitions.fast}
             >
                 <SidebarContent
                     collapsed={collapsed}
                     coachProfile={coachProfile}
                     toggleSidebar={toggleSidebar}
                 />
-            </div>
+            </motion.div>
 
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
                 <SheetContent side="left" className="w-[270px] p-0 bg-white">

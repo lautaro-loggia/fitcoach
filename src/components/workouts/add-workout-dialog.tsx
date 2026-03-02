@@ -23,6 +23,9 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerClose } from '@/components/ui/drawer'
 import { ExerciseInfoDialog } from '@/components/workout-session/exercise-info-dialog'
 import { toast } from 'sonner'
+import { Sparkles } from 'lucide-react'
+import { AIWorkoutBriefDialog } from '@/components/workouts/ai-workout-brief-dialog'
+import type { AIGeneratedWorkoutDraft, AIWorkoutBriefDefaults } from '@/lib/ai/workout-ai-types'
 
 
 
@@ -99,6 +102,7 @@ export function WorkoutDialog({
     const [loading, setLoading] = useState(false)
     const [name, setName] = useState('')
     const [exercises, setExercises] = useState<any[]>([])
+    const [aiDialogOpen, setAiDialogOpen] = useState(false)
 
     // Exercise Form State
     const [editingExerciseIndex, setEditingExerciseIndex] = useState<number | null>(null)
@@ -195,23 +199,43 @@ export function WorkoutDialog({
     }
 
     const isEditingExercise = editingExerciseIndex !== null || isAddingNewExercise
+    const templateAIDefaults: AIWorkoutBriefDefaults = {
+        sessionsPerWeek: 4,
+        minutesPerSession: 60,
+        equipment: ['bodyweight', 'dumbbells'],
+        level: 'intermediate',
+        style: 'mixed',
+    }
+
+    const handleAIDraftGenerated = (payload: { draft: AIGeneratedWorkoutDraft; warnings: string[] }) => {
+        const { draft, warnings } = payload
+        setName(draft.name)
+        setExercises(Array.isArray(draft.exercises) ? JSON.parse(JSON.stringify(draft.exercises)) : [])
+        setEditingExerciseIndex(null)
+        setIsAddingNewExercise(false)
+
+        if (warnings.length > 0) {
+            toast.info(`Borrador generado con ${warnings.length} advertencia${warnings.length > 1 ? 's' : ''}.`)
+        }
+    }
 
     return (
-        <Dialog open={isOpen} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                {trigger ? trigger : (
-                    <Button className="bg-primary hover:bg-primary/90 text-white">
-                        <PlusSignIcon className="mr-2 h-4 w-4" /> Nuevo Entrenamiento
-                    </Button>
-                )}
-            </DialogTrigger>
-            <DialogContent
-                showCloseButton={!isMobile}
-                className={cn(
-                    "sm:max-w-[800px] max-h-[90vh] overflow-y-auto",
-                    isMobile && "!fixed !inset-0 !top-0 !left-0 !translate-x-0 !translate-y-0 !w-full !h-full !max-w-none !max-h-none rounded-none p-0 flex flex-col border-none shadow-none z-[60]"
-                )}
-            >
+        <>
+            <Dialog open={isOpen} onOpenChange={setOpen}>
+                <DialogTrigger asChild>
+                    {trigger ? trigger : (
+                        <Button className="bg-primary hover:bg-primary/90 text-white">
+                            <PlusSignIcon className="mr-2 h-4 w-4" /> Nuevo Entrenamiento
+                        </Button>
+                    )}
+                </DialogTrigger>
+                <DialogContent
+                    showCloseButton={!isMobile}
+                    className={cn(
+                        "sm:max-w-[800px] max-h-[90vh] overflow-y-auto",
+                        isMobile && "!fixed !inset-0 !top-0 !left-0 !translate-x-0 !translate-y-0 !w-full !h-full !max-w-none !max-h-none rounded-none p-0 flex flex-col border-none shadow-none z-[60]"
+                    )}
+                >
                 {!isMobile && (
                     <DialogHeader>
                         <DialogTitle>
@@ -279,6 +303,17 @@ export function WorkoutDialog({
                                         className="h-12 text-base rounded-xl"
                                     />
                                 </div>
+                                {!existingWorkout && (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="w-full border-dashed border-2 text-primary hover:text-primary"
+                                        onClick={() => setAiDialogOpen(true)}
+                                    >
+                                        <Sparkles className="mr-2 h-4 w-4" />
+                                        Generar con IA
+                                    </Button>
+                                )}
                             </div>
 
                             {/* Ejercicios */}
@@ -455,6 +490,19 @@ export function WorkoutDialog({
                                         placeholder="Ej: Pierna Hipertrofia A"
                                     />
                                 </div>
+                                {!existingWorkout && (
+                                    <div className="flex justify-end">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="border-dashed border-2 text-primary hover:text-primary"
+                                            onClick={() => setAiDialogOpen(true)}
+                                        >
+                                            <Sparkles className="mr-2 h-4 w-4" />
+                                            Generar con IA
+                                        </Button>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="space-y-4">
@@ -570,8 +618,17 @@ export function WorkoutDialog({
                         </div>
                     )
                 )}
-            </DialogContent >
-        </Dialog >
+                </DialogContent >
+            </Dialog >
+
+            <AIWorkoutBriefDialog
+                mode="template"
+                open={aiDialogOpen}
+                onOpenChange={setAiDialogOpen}
+                defaults={templateAIDefaults}
+                onGenerated={handleAIDraftGenerated}
+            />
+        </>
     )
 }
 

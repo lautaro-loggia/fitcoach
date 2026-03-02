@@ -1,36 +1,57 @@
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { ArrowLeft } from 'lucide-react'
 import { SessionExerciseList } from '@/components/workout-session/session-exercise-list'
 import { FinishWorkoutButton } from './finish-workout-button'
+import { StartWorkoutButton } from './start-workout-button'
 import { WorkoutBackButton } from './workout-back-button'
 import { getOrCreateSession, getSessionCheckins } from './actions'
 import { WorkoutSessionProvider } from '@/components/workout-session/workout-session-context'
+import { formatEstimatedWorkoutDuration } from '@/lib/workout-time-estimate'
+
+type SessionExercise = {
+    name: string
+    exercise_id?: string
+    category?: string
+    gif_url?: string
+    instructions?: string[]
+    sets_detail?: Array<{ reps: string; weight: string; rest: string }>
+    cardio_config?: {
+        type: 'continuous' | 'intervals'
+        duration?: number
+        intensity?: 'low' | 'medium' | 'high' | 'hiit'
+        work_time?: number
+        rest_time?: number
+        rounds?: number
+    }
+}
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params
 
-    // Get or create session for this workout
-    const { session, error } = await getOrCreateSession(id)
+    // Preview mode by default: entering this screen should not start a session automatically.
+    const { session, workout, error } = await getOrCreateSession(id, false)
 
-    if (error || !session) {
+    if (error || !workout) {
         console.error("Error loading session:", error)
         redirect('/dashboard/workout')
     }
 
-    const assignedWorkouts = (session as any).assigned_workouts
-    const workout = Array.isArray(assignedWorkouts) ? assignedWorkouts[0] : assignedWorkouts
-
     // Parse structure if it's JSON, though usually Supabase returns it as object if column is jsonb
-    const exercises = workout?.structure || []
+    const exercises: SessionExercise[] = Array.isArray(workout?.structure)
+        ? (workout.structure as SessionExercise[])
+        : []
 
     // OPTIMIZATION: Fetch all exercise checkins in bulk
-    const existingCheckins = await getSessionCheckins(session.id)
+    const existingCheckins = session ? await getSessionCheckins(session.id) : []
+    const typedCheckins = existingCheckins as Array<{
+        exercise_index: number
+        set_logs?: Array<{ is_completed?: boolean | null }> | null
+    }>
 
-    const initialCompletedIndices = existingCheckins
-        .filter(c => (c as any).set_logs?.some((s: any) => s.is_completed))
-        .map(c => c.exercise_index)
+    const initialCompletedIndices = session
+        ? typedCheckins
+            .filter(c => c.set_logs?.some((s) => Boolean(s.is_completed)))
+            .map(c => c.exercise_index)
+        : []
 
     return (
         <WorkoutSessionProvider
@@ -48,7 +69,16 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                                 <p className="text-sm text-muted-foreground">Tu entrenamiento</p>
                             </div>
                         </div>
-                        <FinishWorkoutButton sessionId={session.id} />
+                        {session ? (
+                            <FinishWorkoutButton sessionId={session.id} />
+                        ) : (
+                            <StartWorkoutButton
+                                workoutId={id}
+                                workoutName={workout?.name || 'Rutina'}
+                                exercisesCount={exercises.length}
+                                estimatedTime={formatEstimatedWorkoutDuration(exercises)}
+                            />
+                        )}
                     </div>
                 </div>
 
@@ -57,12 +87,16 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 
                 {/* Exercise List */}
                 <div className="p-4 pt-2 flex-1">
+                    {!session && (
+                        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                            Estás viendo la rutina en modo vista previa. Tocá <span className="font-semibold">Comenzar</span> para iniciar el entrenamiento y registrar tus series.
+                        </div>
+                    )}
                     <SessionExerciseList
-                        sessionId={session.id}
+                        sessionId={session?.id}
                         exercises={exercises}
-                        clientName="Tú"
-                        workoutName={workout?.name || 'Rutina'}
                         initialCheckins={existingCheckins}
+                        isReadOnly={!session}
                     />
                 </div>
             </div>
