@@ -20,6 +20,19 @@ interface Exercise1RM {
     changePct: number
 }
 
+type StrengthSetLog = {
+    weight: number | null
+    reps: number | null
+    is_completed?: boolean | null
+}
+
+type StrengthCheckin = {
+    id: string
+    session_id: string
+    exercise_name: string
+    set_logs: StrengthSetLog[]
+}
+
 // Key compound exercises keywords to prioritize
 const PRIORITY_KEYWORDS = ['squat', 'bench', 'deadlift', 'peso muerto', 'press', 'sentadilla', 'banca', 'dominada', 'remo']
 
@@ -74,7 +87,8 @@ export function StrengthProgressCard({ clientId }: StrengthProgressCardProps) {
                     exercise_name, 
                     set_logs (
                         weight, 
-                        reps
+                        reps,
+                        is_completed
                     )
                 `)
                 .in('session_id', sessionIds)
@@ -87,9 +101,38 @@ export function StrengthProgressCard({ clientId }: StrengthProgressCardProps) {
                 return
             }
 
+            const normalizedCheckins = (checkins || []) as Array<Omit<StrengthCheckin, 'set_logs'> & { set_logs: StrengthSetLog[] | null }>
+            const sessionIdsWithCompletedSets = new Set(
+                normalizedCheckins
+                    .filter((checkin) => (checkin.set_logs || []).some((set) => set.is_completed))
+                    .map((checkin) => checkin.session_id)
+            )
+
+            const validSessions = sessions.filter((session) => sessionIdsWithCompletedSets.has(session.id))
+
+            if (validSessions.length < 2) {
+                setInsufficientData(true)
+                setLoading(false)
+                return
+            }
+
+            const completedCheckins: StrengthCheckin[] = normalizedCheckins
+                .filter((checkin) => sessionIdsWithCompletedSets.has(checkin.session_id))
+                .map((checkin) => ({
+                    ...checkin,
+                    set_logs: (checkin.set_logs || []).filter((set) => set.is_completed)
+                }))
+                .filter((checkin) => checkin.set_logs.length > 0)
+
+            if (completedCheckins.length === 0) {
+                setInsufficientData(true)
+                setLoading(false)
+                return
+            }
+
             // Group by exercise name
-            const exerciseGroups: { [name: string]: any[] } = {}
-            checkins.forEach(c => {
+            const exerciseGroups: Record<string, StrengthCheckin[]> = {}
+            completedCheckins.forEach(c => {
                 if (!exerciseGroups[c.exercise_name]) exerciseGroups[c.exercise_name] = []
                 exerciseGroups[c.exercise_name].push(c)
             })
@@ -123,7 +166,7 @@ export function StrengthProgressCard({ clientId }: StrengthProgressCardProps) {
                 // Find First Session and Last Session for this exercise in the period
                 // We need to map back to session date.
                 // Create a map of session_id -> date
-                const sessionDateMap = new Map(sessions.map(s => [s.id, new Date(s.started_at).getTime()]))
+                const sessionDateMap = new Map(validSessions.map(s => [s.id, new Date(s.started_at).getTime()]))
 
                 validLogs.sort((a, b) => {
                     const dateA = sessionDateMap.get(a.session_id) || 0
@@ -138,11 +181,11 @@ export function StrengthProgressCard({ clientId }: StrengthProgressCardProps) {
                 if (firstLog.session_id === lastLog.session_id) continue
 
                 // Calculate Max Estimated 1RM for first and last session
-                const calculateMax1RM = (setLogs: any[]) => {
+                const calculateMax1RM = (setLogs: StrengthSetLog[]) => {
                     let max1RM = 0
-                    setLogs.forEach((set: any) => {
+                    setLogs.forEach((set) => {
                         // Epley Formula: 1RM = Weight * (1 + Reps/30)
-                        if (set.weight > 0 && set.reps > 0) {
+                        if ((set.weight || 0) > 0 && (set.reps || 0) > 0) {
                             const e1rm = Number(set.weight) * (1 + Number(set.reps) / 30)
                             if (e1rm > max1RM) max1RM = e1rm
                         }
