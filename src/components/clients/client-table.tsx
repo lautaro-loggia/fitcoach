@@ -72,7 +72,7 @@ export interface Client {
     full_name: string
     email?: string | null
     onboarding_status?: 'invited' | 'in_progress' | 'completed' | null
-    status: 'active' | 'inactive'
+    status: 'pending' | 'active' | 'inactive' | 'paused' | 'archived'
     goal_specific: string | null
     main_goal: string | null
     next_checkin_date?: string | null
@@ -84,7 +84,7 @@ export interface Client {
     checkins?: { date: string }[]
 }
 
-type StatusFilter = 'all' | 'active' | 'inactive'
+type StatusFilter = 'all' | 'pending' | 'active' | 'inactive'
 type PaymentFilter = 'all' | 'paid' | 'pending' | 'overdue'
 type PlanFilter = 'all' | 'with_plan' | 'without_plan'
 
@@ -105,6 +105,46 @@ function getGoalLabel(goal: string | null) {
     if (goal === 'performance') return 'Rendimiento'
     if (goal === 'health') return 'Salud'
     return '-'
+}
+
+function getClientStatusMeta(status: Client['status']) {
+    if (status === 'pending') {
+        return {
+            label: 'Pendiente',
+            dotClassName: 'bg-amber-500',
+            badgeClassName: 'bg-amber-50 text-amber-700'
+        }
+    }
+
+    if (status === 'active') {
+        return {
+            label: 'Activo',
+            dotClassName: 'bg-green-500',
+            badgeClassName: 'bg-green-50 text-green-700'
+        }
+    }
+
+    if (status === 'paused') {
+        return {
+            label: 'Pausado',
+            dotClassName: 'bg-orange-400',
+            badgeClassName: 'bg-orange-50 text-orange-700'
+        }
+    }
+
+    if (status === 'archived') {
+        return {
+            label: 'Archivado',
+            dotClassName: 'bg-slate-400',
+            badgeClassName: 'bg-slate-100 text-slate-600'
+        }
+    }
+
+    return {
+        label: 'Inactivo',
+        dotClassName: 'bg-gray-300',
+        badgeClassName: 'bg-gray-100 text-gray-500'
+    }
 }
 
 
@@ -365,6 +405,7 @@ export function ClientTable({ clients, presentialWorkouts, defaultOpenNew, hideH
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">Todos los estados</SelectItem>
+                        <SelectItem value="pending">Pendientes</SelectItem>
                         <SelectItem value="active">Activos</SelectItem>
                         <SelectItem value="inactive">Inactivos</SelectItem>
                     </SelectContent>
@@ -493,7 +534,7 @@ export function ClientTable({ clients, presentialWorkouts, defaultOpenNew, hideH
                         <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mr-1">Activos:</span>
                         {statusFilter !== 'all' && (
                             <Badge variant="secondary" className="px-2 py-1 gap-1 text-xs border-transparent bg-primary/5 text-primary hover:bg-primary/10">
-                                {statusFilter === 'active' ? 'Activos' : 'Inactivos'}
+                                {statusFilter === 'active' ? 'Activos' : statusFilter === 'pending' ? 'Pendientes' : 'Inactivos'}
                                 <button onClick={() => removeFilter('status')} className="ml-1 hover:text-red-600 transition-colors"><Cancel01Icon className="h-3 w-3" /></button>
                             </Badge>
                         )}
@@ -517,7 +558,7 @@ export function ClientTable({ clients, presentialWorkouts, defaultOpenNew, hideH
                     <div className="flex flex-wrap gap-2 items-center">
                         {statusFilter !== 'all' && (
                             <Badge variant="secondary" className="gap-1 pr-1">
-                                Estado: {statusFilter === 'active' ? 'Activo' : 'Inactivo'}
+                                Estado: {statusFilter === 'active' ? 'Activo' : statusFilter === 'pending' ? 'Pendiente' : 'Inactivo'}
                                 <button onClick={() => removeFilter('status')} className="ml-1 hover:text-foreground"><Cancel01Icon className="h-3 w-3" /></button>
                             </Badge>
                         )}
@@ -574,6 +615,7 @@ export function ClientTable({ clients, presentialWorkouts, defaultOpenNew, hideH
                                 <TableBody>
                                     {filteredClients.map((client) => {
                                         const checkinInfo = getCheckinStatus(client);
+                                        const statusMeta = getClientStatusMeta(client.status)
                                         return (
                                             <TableRow
                                                 key={client.id}
@@ -594,8 +636,8 @@ export function ClientTable({ clients, presentialWorkouts, defaultOpenNew, hideH
                                                 </TableCell>
                                                 <TableCell>
                                                     <div className="flex items-center gap-2">
-                                                        <div className={`h-2.5 w-2.5 rounded-full ${client.status === 'active' ? 'bg-green-500' : 'bg-gray-300'}`} />
-                                                        <span className="text-sm">{client.status === 'active' ? 'Activo' : 'Inactivo'}</span>
+                                                        <div className={`h-2.5 w-2.5 rounded-full ${statusMeta.dotClassName}`} />
+                                                        <span className="text-sm">{statusMeta.label}</span>
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
@@ -622,6 +664,7 @@ export function ClientTable({ clients, presentialWorkouts, defaultOpenNew, hideH
                         <div className="md:hidden space-y-4">
                             {filteredClients.map((client) => {
                                 const checkinInfo = getCheckinStatus(client);
+                                const statusMeta = getClientStatusMeta(client.status)
                                 return (
                                     <div
                                         key={client.id}
@@ -646,9 +689,9 @@ export function ClientTable({ clients, presentialWorkouts, defaultOpenNew, hideH
                                                     <div className="flex flex-wrap gap-2 mt-1">
                                                         <Badge variant="outline" className={cn(
                                                             "px-2 py-0.5 h-5 text-[10px] font-black uppercase tracking-wider border-0",
-                                                            client.status === 'active' ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-500"
+                                                            statusMeta.badgeClassName
                                                         )}>
-                                                            {client.status === 'active' ? 'Activo' : 'Inactivo'}
+                                                            {statusMeta.label}
                                                         </Badge>
                                                         <Badge variant="outline" className="px-2 py-0.5 h-5 text-[10px] font-black uppercase tracking-wider border-gray-200 text-gray-600">
                                                             {getGoalLabel(client.main_goal)}

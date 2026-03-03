@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Download, Pencil } from "lucide-react"
 import { generateWorkoutPDF } from '@/lib/pdf-utils'
 import { ExerciseInfoDialog } from '@/components/workout-session/exercise-info-dialog'
+import { formatStoredWorkoutRest } from '@/lib/workout-rest'
 
 interface WorkoutDetailDialogProps {
     isOpen: boolean
@@ -132,7 +133,7 @@ export function WorkoutDetailDialog({ isOpen, onClose, workout, client, onEdit }
                                                     <div className="py-1 font-semibold text-muted-foreground">{idx + 1}</div>
                                                     <div className="py-1 font-semibold text-foreground/80">{set.reps}</div>
                                                     <div className="py-1 font-semibold text-foreground/80">{set.weight}kg</div>
-                                                    <div className="py-1 font-semibold text-foreground/80">{set.rest}min</div>
+                                                    <div className="py-1 font-semibold text-foreground/80">{formatStoredWorkoutRest(set.rest)}</div>
                                                 </div>
                                             ))}
                                         </div>

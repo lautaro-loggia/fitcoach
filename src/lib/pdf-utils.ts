@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { formatStoredWorkoutRest } from '@/lib/workout-rest'
 
 interface GeneratePDFOptions {
     workout: any
@@ -38,7 +39,7 @@ export function generateWorkoutPDF({ workout, client }: GeneratePDFOptions) {
                     `Set ${idx + 1}`,
                     `${set.reps}`,
                     `${set.weight}kg`,
-                    `${set.rest}s`,
+                    formatStoredWorkoutRest(set.rest),
                     ''
                 ])
             })

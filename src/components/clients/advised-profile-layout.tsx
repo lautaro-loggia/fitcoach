@@ -7,7 +7,7 @@ interface AdvisedProfileLayoutProps {
     client: {
         id: string
         full_name: string
-        status: 'active' | 'inactive'
+        status: 'pending' | 'active' | 'inactive' | 'paused' | 'archived'
         avatar_url?: string | null
     }
     allClients?: {

@@ -403,7 +403,8 @@ export async function getCoachHomeData(): Promise<CoachHomeData> {
                 last_app_opened_at
             `)
             .eq('trainer_id', user.id)
-            .eq('status', 'active'),
+            .eq('status', 'active')
+            .or('onboarding_status.is.null,onboarding_status.neq.invited'),
         supabase
             .from('meal_logs')
             .select('client_id, created_at, status')
@@ -463,6 +464,7 @@ export async function getCoachHomeData(): Promise<CoachHomeData> {
                 .select(clientsSelectBase)
                 .eq('trainer_id', user.id)
                 .eq('status', 'active')
+                .or('onboarding_status.is.null,onboarding_status.neq.invited')
 
             if (fallbackClientsResult.error) {
                 console.error('getCoachHomeData fallback clients query error:', fallbackClientsResult.error)

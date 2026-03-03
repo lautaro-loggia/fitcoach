@@ -19,7 +19,7 @@ interface ProfileHeaderProps {
     client: {
         id: string
         full_name: string
-        status: 'active' | 'inactive'
+        status: 'pending' | 'active' | 'inactive' | 'paused' | 'archived'
         email: string | null
         avatar_url?: string | null
     },
@@ -32,8 +32,49 @@ interface ProfileHeaderProps {
     className?: string
 }
 
+function getStatusMeta(status: ProfileHeaderProps['client']['status']) {
+    if (status === 'pending') {
+        return {
+            label: 'PENDIENTE',
+            badgeVariant: 'outline' as const,
+            className: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50'
+        }
+    }
+
+    if (status === 'active') {
+        return {
+            label: 'ACTIVO',
+            badgeVariant: 'secondary' as const,
+            className: 'bg-green-100 text-green-700 hover:bg-green-100'
+        }
+    }
+
+    if (status === 'paused') {
+        return {
+            label: 'PAUSADO',
+            badgeVariant: 'outline' as const,
+            className: 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-50'
+        }
+    }
+
+    if (status === 'archived') {
+        return {
+            label: 'ARCHIVADO',
+            badgeVariant: 'outline' as const,
+            className: 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-100'
+        }
+    }
+
+    return {
+        label: 'INACTIVO',
+        badgeVariant: 'outline' as const,
+        className: ''
+    }
+}
+
 export function ProfileHeader({ client, allClients = [], isCompact = false, className }: ProfileHeaderProps) {
     const router = useRouter()
+    const statusMeta = getStatusMeta(client.status)
 
     return (
         <div className={cn("flex items-center gap-3 md:gap-4", className)}>
@@ -79,11 +120,11 @@ export function ProfileHeader({ client, allClients = [], isCompact = false, clas
                             isCompact ? "text-lg md:text-xl" : "text-xl md:text-2xl"
                         )}>{client.full_name}</h2>
                     )}
-                    <Badge variant={client.status === 'active' ? 'secondary' : 'outline'} className={cn(
+                    <Badge variant={statusMeta.badgeVariant} className={cn(
                         "text-[10px] px-1.5 h-5",
-                        client.status === 'active' ? "bg-green-100 text-green-700 hover:bg-green-100" : ""
+                        statusMeta.className
                     )}>
-                        {client.status === 'active' ? 'ACTIVO' : 'INACTIVO'}
+                        {statusMeta.label}
                     </Badge>
                 </div>
                 {!isCompact && (

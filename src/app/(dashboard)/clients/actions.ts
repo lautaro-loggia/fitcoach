@@ -344,8 +344,9 @@ export async function resendClientInviteAction(clientId: string) {
             invitedUserId = firstInviteResult.data.user?.id ?? null
         }
 
-        const updatePayload: { onboarding_status: string; user_id?: string } = {
+        const updatePayload: { onboarding_status: string; status: string; user_id?: string } = {
             onboarding_status: 'invited',
+            status: 'pending',
         }
 
         if (invitedUserId) {

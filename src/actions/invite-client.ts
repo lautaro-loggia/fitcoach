@@ -26,7 +26,6 @@ export async function inviteClient(_prevState: unknown, formData: FormData) {
         const planId = ((formData.get('planId') as string) || '').trim() || null
         const paymentAmountRaw = ((formData.get('paymentAmount') as string) || '').trim()
         const paidAt = ((formData.get('paidAt') as string) || '').trim()
-        const firstDueDate = ((formData.get('firstDueDate') as string) || '').trim()
         const paymentMethodRaw = ((formData.get('paymentMethod') as string) || 'bank_transfer').trim()
         const paymentAmount = Number(paymentAmountRaw)
 
@@ -36,14 +35,13 @@ export async function inviteClient(_prevState: unknown, formData: FormData) {
         if (!email || !fullName) {
             return { error: 'Faltan campos requeridos', success: false }
         }
-        if (!paymentAmountRaw || Number.isNaN(paymentAmount) || paymentAmount <= 0) {
-            return { error: 'El monto inicial debe ser mayor a 0', success: false }
-        }
-        if (paymentSetup === 'paid' && !paidAt) {
-            return { error: 'La fecha de pago inicial es obligatoria', success: false }
-        }
-        if (paymentSetup === 'pending' && !firstDueDate) {
-            return { error: 'El primer vencimiento es obligatorio', success: false }
+        if (paymentSetup === 'paid') {
+            if (!paymentAmountRaw || Number.isNaN(paymentAmount) || paymentAmount <= 0) {
+                return { error: 'El monto inicial debe ser mayor a 0', success: false }
+            }
+            if (!paidAt) {
+                return { error: 'La fecha de pago inicial es obligatoria', success: false }
+            }
         }
 
         // 2. Check for existing client (Enforce 1-Client-1-Coach policy)
@@ -140,7 +138,7 @@ export async function inviteClient(_prevState: unknown, formData: FormData) {
             full_name: fullName,
             phone: phone || null,
             onboarding_status: 'invited',
-            status: 'active', // Operational status
+            status: 'pending', // Operational status until onboarding is completed
             user_id: userId // Link immediately or defer check on callback
         }
 
@@ -155,12 +153,12 @@ export async function inviteClient(_prevState: unknown, formData: FormData) {
                 clientData.next_due_date = nextDueDate
                 clientData.payment_status = calculatePaymentStatus(nextDueDate)
             } else {
-                clientData.plan_id = planId
+                clientData.plan_id = null
                 clientData.billing_frequency = billingFrequency
-                clientData.price_monthly = paymentAmount
+                clientData.price_monthly = null
                 clientData.last_paid_at = null
-                clientData.next_due_date = firstDueDate
-                clientData.payment_status = calculatePaymentStatus(firstDueDate)
+                clientData.next_due_date = null
+                clientData.payment_status = 'pending'
             }
         }
 
@@ -226,7 +224,9 @@ export async function inviteClient(_prevState: unknown, formData: FormData) {
             warning,
             message: isReinvite
                 ? 'Invitación reenviada correctamente'
-                : 'Invitación enviada y estado de pago inicial registrado'
+                : paymentSetup === 'paid'
+                    ? 'Invitación enviada y pago inicial registrado'
+                    : 'Invitación enviada correctamente'
         }
 
     } catch (err: unknown) {

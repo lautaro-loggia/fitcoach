@@ -13,7 +13,7 @@ interface DashboardTabsProps {
     client: {
         id: string
         full_name: string
-        status: 'active' | 'inactive'
+        status: 'pending' | 'active' | 'inactive' | 'paused' | 'archived'
         email: string | null
         avatar_url?: string | null
     }

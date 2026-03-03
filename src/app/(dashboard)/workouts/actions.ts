@@ -3,11 +3,56 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 
+const EXERCISE_SEARCH_ALIASES: Array<{ matches: string[]; aliases: string[] }> = [
+    {
+        matches: ['sentadilla pendulo', 'sentadilla pendula', 'pendulo'],
+        aliases: ['sentadilla hack', 'sentadilla hack en smith', 'hack squat', 'smith hack squat']
+    },
+    {
+        matches: ['extension de cuadriceps', 'extension cuadriceps', 'extensiones de cuadriceps'],
+        aliases: ['extension de cuadriceps', 'extension de pierna', 'leg extension', 'lever leg extension']
+    },
+    {
+        matches: ['pull over en polea', 'pullover en polea'],
+        aliases: ['pull over en polea', 'pullover cable']
+    },
+    {
+        matches: ['hip thrust con barra'],
+        aliases: ['hip thrust con barra', 'barbell hip thrust']
+    },
+    {
+        matches: ['hack squat'],
+        aliases: ['hack squat', 'sentadilla hack']
+    }
+]
+
 export async function searchExercises(query: string = '', limit: number = 50, offset: number = 0) {
     const supabase = await createClient()
 
     try {
         const normalize = (str: string) => str ? str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : ""
+        const resolveAliasTerms = (normalizedQuery: string) => {
+            const terms = new Set<string>()
+
+            for (const mapping of EXERCISE_SEARCH_ALIASES) {
+                const shouldApply = mapping.matches.some((candidate) =>
+                    normalizedQuery.includes(normalize(candidate)) || normalize(candidate).includes(normalizedQuery)
+                )
+
+                if (!shouldApply) continue
+                for (const alias of mapping.aliases) {
+                    terms.add(normalize(alias))
+                }
+            }
+
+            return Array.from(terms).filter(Boolean)
+        }
+        const matchesText = (value: string | null | undefined, normalizedQuery: string, aliasTerms: string[]) => {
+            const normalizedValue = normalize(value || '')
+            if (!normalizedValue) return false
+            if (normalizedValue.includes(normalizedQuery)) return true
+            return aliasTerms.some((alias) => normalizedValue.includes(alias))
+        }
         const mapExercise = (ex: any) => {
             const isCardio =
                 normalize(ex.muscle_group).includes('cardio') ||
@@ -52,13 +97,14 @@ export async function searchExercises(query: string = '', limit: number = 50, of
         if (trimmedQuery.length > 0 && exercises.length === 0) {
             const { data: allData } = await supabase.from('exercises_v2').select('*')
             const normalizedQuery = normalize(trimmedQuery)
+            const aliasTerms = resolveAliasTerms(normalizedQuery)
 
             exercises = (allData || []).map(mapExercise).filter(ex =>
-                normalize(ex.name).includes(normalizedQuery) ||
-                normalize(ex.english_name).includes(normalizedQuery) ||
-                normalize(ex.main_muscle_group).includes(normalizedQuery) ||
-                normalize(ex.equipment).includes(normalizedQuery) ||
-                (ex.category && normalize(ex.category).includes(normalizedQuery))
+                matchesText(ex.name, normalizedQuery, aliasTerms) ||
+                matchesText(ex.english_name, normalizedQuery, aliasTerms) ||
+                matchesText(ex.main_muscle_group, normalizedQuery, aliasTerms) ||
+                matchesText(ex.equipment, normalizedQuery, aliasTerms) ||
+                matchesText(ex.category, normalizedQuery, aliasTerms)
             )
         }
 
