@@ -45,10 +45,10 @@ export async function inviteClient(_prevState: unknown, formData: FormData) {
         }
 
         // 2. Check for existing client (Enforce 1-Client-1-Coach policy)
-        // We check via Admin to see if this email is already assigned to ANY coach
+        // Buscamos incluyendo soft-deleted para detectar re-invitaciones de asesorados eliminados.
         const { data: existingClients, error: searchError } = await adminSupabase
             .from('clients')
-            .select('id, trainer_id, status')
+            .select('id, trainer_id, status, deleted_at')
             .eq('email', email)
 
         if (searchError) {
@@ -58,14 +58,32 @@ export async function inviteClient(_prevState: unknown, formData: FormData) {
 
         if (existingClients && existingClients.length > 0) {
             const existing = existingClients[0]
+            const isSoftDeleted = Boolean(existing.deleted_at)
+
             if (existing.trainer_id !== user.id) {
-                // Client exists with ANOTHER coach
-                return { error: 'Este email ya está registrado con otro entrenador.', success: false }
+                if (isSoftDeleted) {
+                    // Fue eliminado de este coach y ahora otro quiere invitar al mismo email.
+                    // Bloqueamos solo si hay un registro activo (no deleted) con otro coach.
+                    const activeWithOtherCoach = existingClients.find(
+                        c => !c.deleted_at && c.trainer_id !== user.id
+                    )
+                    if (activeWithOtherCoach) {
+                        return { error: 'Este email ya está registrado con otro entrenador.', success: false }
+                    }
+                    // Si el único registro es de otro coach pero soft-deleted, permitimos la re-invitación
+                } else {
+                    // Client exists with ANOTHER coach (activo)
+                    return { error: 'Este email ya está registrado con otro entrenador.', success: false }
+                }
             }
-            // Client exists with THIS coach -> Allow Re-invite logic (update name? currently just invite)
+            // Client exists with THIS coach (active or soft-deleted) -> Re-invite logic
         }
-        const existingClientId = existingClients?.[0]?.id ?? null
+
+        // Encontrar el registro de este coach (activo o soft-deleted)
+        const existingClient = existingClients?.find(c => c.trainer_id === user.id) ?? null
+        const existingClientId = existingClient?.id ?? null
         const isReinvite = Boolean(existingClientId)
+        const wasSoftDeleted = Boolean(existingClient?.deleted_at)
 
         // 3. Send Supabase Auth Invite
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://orbit-fit.vercel.app'
@@ -166,10 +184,34 @@ export async function inviteClient(_prevState: unknown, formData: FormData) {
         let targetClientId = existingClientId
 
         if (isReinvite && existingClientId) {
-            // Update existing
+            // Update existing (incluye limpiar deleted_at si fue soft-deleted)
+            const updatePayload: Record<string, unknown> = {
+                ...clientData,
+                deleted_at: null,             // Restaurar si estaba soft-deleted
+                onboarding_status: 'invited', // Resetear onboarding
+            }
+
+            if (wasSoftDeleted) {
+                // Si fue eliminado, reseteamos también datos de pago para que el coach los configure de nuevo
+                updatePayload.plan_id = planId
+                updatePayload.billing_frequency = 'monthly'
+                if (paymentSetup === 'paid') {
+                    const nextDueDate = calculateNextDueDate(paidAt, 'monthly')
+                    updatePayload.price_monthly = paymentAmount
+                    updatePayload.last_paid_at = paidAt
+                    updatePayload.next_due_date = nextDueDate
+                    updatePayload.payment_status = calculatePaymentStatus(nextDueDate)
+                } else {
+                    updatePayload.price_monthly = null
+                    updatePayload.last_paid_at = null
+                    updatePayload.next_due_date = null
+                    updatePayload.payment_status = 'pending'
+                }
+            }
+
             const { data: updatedClient, error } = await adminSupabase
                 .from('clients')
-                .update(clientData)
+                .update(updatePayload)
                 .eq('id', existingClientId)
                 .select('id')
                 .single()
@@ -223,7 +265,9 @@ export async function inviteClient(_prevState: unknown, formData: FormData) {
             success: true,
             warning,
             message: isReinvite
-                ? 'Invitación reenviada correctamente'
+                ? wasSoftDeleted
+                    ? 'Asesorado reactivado e invitación enviada correctamente'
+                    : 'Invitación reenviada correctamente'
                 : paymentSetup === 'paid'
                     ? 'Invitación enviada y pago inicial registrado'
                     : 'Invitación enviada correctamente'

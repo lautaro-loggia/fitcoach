@@ -74,6 +74,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
             .from('clients')
             .select('price_monthly')
             .eq('trainer_id', user.id)
+            .is('deleted_at', null)
             .in('payment_status', ['pending', 'overdue']),
         supabase
             .from('clients')
@@ -85,6 +86,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
             .from('clients')
             .select('id', { count: 'exact', head: true })
             .eq('trainer_id', user.id)
+            .is('deleted_at', null)
             .gte('created_at', firstDayOfMonth),
     ])
 
@@ -325,13 +327,13 @@ export async function getTodayPresentialTrainings(): Promise<PresentialTraining[
         const client = Array.isArray(item.client) ? item.client[0] : null
 
         return {
-        id: item.id,
-        clientName: client?.full_name || 'Cliente',
-        clientAvatar: client?.avatar_url || null,
-        workoutName: item.name || 'Entrenamiento',
-        clientPhone: client?.phone || null,
-        startTime: item.start_time || null,
-        messageTemplate
+            id: item.id,
+            clientName: client?.full_name || 'Cliente',
+            clientAvatar: client?.avatar_url || null,
+            workoutName: item.name || 'Entrenamiento',
+            clientPhone: client?.phone || null,
+            startTime: item.start_time || null,
+            messageTemplate
         }
     })
 }
