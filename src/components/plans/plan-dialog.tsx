@@ -28,6 +28,11 @@ interface PlanDialogProps {
 type RoutineFrequency = 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'biannual'
 type CallsFrequency = 'none' | 'monthly' | 'weekly'
 
+function getPlanPriceNumber(value: unknown): number | null {
+    const parsed = typeof value === 'number' ? value : Number(value)
+    return Number.isFinite(parsed) ? parsed : null
+}
+
 export function PlanDialog({ open, onOpenChange, plan, onSuccess }: PlanDialogProps) {
     const [loading, setLoading] = useState(false)
     const [name, setName] = useState('')
@@ -46,7 +51,8 @@ export function PlanDialog({ open, onOpenChange, plan, onSuccess }: PlanDialogPr
         if (open) {
             if (plan) {
                 setName(plan.name)
-                setPriceMonthly(plan.price_monthly.toString())
+                const planPrice = getPlanPriceNumber(plan.price_monthly)
+                setPriceMonthly(planPrice === null ? '' : planPrice.toString())
                 setDescription(plan.description || '')
                 setRoutineFrequency(plan.routine_frequency || 'monthly')
                 setCallsFrequency(plan.calls_frequency || 'none')
@@ -68,6 +74,9 @@ export function PlanDialog({ open, onOpenChange, plan, onSuccess }: PlanDialogPr
     }, [open, plan])
 
     const isEdit = !!plan
+    const currentPrice = Number.parseFloat(priceMonthly)
+    const originalPlanPrice = getPlanPriceNumber(plan?.price_monthly) ?? 0
+    const hasPriceChanged = Number.isFinite(currentPrice) && currentPrice !== originalPlanPrice
 
     // Reset state when opening for create or switching plans
     // Note: This logic is better handled by a useEffect on the `plan` prop or `open` prop
@@ -243,7 +252,7 @@ export function PlanDialog({ open, onOpenChange, plan, onSuccess }: PlanDialogPr
                         </div>
 
                         {/* Show notification option only if editing and price changed */}
-                        {isEdit && plan && parseFloat(priceMonthly) !== plan.price_monthly && (
+                        {isEdit && plan && hasPriceChanged && (
                             <div className="rounded-lg border p-4 bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800">
                                 <div className="flex items-start space-x-2">
                                     <Checkbox

@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useTransition, useState, useMemo } from 'react'
-import { MoreHorizontalIcon, File01Icon, Delete02Icon, UserSettings01Icon, Loading03Icon, Search01Icon, Cancel01Icon, ArrowDown01Icon, Calendar03Icon, FilterHorizontalIcon } from 'hugeicons-react'
+import { MoreHorizontalIcon, File01Icon, Delete02Icon, UserSettings01Icon, Loading03Icon, Search01Icon, Cancel01Icon, ArrowDown01Icon, Calendar03Icon, FilterHorizontalIcon, Mail01Icon } from 'hugeicons-react'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -51,7 +51,7 @@ import {
 import { ClientAvatar } from '@/components/clients/client-avatar'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { deleteClientAction } from '@/app/(dashboard)/clients/actions'
+import { deleteClientAction, resendClientInviteAction } from '@/app/(dashboard)/clients/actions'
 import {
     AlertDialog,
     AlertDialogAction,
@@ -71,6 +71,7 @@ export interface Client {
     id: string
     full_name: string
     email?: string | null
+    onboarding_status?: 'invited' | 'in_progress' | 'completed' | null
     status: 'active' | 'inactive'
     goal_specific: string | null
     main_goal: string | null
@@ -267,11 +268,31 @@ export function ClientTable({ clients, presentialWorkouts, defaultOpenNew, hideH
     // Action Menu Component (Re-use existing logic)
     const ActionMenu = ({ client }: { client: Client }) => {
         const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+        const [reinviting, setReinviting] = useState(false)
+        const canResendInvite = client.onboarding_status === 'invited' && Boolean(client.email)
+
         const handleDelete = async () => {
             const result = await deleteClientAction(client.id)
             if (result?.error) toast.error(result.error)
             else { toast.success("Cliente eliminado correctamente"); setShowDeleteDialog(false) }
         }
+
+        const handleResendInvite = async (e: React.MouseEvent) => {
+            e.stopPropagation()
+            if (!canResendInvite || reinviting) return
+
+            setReinviting(true)
+            const result = await resendClientInviteAction(client.id)
+
+            if (result?.error) {
+                toast.error(result.error)
+            } else {
+                toast.success(result?.message || 'Invitación reenviada correctamente')
+            }
+
+            setReinviting(false)
+        }
+
         return (
             <>
                 <DropdownMenu>
@@ -289,6 +310,12 @@ export function ClientTable({ clients, presentialWorkouts, defaultOpenNew, hideH
                         <DropdownMenuItem onClick={(e) => handleEditProfile(e, client.id)}>
                             <UserSettings01Icon className="mr-2 h-4 w-4" /> Editar perfil
                         </DropdownMenuItem>
+                        {canResendInvite && (
+                            <DropdownMenuItem onClick={handleResendInvite} disabled={reinviting}>
+                                <Mail01Icon className="mr-2 h-4 w-4" />
+                                {reinviting ? 'Reenviando...' : 'Reenviar invitación'}
+                            </DropdownMenuItem>
+                        )}
                         <DropdownMenuSeparator />
                         <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); setShowDeleteDialog(true) }}>
                             <Delete02Icon className="mr-2 h-4 w-4" /> Eliminar

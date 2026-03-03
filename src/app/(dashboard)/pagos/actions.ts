@@ -410,6 +410,11 @@ export interface Plan {
     updated_at: string
 }
 
+function normalizePlanPrice(value: unknown): number {
+    const parsed = typeof value === 'number' ? value : Number(value)
+    return Number.isFinite(parsed) ? parsed : 0
+}
+
 // Get all plans for the authenticated trainer
 export async function getPlans(): Promise<Plan[]> {
     const supabase = await createClient()
@@ -424,7 +429,13 @@ export async function getPlans(): Promise<Plan[]> {
         .order('created_at', { ascending: false })
 
     if (error) throw error
-    return data as Plan[]
+
+    const normalizedPlans = (data || []).map((plan) => ({
+        ...plan,
+        price_monthly: normalizePlanPrice((plan as { price_monthly?: unknown }).price_monthly),
+    }))
+
+    return normalizedPlans as Plan[]
 }
 
 // Create a new plan

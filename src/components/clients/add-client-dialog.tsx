@@ -33,6 +33,16 @@ interface AddClientDialogProps {
 
 type PaymentSetup = 'paid' | 'pending'
 
+function getPlanPriceNumber(value: unknown): number | null {
+    const parsed = typeof value === 'number' ? value : Number(value)
+    return Number.isFinite(parsed) ? parsed : null
+}
+
+function formatPlanPriceLabel(value: unknown): string {
+    const amount = getPlanPriceNumber(value)
+    return amount === null ? 'Sin precio' : `$${amount.toLocaleString('es-AR')}`
+}
+
 export function AddClientDialog({ defaultOpen = false }: AddClientDialogProps) {
     const [internalOpen, setInternalOpen] = useState(defaultOpen)
     const [loading, setLoading] = useState(false)
@@ -86,7 +96,8 @@ export function AddClientDialog({ defaultOpen = false }: AddClientDialogProps) {
 
         const plan = plans.find((item) => item.id === planId)
         if (plan) {
-            setPaymentAmount(plan.price_monthly.toString())
+            const amount = getPlanPriceNumber(plan.price_monthly)
+            setPaymentAmount(amount === null ? '' : amount.toString())
         }
     }
 
@@ -243,7 +254,7 @@ export function AddClientDialog({ defaultOpen = false }: AddClientDialogProps) {
                                     <SelectItem value="none">Personalizado</SelectItem>
                                     {plans.map((plan) => (
                                         <SelectItem key={plan.id} value={plan.id}>
-                                            {plan.name} - ${plan.price_monthly.toLocaleString('es-AR')}
+                                            {plan.name} - {formatPlanPriceLabel(plan.price_monthly)}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
