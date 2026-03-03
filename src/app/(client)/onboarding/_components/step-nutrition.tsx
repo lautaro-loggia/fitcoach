@@ -185,7 +185,7 @@ export function StepNutrition({ client, onNext, onPrev, isPreview }: { client: a
                             value={formData.experience}
                             onValueChange={val => setFormData({ ...formData, experience: val })}
                         >
-                            <SelectTrigger className="w-full h-14 border-gray-200 focus:ring-black rounded-xl">
+                            <SelectTrigger className="bg-white w-full h-14 border-gray-200 focus:ring-black rounded-xl">
                                 <SelectValue placeholder="Seleccioná..." />
                             </SelectTrigger>
                             <SelectContent>
@@ -231,7 +231,7 @@ export function StepNutrition({ client, onNext, onPrev, isPreview }: { client: a
                         <ShieldAlert className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <Input
                             placeholder="Solo si no está en la lista..."
-                            className="h-14 pl-11 border-gray-200 focus:ring-black rounded-xl text-sm bg-gray-50/50"
+                            className="bg-white h-14 pl-11 border-gray-200 focus:ring-black rounded-xl text-sm"
                             value={formData.other_restrictions}
                             onChange={e => setFormData({ ...formData, other_restrictions: e.target.value })}
                         />

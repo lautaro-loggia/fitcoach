@@ -5,6 +5,8 @@ import { revalidatePath } from 'next/cache'
 import { parseISO } from 'date-fns'
 import { createAdminClient } from '@/lib/supabase/admin'
 
+const MAX_ACTIVE_CLIENTS_PER_TRAINER = 15
+
 export async function createClientAction(formData: FormData) {
     const supabase = await createClient()
 
@@ -14,6 +16,21 @@ export async function createClientAction(formData: FormData) {
 
     if (!user) {
         return { error: 'No autorizado' }
+    }
+
+    const { count: activeClientsCount, error: activeClientsCountError } = await supabase
+        .from('clients')
+        .select('id', { count: 'exact', head: true })
+        .eq('trainer_id', user.id)
+        .is('deleted_at', null)
+
+    if (activeClientsCountError) {
+        console.error('Error counting active clients:', activeClientsCountError)
+        return { error: 'No se pudo validar el cupo de asesorados activos' }
+    }
+
+    if ((activeClientsCount ?? 0) >= MAX_ACTIVE_CLIENTS_PER_TRAINER) {
+        return { error: `Alcanzaste el límite de ${MAX_ACTIVE_CLIENTS_PER_TRAINER} asesorados activos. Eliminá uno para liberar un cupo.` }
     }
 
     const full_name = formData.get('full_name') as string
@@ -162,6 +179,9 @@ export async function createClientAction(formData: FormData) {
 
     if (error) {
         console.error('Supabase error creating client:', error)
+        if (error.message?.includes('active_client_limit_reached')) {
+            return { error: `Alcanzaste el límite de ${MAX_ACTIVE_CLIENTS_PER_TRAINER} asesorados activos. Eliminá uno para liberar un cupo.` }
+        }
         return { error: `Error al crear el cliente: ${error.message}` }
     }
 

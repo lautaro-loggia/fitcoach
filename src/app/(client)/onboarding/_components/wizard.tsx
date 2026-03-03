@@ -15,8 +15,8 @@ import { StepSuccess } from './step-success'
 const TOTAL_STEPS = 9 // 0 a 8
 
 const STEP_LABELS = [
-    'Cuenta y contraseña',
     'Bienvenida',
+    'Cuenta y contraseña',
     'Perfil básico',
     'Objetivos',
     'Estilo de vida',
@@ -251,8 +251,8 @@ export function OnboardingWizard({
 
             <div className="flex-1 p-6 flex flex-col max-w-lg mx-auto w-full overflow-y-auto">
                 <div key={activeStepKey} className="flex-1 mb-8">
-                    {step === 0 && <StepAccountPassword client={clientData} onNext={nextStep} isPreview={isPreview} />}
-                    {step === 1 && <StepBinding client={clientData} onNext={nextStep} isPreview={isPreview} />}
+                    {step === 0 && <StepBinding client={clientData} onNext={nextStep} isPreview={isPreview} />}
+                    {step === 1 && <StepAccountPassword client={clientData} onNext={nextStep} isPreview={isPreview} />}
                     {step === 2 && <StepProfile client={clientData} onUpdate={updateClient} onNext={nextStep} isNextTo="Objetivos" isPreview={isPreview} />}
                     {step === 3 && <StepGoals client={clientData} onNext={nextStep} onPrev={prevStep} isPreview={isPreview} />}
                     {step === 4 && <StepLifestyle client={clientData} onNext={nextStep} onPrev={prevStep} isPreview={isPreview} />}

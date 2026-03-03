@@ -214,7 +214,7 @@ export function StepGoals({
                         value={formData.timeframe}
                         onValueChange={(val) => setFormData({ ...formData, timeframe: val })}
                     >
-                        <SelectTrigger className="w-full h-12 border-gray-200 focus:ring-black">
+                        <SelectTrigger className="bg-white w-full h-14 border-gray-200 focus:ring-black rounded-xl">
                             <SelectValue placeholder="Seleccioná plazo" />
                         </SelectTrigger>
                         <SelectContent>
@@ -235,7 +235,7 @@ export function StepGoals({
                                 type="number"
                                 step="0.1"
                                 placeholder="Ej: 75"
-                                className="w-full h-12 pr-12 border-gray-200 focus:ring-black"
+                                className="bg-white w-full h-14 pr-12 border-gray-200 focus:ring-black rounded-xl"
                                 value={formData.target_weight}
                                 onChange={e => setFormData({ ...formData, target_weight: e.target.value })}
                             />
@@ -261,7 +261,7 @@ export function StepGoals({
                                 type="number"
                                 step="0.1"
                                 placeholder="15"
-                                className="w-full h-12 pr-12 border-gray-200 focus:ring-black"
+                                className="bg-white w-full h-14 pr-12 border-gray-200 focus:ring-black rounded-xl"
                                 value={formData.target_fat}
                                 onChange={e => setFormData({ ...formData, target_fat: e.target.value })}
                             />
@@ -295,7 +295,7 @@ export function StepGoals({
                     <Label className="text-sm font-bold text-[#1A1A1A]">Meta Personal (Opcional)</Label>
                     <Textarea
                         placeholder="Ej: Quiero recuperar la movilidad o entrar en un talle menos..."
-                        className="min-h-[100px] border-gray-200 focus:ring-black rounded-xl"
+                        className="bg-white min-h-[100px] border-gray-200 focus:ring-black rounded-xl"
                         value={formData.goal_specific}
                         onChange={e => setFormData({ ...formData, goal_specific: e.target.value })}
                     />

@@ -156,7 +156,7 @@ export function StepBodyFat({ client, onNext, onPrev, isPreview }: { client: any
                                             <Input
                                                 type="number"
                                                 placeholder="0.0"
-                                                className="w-full h-11 pr-10 border-gray-200 focus:ring-black"
+                                                className="bg-white w-full h-14 pr-10 border-gray-200 focus:ring-black rounded-xl"
                                                 value={measurements.neck}
                                                 onChange={e => setMeasurements({ ...measurements, neck: e.target.value })}
                                                 onBlur={calculateNavy}
@@ -172,7 +172,7 @@ export function StepBodyFat({ client, onNext, onPrev, isPreview }: { client: any
                                             <Input
                                                 type="number"
                                                 placeholder="0.0"
-                                                className="w-full h-11 pr-10 border-gray-200 focus:ring-black"
+                                                className="bg-white w-full h-14 pr-10 border-gray-200 focus:ring-black rounded-xl"
                                                 value={measurements.waist}
                                                 onChange={e => setMeasurements({ ...measurements, waist: e.target.value })}
                                                 onBlur={calculateNavy}
@@ -189,7 +189,7 @@ export function StepBodyFat({ client, onNext, onPrev, isPreview }: { client: any
                                                 <Input
                                                     type="number"
                                                     placeholder="0.0"
-                                                    className="w-full h-11 pr-10 border-gray-200 focus:ring-black"
+                                                    className="bg-white w-full h-14 pr-10 border-gray-200 focus:ring-black rounded-xl"
                                                     value={measurements.hip}
                                                     onChange={e => setMeasurements({ ...measurements, hip: e.target.value })}
                                                     onBlur={calculateNavy}
@@ -243,7 +243,7 @@ export function StepBodyFat({ client, onNext, onPrev, isPreview }: { client: any
                                     <Input
                                         type="number"
                                         placeholder="15.0"
-                                        className="h-10 w-24 border-gray-200 focus:ring-black font-bold"
+                                        className="bg-white h-14 w-24 border-gray-200 focus:ring-black font-bold rounded-xl"
                                         value={manualFat}
                                         onChange={e => setManualFat(e.target.value)}
                                     />
