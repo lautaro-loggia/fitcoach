@@ -257,3 +257,119 @@ export async function deleteClientAction(clientId: string) {
     revalidatePath('/clients')
     return { success: true }
 }
+
+export async function resendClientInviteAction(clientId: string) {
+    try {
+        const supabase = await createClient()
+        const adminSupabase = createAdminClient()
+
+        const {
+            data: { user },
+            error: authError,
+        } = await supabase.auth.getUser()
+
+        if (authError || !user) {
+            return { error: 'No autorizado' }
+        }
+
+        const { data: client, error: clientError } = await adminSupabase
+            .from('clients')
+            .select('id, trainer_id, email, full_name, onboarding_status')
+            .eq('id', clientId)
+            .eq('trainer_id', user.id)
+            .is('deleted_at', null)
+            .maybeSingle()
+
+        if (clientError) {
+            console.error('Error fetching client for resend invite:', clientError)
+            return { error: 'No se pudo validar el asesorado' }
+        }
+
+        if (!client) {
+            return { error: 'Asesorado no encontrado' }
+        }
+
+        if (!client.email) {
+            return { error: 'El asesorado no tiene email para reenviar la invitación' }
+        }
+
+        if (client.onboarding_status !== 'invited') {
+            return { error: 'Solo se puede reenviar la invitación si aún no fue aceptada' }
+        }
+
+        const email = client.email.trim().toLowerCase()
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://orbit-fit.vercel.app'
+        const redirectUrl = `${baseUrl}/auth/callback`
+        const coachName = user.user_metadata?.full_name || 'Tu coach'
+
+        const inviteOptions = {
+            redirectTo: redirectUrl,
+            data: {
+                full_name: client.full_name || '',
+                trainer_name: coachName,
+                role: 'client',
+                needs_password: true,
+            },
+        }
+
+        let invitedUserId: string | null = null
+
+        const firstInviteResult = await adminSupabase.auth.admin.inviteUserByEmail(email, inviteOptions)
+
+        if (firstInviteResult.error) {
+            if (firstInviteResult.error.message.includes('already been registered')) {
+                const { data: existingUsers } = await adminSupabase.auth.admin.listUsers()
+                const existingAuthUser = existingUsers?.users?.find((u) => u.email?.toLowerCase() === email)
+
+                if (existingAuthUser) {
+                    const { error: deleteError } = await adminSupabase.auth.admin.deleteUser(existingAuthUser.id)
+                    if (deleteError) {
+                        console.error('Error deleting auth user before re-invite:', deleteError)
+                        return { error: `No se pudo preparar el reenvío: ${deleteError.message}` }
+                    }
+                }
+
+                const retryInviteResult = await adminSupabase.auth.admin.inviteUserByEmail(email, inviteOptions)
+                if (retryInviteResult.error) {
+                    console.error('Retry re-invite error:', retryInviteResult.error)
+                    return { error: `Error reenviando invitación: ${retryInviteResult.error.message}` }
+                }
+
+                invitedUserId = retryInviteResult.data.user?.id ?? null
+            } else {
+                console.error('Re-invite error:', firstInviteResult.error)
+                return { error: `Error reenviando invitación: ${firstInviteResult.error.message}` }
+            }
+        } else {
+            invitedUserId = firstInviteResult.data.user?.id ?? null
+        }
+
+        const updatePayload: { onboarding_status: string; user_id?: string } = {
+            onboarding_status: 'invited',
+        }
+
+        if (invitedUserId) {
+            updatePayload.user_id = invitedUserId
+        }
+
+        const { error: updateError } = await adminSupabase
+            .from('clients')
+            .update(updatePayload)
+            .eq('id', clientId)
+            .eq('trainer_id', user.id)
+
+        if (updateError) {
+            console.error('Error updating client after re-invite:', updateError)
+            return { error: 'La invitación se reenvió, pero no se pudo actualizar el estado del asesorado' }
+        }
+
+        revalidatePath('/clients')
+        revalidatePath(`/clients/${clientId}`)
+
+        return { success: true, message: 'Invitación reenviada correctamente' }
+    } catch (error) {
+        console.error('Unexpected resendClientInviteAction error:', error)
+        const message = error instanceof Error ? error.message : 'Error desconocido'
+        return { error: `No se pudo reenviar la invitación: ${message}` }
+    }
+}

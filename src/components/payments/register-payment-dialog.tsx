@@ -26,6 +26,16 @@ interface RegisterPaymentDialogProps {
     onSuccess: () => void
 }
 
+function getPlanPriceNumber(value: unknown): number | null {
+    const parsed = typeof value === 'number' ? value : Number(value)
+    return Number.isFinite(parsed) ? parsed : null
+}
+
+function formatPlanPriceLabel(value: unknown): string {
+    const amount = getPlanPriceNumber(value)
+    return amount === null ? 'Sin precio' : `$${amount.toLocaleString('es-AR')}`
+}
+
 export function RegisterPaymentDialog({
     client,
     open,
@@ -61,7 +71,8 @@ export function RegisterPaymentDialog({
             if (client.plan_id && plans.length > 0) {
                 const currentPlan = plans.find(p => p.id === client.plan_id)
                 if (currentPlan) {
-                    setAmount(currentPlan.price_monthly.toString())
+                    const amount = getPlanPriceNumber(currentPlan.price_monthly)
+                    setAmount(amount === null ? '' : amount.toString())
                     return
                 }
             }
@@ -76,7 +87,8 @@ export function RegisterPaymentDialog({
         if (planId !== 'none') {
             const plan = plans.find(p => p.id === planId)
             if (plan) {
-                setAmount(plan.price_monthly.toString())
+                const amount = getPlanPriceNumber(plan.price_monthly)
+                setAmount(amount === null ? '' : amount.toString())
             }
         }
     }
@@ -157,7 +169,7 @@ export function RegisterPaymentDialog({
                                 <SelectItem value="none">Personalizado</SelectItem>
                                 {plans.map((plan) => (
                                     <SelectItem key={plan.id} value={plan.id}>
-                                        {plan.name} - ${plan.price_monthly.toLocaleString('es-AR')}
+                                        {plan.name} - {formatPlanPriceLabel(plan.price_monthly)}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
