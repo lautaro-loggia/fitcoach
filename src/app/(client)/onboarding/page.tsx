@@ -36,7 +36,16 @@ export default async function OnboardingPage(props: {
         return <div>Error cargando perfil. Contactá a soporte.</div>
     }
 
-    if (client.onboarding_status === 'completed' && !isPreview) {
+    let isServerAction = false
+    try {
+        const { headers } = await import('next/headers')
+        const headersList = await headers()
+        isServerAction = headersList.get('next-action') !== null
+    } catch (e) {
+        // Ignore errors
+    }
+
+    if (client.onboarding_status === 'completed' && !isPreview && !isServerAction) {
         redirect('/dashboard')
     }
 

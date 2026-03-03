@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { CheckCircle2, Sparkles, ArrowRight } from 'lucide-react'
 import confetti from 'canvas-confetti'
+import Image from 'next/image'
 
 type StepSuccessProps = {
     isPreview?: boolean
@@ -39,26 +40,42 @@ export function StepSuccess({ isPreview, isQaMode, onRestart }: StepSuccessProps
             colors: ['#5254D9', '#FFFFFF', '#1A1A1A']
         })
 
-        return () => clearInterval(interval)
-    }, [])
+        let timeout: ReturnType<typeof setTimeout>
+        if (!isPreview && !isQaMode) {
+            timeout = setTimeout(() => {
+                window.location.href = '/dashboard'
+            }, 4500)
+        }
+
+        return () => {
+            clearInterval(interval)
+            if (timeout) clearTimeout(timeout)
+        }
+    }, [isPreview, isQaMode])
 
     return (
         <div className="flex flex-col items-center justify-center py-12 text-center space-y-8 animate-in zoom-in-95 duration-700">
-            <div className="relative">
-                <div className="absolute -inset-4 bg-[#5254D9]/20 rounded-full blur-xl animate-pulse" />
-                <div className="relative bg-white p-6 rounded-full shadow-2xl shadow-[#5254D9]/40 border-4 border-[#5254D9]">
-                    <CheckCircle2 className="w-16 h-16 text-[#5254D9]" />
-                </div>
-                <div className="absolute -top-2 -right-2">
-                    <Sparkles className="w-8 h-8 text-amber-400 animate-bounce" />
-                </div>
+            <div className="relative w-64 h-64 sm:w-72 sm:h-72 drop-shadow-2xl">
+                <Image
+                    src="/images/onboarding-congrats.png"
+                    alt="Felicitaciones"
+                    fill
+                    className="object-contain"
+                    priority
+                />
             </div>
 
-            <div className="space-y-3">
-                <h2 className="text-4xl font-black tracking-tight text-[#1A1A1A]">¡Estás dentro!</h2>
-                <p className="text-gray-500 max-w-xs mx-auto text-lg leading-relaxed">
-                    Hemos configurado tu perfil con éxito. Tu coach ya tiene todo listo para empezar.
-                </p>
+            <div className="space-y-4">
+                <h2 className="text-3xl font-black tracking-tight text-[#1A1A1A] max-w-xs mx-auto">
+                    ¡Listo! Ya tenés tu perfil creado.
+                </h2>
+                <div className="text-gray-500 max-w-sm mx-auto text-lg leading-relaxed space-y-4">
+                    <p>
+                        Ahora tu coach va a armarte tu rutina<br />
+                        y tu plan de alimentación.
+                    </p>
+                    <p>Te avisamos apenas esté todo asignado.</p>
+                </div>
             </div>
 
             {isQaMode ? (

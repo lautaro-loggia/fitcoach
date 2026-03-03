@@ -180,7 +180,7 @@ export function StepInjuries({ client, onNext, onPrev, isPreview }: { client: an
                                             value={injury.zone}
                                             onValueChange={v => updateInjury(injury.id, 'zone', v)}
                                         >
-                                            <SelectTrigger className="w-full h-11 border-gray-200 focus:ring-black">
+                                            <SelectTrigger className="bg-white w-full h-14 border-gray-200 focus:ring-black rounded-xl">
                                                 <SelectValue placeholder="Zona" />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -194,7 +194,7 @@ export function StepInjuries({ client, onNext, onPrev, isPreview }: { client: an
                                             value={injury.severity}
                                             onValueChange={v => updateInjury(injury.id, 'severity', v)}
                                         >
-                                            <SelectTrigger className="w-full h-11 border-gray-200 focus:ring-black">
+                                            <SelectTrigger className="bg-white w-full h-14 border-gray-200 focus:ring-black rounded-xl">
                                                 <SelectValue placeholder="Nivel" />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -210,7 +210,7 @@ export function StepInjuries({ client, onNext, onPrev, isPreview }: { client: an
                                     <Label className="text-sm font-bold text-[#1A1A1A]">Antigüedad</Label>
                                     <Input
                                         placeholder="Ej: Hace 2 semanas, o Crónica"
-                                        className="h-11 border-gray-200 focus:ring-black"
+                                        className="bg-white h-14 border-gray-200 focus:ring-black rounded-xl"
                                         value={injury.since}
                                         onChange={e => updateInjury(injury.id, 'since', e.target.value)}
                                     />
@@ -222,7 +222,7 @@ export function StepInjuries({ client, onNext, onPrev, isPreview }: { client: an
                                         placeholder="Ej: Me duele solo al hacer press de banca..."
                                         value={injury.description}
                                         onChange={e => updateInjury(injury.id, 'description', e.target.value)}
-                                        className="min-h-[80px] border-gray-200 rounded-xl focus:ring-black"
+                                        className="bg-white min-h-[80px] border-gray-200 rounded-xl focus:ring-black"
                                     />
                                 </div>
 

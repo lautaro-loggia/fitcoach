@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { calculateNextDueDate, calculatePaymentStatus } from '@/lib/payments/payment-cycle'
 
+const MAX_ACTIVE_CLIENTS_PER_TRAINER = 15
+
 export async function inviteClient(_prevState: unknown, formData: FormData) {
     try {
         const supabase = await createClient()
@@ -84,6 +86,27 @@ export async function inviteClient(_prevState: unknown, formData: FormData) {
         const existingClientId = existingClient?.id ?? null
         const isReinvite = Boolean(existingClientId)
         const wasSoftDeleted = Boolean(existingClient?.deleted_at)
+        const requiresActiveSlot = !isReinvite || wasSoftDeleted
+
+        if (requiresActiveSlot) {
+            const { count: activeClientsCount, error: activeClientsCountError } = await adminSupabase
+                .from('clients')
+                .select('id', { count: 'exact', head: true })
+                .eq('trainer_id', user.id)
+                .is('deleted_at', null)
+
+            if (activeClientsCountError) {
+                console.error('Error counting active clients:', activeClientsCountError)
+                return { error: 'No se pudo validar el cupo de asesorados activos', success: false }
+            }
+
+            if ((activeClientsCount ?? 0) >= MAX_ACTIVE_CLIENTS_PER_TRAINER) {
+                return {
+                    error: `Alcanzaste el límite de ${MAX_ACTIVE_CLIENTS_PER_TRAINER} asesorados activos. Eliminá uno para liberar un cupo.`,
+                    success: false
+                }
+            }
+        }
 
         // 3. Send Supabase Auth Invite
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://orbit-fit.vercel.app'
@@ -230,6 +253,21 @@ export async function inviteClient(_prevState: unknown, formData: FormData) {
 
         if (dbError) {
             console.error('DB Error upserting client:', dbError)
+
+            const dbErrorMessage = typeof dbError.message === 'string' ? dbError.message : ''
+            if (dbErrorMessage.includes('active_client_limit_reached')) {
+                if (userId) {
+                    const { error: rollbackInviteError } = await adminSupabase.auth.admin.deleteUser(userId)
+                    if (rollbackInviteError) {
+                        console.error('Error rolling back invited auth user after active limit hit:', rollbackInviteError)
+                    }
+                }
+                return {
+                    error: `Alcanzaste el límite de ${MAX_ACTIVE_CLIENTS_PER_TRAINER} asesorados activos. Eliminá uno para liberar un cupo.`,
+                    success: false
+                }
+            }
+
             return { error: 'Invitación enviada, pero hubo error guardando en base de datos.', success: false }
         }
 

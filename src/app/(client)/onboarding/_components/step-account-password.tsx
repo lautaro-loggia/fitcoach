@@ -103,7 +103,7 @@ export function StepAccountPassword({
                             value={password}
                             onChange={e => setPassword(e.target.value)}
                             placeholder="Mínimo 6 caracteres"
-                            className="h-12 pr-12 border-gray-200 focus:ring-black"
+                            className="bg-white h-14 pr-12 border-gray-200 focus:ring-black rounded-xl"
                             required
                             minLength={6}
                             autoComplete="new-password"
@@ -121,7 +121,7 @@ export function StepAccountPassword({
 
                 <div className="space-y-2">
                     <Label htmlFor="onboarding-confirm-password" className="text-sm font-bold text-[#1A1A1A]">
-                        Repetir contraseña
+                        Confirmar contraseña
                     </Label>
                     <div className="relative">
                         <Input
@@ -130,7 +130,7 @@ export function StepAccountPassword({
                             value={confirmPassword}
                             onChange={e => setConfirmPassword(e.target.value)}
                             placeholder="Repetí tu contraseña"
-                            className="h-12 pr-12 border-gray-200 focus:ring-black"
+                            className="bg-white h-14 pr-12 border-gray-200 focus:ring-black rounded-xl"
                             required
                             minLength={6}
                             autoComplete="new-password"

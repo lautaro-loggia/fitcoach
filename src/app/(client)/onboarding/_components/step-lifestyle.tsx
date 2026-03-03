@@ -135,7 +135,7 @@ export function StepLifestyle({ client, onNext, onPrev, isPreview }: { client: a
                             value={formData.work_type}
                             onValueChange={(val) => setFormData({ ...formData, work_type: val })}
                         >
-                            <SelectTrigger className="w-full h-12 border-gray-200 focus:ring-black">
+                            <SelectTrigger className="bg-white w-full h-14 border-gray-200 focus:ring-black rounded-xl">
                                 <SelectValue placeholder="Seleccioná..." />
                             </SelectTrigger>
                             <SelectContent>
@@ -156,7 +156,7 @@ export function StepLifestyle({ client, onNext, onPrev, isPreview }: { client: a
                             value={formData.training_days}
                             onValueChange={(val) => setFormData({ ...formData, training_days: val })}
                         >
-                            <SelectTrigger className="w-full h-12 border-gray-200 focus:ring-black">
+                            <SelectTrigger className="bg-white w-full h-14 border-gray-200 focus:ring-black rounded-xl">
                                 <SelectValue placeholder="Días por semana" />
                             </SelectTrigger>
                             <SelectContent>

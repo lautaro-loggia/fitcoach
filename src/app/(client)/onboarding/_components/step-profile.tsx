@@ -113,7 +113,7 @@ export function StepProfile({ client, onNext, isNextTo, isPreview, onUpdate }: {
                         onValueChange={v => setFormData({ ...formData, gender: v })}
                         required
                     >
-                        <SelectTrigger id="gender" className="w-full h-12 border-gray-200 focus:ring-black transition-all">
+                        <SelectTrigger id="gender" className="bg-white w-full h-14 border-gray-200 focus:ring-black transition-all rounded-xl">
                             <SelectValue placeholder="Seleccioná tu sexo..." />
                         </SelectTrigger>
                         <SelectContent>
@@ -136,7 +136,7 @@ export function StepProfile({ client, onNext, isNextTo, isPreview, onUpdate }: {
                         id="dob"
                         type="date"
                         required
-                        className="h-12 border-gray-200 focus:ring-black"
+                        className="bg-white h-14 border-gray-200 focus:ring-black rounded-xl"
                         value={formData.birth_date}
                         onChange={e => setFormData({ ...formData, birth_date: e.target.value })}
                     />
@@ -153,7 +153,7 @@ export function StepProfile({ client, onNext, isNextTo, isPreview, onUpdate }: {
                                 required
                                 min={100}
                                 max={250}
-                                className="w-full h-12 pr-12 border-gray-200 focus:ring-black"
+                                className="bg-white w-full h-14 pr-12 border-gray-200 focus:ring-black rounded-xl"
                                 value={formData.height}
                                 onChange={e => setFormData({ ...formData, height: e.target.value })}
                             />
@@ -173,7 +173,7 @@ export function StepProfile({ client, onNext, isNextTo, isPreview, onUpdate }: {
                                 step="0.1"
                                 min={30}
                                 max={300}
-                                className="w-full h-12 pr-12 border-gray-200 focus:ring-black"
+                                className="bg-white w-full h-14 pr-12 border-gray-200 focus:ring-black rounded-xl"
                                 value={formData.weight}
                                 onChange={e => setFormData({ ...formData, weight: e.target.value })}
                             />
