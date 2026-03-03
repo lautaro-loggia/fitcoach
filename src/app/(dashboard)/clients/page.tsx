@@ -33,6 +33,7 @@ export default async function ClientsPage({ searchParams: searchParamsPromise }:
       plan:plans(name)
     `)
         .eq('trainer_id', user.id)
+        .is('deleted_at', null)
         .order('created_at', { ascending: false })
 
     if (error) {

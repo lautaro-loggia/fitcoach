@@ -223,35 +223,23 @@ export async function deleteClientAction(clientId: string) {
     const supabase = await createClient()
     const adminSupabase = createAdminClient()
 
-    // 1. Get Client to retrieve user_id
-    const { data: client, error: fetchError } = await supabase
+    // Soft-delete: marcamos deleted_at en lugar de borrar el registro.
+    // Esto preserva la integridad referencial (payments, checkins, etc.)
+    // y permite re-invitar al mismo email sin errores en la base de datos.
+    // El auth user NO se borra aquí: si el mismo email se re-invita, el
+    // flujo de invite-client.ts detecta el usuario existente y lo reemplaza.
+    const { error } = await adminSupabase
         .from('clients')
-        .select('user_id')
+        .update({
+            deleted_at: new Date().toISOString(),
+            status: 'inactive',
+            user_id: null // Deslinkar la cuenta de auth para evitar acceso residual
+        })
         .eq('id', clientId)
-        .single()
-
-    if (fetchError) {
-        console.error("Error fetching client for deletion:", fetchError)
-        // Continue even if fetch fails? Probably not safe. But maybe client is already gone.
-    }
-
-    // 2. Delete Client Record
-    const { error } = await supabase.from('clients').delete().eq('id', clientId)
 
     if (error) {
-        console.error("Error deleting client:", error)
+        console.error("Error soft-deleting client:", error)
         return { error: "Error al eliminar el cliente" }
-    }
-
-    // 3. Delete Auth User if exists
-    if (client?.user_id) {
-        const { error: deleteUserError } = await adminSupabase.auth.admin.deleteUser(client.user_id)
-        if (deleteUserError) {
-            console.error("Error deleting auth user:", deleteUserError)
-            // We don't block success here, as the client record is gone.
-        } else {
-            console.log("Auth user deleted successfully")
-        }
     }
 
     revalidatePath('/clients')
