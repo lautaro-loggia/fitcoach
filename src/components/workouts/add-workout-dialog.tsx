@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { PlusSignIcon, Cancel01Icon, DragDropVerticalIcon, PencilEdit02Icon, Delete02Icon, Tick01Icon, ArrowUpDownIcon, ArrowLeft01Icon, Search01Icon, ArrowUp01Icon, ArrowDown01Icon, MinusSignIcon } from 'hugeicons-react'
 import { ExerciseSelector } from './exercise-selector'
@@ -26,7 +27,45 @@ import { toast } from 'sonner'
 import { Sparkles } from 'lucide-react'
 import { AIWorkoutBriefDialog } from '@/components/workouts/ai-workout-brief-dialog'
 import type { AIGeneratedWorkoutDraft, AIWorkoutBriefDefaults } from '@/lib/ai/workout-ai-types'
+import {
+    formatStoredWorkoutRest,
+    getWorkoutRestStep,
+    inferWorkoutRestInput,
+    parseStoredWorkoutRestSeconds,
+    workoutRestInputToStoredSeconds,
+    type WorkoutRestUnit,
+} from '@/lib/workout-rest'
 
+
+type EditableSet = {
+    reps: string
+    weight: string
+    rest: string
+    rest_unit: WorkoutRestUnit
+}
+
+function normalizeSetForForm(set: any): EditableSet {
+    const inferredRest = inferWorkoutRestInput(set?.rest)
+    return {
+        reps: String(set?.reps ?? '10'),
+        weight: String(set?.weight ?? '0'),
+        rest: inferredRest.value,
+        rest_unit: inferredRest.unit,
+    }
+}
+
+function normalizeSetsForForm(rawSets: any[] | undefined, fallbackSet: any): EditableSet[] {
+    const source = Array.isArray(rawSets) && rawSets.length > 0 ? rawSets : [fallbackSet]
+    return source.map((set) => normalizeSetForForm(set))
+}
+
+function sanitizeSetsForSave(sets: EditableSet[]) {
+    return sets.map((set) => ({
+        reps: String(set.reps ?? ''),
+        weight: String(set.weight ?? '0'),
+        rest: workoutRestInputToStoredSeconds(set.rest, set.rest_unit || 'sec'),
+    }))
+}
 
 
 // Color mapping for muscle groups
@@ -373,18 +412,20 @@ export function WorkoutDialog({
                                                                         const count = setsDetail.length || ex.sets || 0
                                                                         const reps = setsDetail.length > 0 ? setsDetail.map((s: any) => parseInt(s.reps) || 0) : [parseInt(ex.reps) || 0]
                                                                         const weights = setsDetail.length > 0 ? setsDetail.map((s: any) => parseFloat(s.weight) || 0) : [parseFloat(ex.weight) || 0]
-                                                                        const rests = setsDetail.length > 0 ? setsDetail.map((s: any) => parseInt(s.rest) || 0) : [parseInt(ex.rest) || 0]
+                                                                        const restSeconds = setsDetail.length > 0
+                                                                            ? setsDetail.map((s: any) => parseStoredWorkoutRestSeconds(s.rest) || 0)
+                                                                            : [parseStoredWorkoutRestSeconds(ex.rest) || 0]
 
                                                                         const minReps = Math.min(...reps)
                                                                         const maxReps = Math.max(...reps)
                                                                         const minWeight = Math.min(...weights)
                                                                         const maxWeight = Math.max(...weights)
-                                                                        const avgRest = Math.max(...rests)
+                                                                        const maxRest = Math.max(...restSeconds)
 
                                                                         const repsStr = minReps === maxReps ? `${minReps} reps` : `${minReps}-${maxReps} reps`
                                                                         const weightStr = minWeight === maxWeight ? `${minWeight}kg` : `${minWeight}-${maxWeight}kg`
 
-                                                                        return `${count} series · ${repsStr} · ${weightStr} · ${avgRest}s`
+                                                                        return `${count} series · ${repsStr} · ${weightStr} · ${maxRest}s`
                                                                     })()}
                                                                 </p>
                                                                 {ex.muscle_group && (
@@ -564,7 +605,7 @@ export function WorkoutDialog({
                                                                 <TableCell className="text-center font-semibold">{ex.sets}</TableCell>
                                                                 <TableCell className="text-center">{ex.reps}</TableCell>
                                                                 <TableCell className="text-center">{ex.weight}kg</TableCell>
-                                                                <TableCell className="text-center">{ex.rest} min</TableCell>
+                                                                <TableCell className="text-center">{formatStoredWorkoutRest(ex.rest)}</TableCell>
                                                             </>
                                                         )}
                                                         <TableCell>
@@ -649,8 +690,12 @@ function ExerciseForm({
     const [category, setCategory] = useState(initialData?.category || '')
     const [gifUrl, setGifUrl] = useState(initialData?.gif_url || '')
     const [instructions, setInstructions] = useState<string[]>(initialData?.instructions || [])
-    const [sets, setSets] = useState<any[]>(
-        initialData?.sets_detail || [{ reps: '10', weight: '0', rest: '60' }]
+    const [sets, setSets] = useState<EditableSet[]>(() =>
+        normalizeSetsForForm(initialData?.sets_detail, {
+            reps: initialData?.reps || '10',
+            weight: initialData?.weight || '0',
+            rest: initialData?.rest || '90',
+        })
     )
 
 
@@ -739,7 +784,7 @@ function ExerciseForm({
         }
     }
 
-    const updateSet = (index: number, field: string, value: string) => {
+    const updateSet = (index: number, field: keyof EditableSet, value: string) => {
         const newSets = [...sets]
         newSets[index] = { ...newSets[index], [field]: value }
         setSets(newSets)
@@ -763,6 +808,8 @@ function ExerciseForm({
                 }
             })
         } else {
+            const normalizedSets = sanitizeSetsForSave(sets)
+
             if (isMobile) {
                 // Validation: Ensure all sets have reps
                 if (sets.some(s => !s.reps)) {
@@ -776,12 +823,12 @@ function ExerciseForm({
                     muscle_group: muscleGroup || undefined,
                     gif_url: gifUrl || undefined,
                     instructions: instructions.length > 0 ? instructions : undefined,
-                    sets_detail: sets,
+                    sets_detail: normalizedSets,
                     // Legacy support for desktop summary (first set)
-                    sets: sets.length.toString(),
-                    reps: sets[0]?.reps || '0',
-                    weight: sets[0]?.weight || '0',
-                    rest: sets[0]?.rest || '0'
+                    sets: normalizedSets.length.toString(),
+                    reps: normalizedSets[0]?.reps || '0',
+                    weight: normalizedSets[0]?.weight || '0',
+                    rest: normalizedSets[0]?.rest || '0'
                 })
             } else {
                 onSave({
@@ -790,7 +837,7 @@ function ExerciseForm({
                     muscle_group: muscleGroup || undefined,
                     gif_url: gifUrl || undefined,
                     instructions: instructions.length > 0 ? instructions : undefined,
-                    sets_detail: sets
+                    sets_detail: normalizedSets
                 })
             }
         }
@@ -1103,27 +1150,51 @@ function ExerciseForm({
                                                 {/* Rest Stepper */}
                                                 <div className="flex flex-col gap-2">
                                                     <Label className="text-[10px] font-black text-gray-400 uppercase text-center tracking-wider">Desc.</Label>
-                                                    <div className="flex items-center bg-gray-50 rounded-2xl p-1 h-14 border border-transparent focus-within:border-primary/20 focus-within:bg-white transition-all">
-                                                        <button
-                                                            type="button"
-                                                            onClick={(e) => { e.preventDefault(); updateSet(index, 'rest', String(Math.max(0, Number(set.rest) - 10))) }}
-                                                            className="h-full w-10 flex items-center justify-center text-gray-400 hover:text-primary active:scale-90 transition-transform"
+                                                    <div className="space-y-2">
+                                                        <div className="flex items-center bg-gray-50 rounded-2xl p-1 h-14 border border-transparent focus-within:border-primary/20 focus-within:bg-white transition-all">
+                                                            <button
+                                                                type="button"
+                                                                onClick={(e) => {
+                                                                    e.preventDefault()
+                                                                    const step = getWorkoutRestStep(set.rest_unit || 'sec')
+                                                                    updateSet(index, 'rest', String(Math.max(0, Number(set.rest) - step)))
+                                                                }}
+                                                                className="h-full w-10 flex items-center justify-center text-gray-400 hover:text-primary active:scale-90 transition-transform"
+                                                            >
+                                                                <MinusSignIcon className="h-4 w-4" />
+                                                            </button>
+                                                            <Input
+                                                                type="number"
+                                                                min={0}
+                                                                step={getWorkoutRestStep(set.rest_unit || 'sec')}
+                                                                className="h-full flex-1 bg-transparent border-0 text-center font-black text-xl p-0 focus-visible:ring-0 text-gray-900"
+                                                                value={set.rest}
+                                                                onChange={(e) => updateSet(index, 'rest', e.target.value)}
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                onClick={(e) => {
+                                                                    e.preventDefault()
+                                                                    const step = getWorkoutRestStep(set.rest_unit || 'sec')
+                                                                    updateSet(index, 'rest', String(Number(set.rest) + step))
+                                                                }}
+                                                                className="h-full w-10 flex items-center justify-center text-gray-400 hover:text-primary active:scale-90 transition-transform"
+                                                            >
+                                                                <PlusSignIcon className="h-4 w-4" />
+                                                            </button>
+                                                        </div>
+                                                        <Select
+                                                            value={set.rest_unit || 'sec'}
+                                                            onValueChange={(value: WorkoutRestUnit) => updateSet(index, 'rest_unit', value)}
                                                         >
-                                                            <MinusSignIcon className="h-4 w-4" />
-                                                        </button>
-                                                        <Input
-                                                            type="number"
-                                                            className="h-full flex-1 bg-transparent border-0 text-center font-black text-xl p-0 focus-visible:ring-0 text-gray-900"
-                                                            value={set.rest}
-                                                            onChange={(e) => updateSet(index, 'rest', e.target.value)}
-                                                        />
-                                                        <button
-                                                            type="button"
-                                                            onClick={(e) => { e.preventDefault(); updateSet(index, 'rest', String(Number(set.rest) + 10)) }}
-                                                            className="h-full w-10 flex items-center justify-center text-gray-400 hover:text-primary active:scale-90 transition-transform"
-                                                        >
-                                                            <PlusSignIcon className="h-4 w-4" />
-                                                        </button>
+                                                            <SelectTrigger className="h-8 w-full bg-white text-xs">
+                                                                <SelectValue />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="sec">segundos</SelectItem>
+                                                                <SelectItem value="min">minutos</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1185,13 +1256,27 @@ function ExerciseForm({
                                                 </div>
                                             </TableCell>
                                             <TableCell className="text-center">
-                                                <div className="flex items-center justify-center gap-1">
+                                                <div className="flex items-center justify-center gap-2">
                                                     <Input
+                                                        type="number"
+                                                        min={0}
+                                                        step={getWorkoutRestStep(set.rest_unit || 'sec')}
                                                         className="h-8 w-16 text-center border rounded-md bg-muted/30"
                                                         value={set.rest}
                                                         onChange={(e) => updateSet(index, 'rest', e.target.value)}
                                                     />
-                                                    <span className="text-sm text-muted-foreground">min</span>
+                                                    <Select
+                                                        value={set.rest_unit || 'sec'}
+                                                        onValueChange={(value: WorkoutRestUnit) => updateSet(index, 'rest_unit', value)}
+                                                    >
+                                                        <SelectTrigger className="h-8 w-[92px] bg-muted/30 border rounded-md text-xs">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="sec">segundos</SelectItem>
+                                                            <SelectItem value="min">minutos</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
                                                 </div>
                                             </TableCell>
                                             <TableCell>

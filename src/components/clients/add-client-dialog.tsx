@@ -57,6 +57,7 @@ export function AddClientDialog({ defaultOpen = false }: AddClientDialogProps) {
     const router = useRouter()
     const searchParams = useSearchParams()
     const open = internalOpen || searchParams.get('new') === 'true'
+    const isPaidSetup = paymentSetup === 'paid'
 
     useEffect(() => {
         if (!open) return
@@ -172,7 +173,11 @@ export function AddClientDialog({ defaultOpen = false }: AddClientDialogProps) {
 
                     <div className="grid gap-4 py-4">
                         <input type="hidden" name="paymentSetup" value={paymentSetup} />
-                        <input type="hidden" name="planId" value={selectedPlanId === 'none' ? '' : selectedPlanId} />
+                        <input
+                            type="hidden"
+                            name="planId"
+                            value={isPaidSetup && selectedPlanId !== 'none' ? selectedPlanId : ''}
+                        />
                         <input type="hidden" name="paymentMethod" value={paymentMethod} />
 
                         <div className="grid gap-2">
@@ -245,7 +250,7 @@ export function AddClientDialog({ defaultOpen = false }: AddClientDialogProps) {
                             <Select
                                 value={selectedPlanId}
                                 onValueChange={handlePlanChange}
-                                disabled={loading || loadingPlans}
+                                disabled={loading || loadingPlans || !isPaidSetup}
                             >
                                 <SelectTrigger id="plan">
                                     <SelectValue placeholder={loadingPlans ? 'Cargando planes...' : 'Seleccioná un plan'} />
@@ -263,7 +268,7 @@ export function AddClientDialog({ defaultOpen = false }: AddClientDialogProps) {
 
                         <div className="grid gap-2">
                             <Label htmlFor="paymentAmount">
-                                {paymentSetup === 'paid' ? 'Monto pagado' : 'Monto a cobrar'} *
+                                {isPaidSetup ? 'Monto pagado *' : 'Monto a cobrar'}
                             </Label>
                             <Input
                                 id="paymentAmount"
@@ -274,12 +279,12 @@ export function AddClientDialog({ defaultOpen = false }: AddClientDialogProps) {
                                 value={paymentAmount}
                                 onChange={(e) => setPaymentAmount(e.target.value)}
                                 placeholder="0"
-                                required
-                                disabled={loading}
+                                required={isPaidSetup}
+                                disabled={loading || !isPaidSetup}
                             />
                         </div>
 
-                        {paymentSetup === 'paid' ? (
+                        {isPaidSetup ? (
                             <>
                                 <div className="grid gap-2">
                                     <Label htmlFor="paidAt">Fecha de pago *</Label>
@@ -315,15 +320,14 @@ export function AddClientDialog({ defaultOpen = false }: AddClientDialogProps) {
                             </>
                         ) : (
                             <div className="grid gap-2">
-                                <Label htmlFor="firstDueDate">Primer vencimiento *</Label>
+                                <Label htmlFor="firstDueDate">Primer vencimiento</Label>
                                 <Input
                                     id="firstDueDate"
                                     name="firstDueDate"
                                     type="date"
                                     value={firstDueDate}
                                     onChange={(e) => setFirstDueDate(e.target.value)}
-                                    required
-                                    disabled={loading}
+                                    disabled
                                 />
                             </div>
                         )}

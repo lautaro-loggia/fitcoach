@@ -193,7 +193,7 @@ export async function setOnboardingPassword(data: {
     if (client.onboarding_status !== 'completed') {
         const { error: clientError } = await adminSupabase
             .from('clients')
-            .update({ onboarding_status: 'in_progress' })
+            .update({ onboarding_status: 'in_progress', status: 'pending' })
             .eq('id', client.id)
 
         if (clientError) return { error: clientError.message }

@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { ArrowLeft, Dumbbell, Calendar, Info } from 'lucide-react'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
+import { formatStoredWorkoutRest } from '@/lib/workout-rest'
 
 export default async function WorkoutDetailPage({ params }: { params: { id: string } }) {
     const { id } = await params
@@ -84,7 +85,7 @@ export default async function WorkoutDetailPage({ params }: { params: { id: stri
                                         <div>
                                             <p className="font-semibold text-lg">{ex.name}</p>
                                             <div className="flex gap-2 text-xs text-muted-foreground mt-1">
-                                                {ex.rest && <Badge variant="outline" className="text-xs">Descanso: {ex.rest}s</Badge>}
+                                                {ex.rest && <Badge variant="outline" className="text-xs">Descanso: {formatStoredWorkoutRest(ex.rest)}</Badge>}
                                                 {ex.rpe && <Badge variant="outline" className="text-xs">RPE: {ex.rpe}</Badge>}
                                             </div>
                                         </div>

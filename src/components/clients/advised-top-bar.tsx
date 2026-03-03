@@ -21,7 +21,7 @@ interface AdvisedTopBarProps {
     client: {
         id: string
         full_name: string
-        status: 'active' | 'inactive'
+        status: 'pending' | 'active' | 'inactive' | 'paused' | 'archived'
         avatar_url?: string | null
     }
     allClients?: {
@@ -31,10 +31,51 @@ interface AdvisedTopBarProps {
     activeTab: string
 }
 
+function getStatusMeta(status: AdvisedTopBarProps['client']['status']) {
+    if (status === 'pending') {
+        return {
+            label: 'PENDIENTE',
+            className: 'bg-amber-50 text-amber-700 border-amber-200',
+            variant: 'outline' as const
+        }
+    }
+
+    if (status === 'active') {
+        return {
+            label: 'ACTIVO',
+            className: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+            variant: 'outline' as const
+        }
+    }
+
+    if (status === 'paused') {
+        return {
+            label: 'PAUSADO',
+            className: 'bg-orange-50 text-orange-700 border-orange-200',
+            variant: 'outline' as const
+        }
+    }
+
+    if (status === 'archived') {
+        return {
+            label: 'ARCHIVADO',
+            className: 'bg-slate-100 text-slate-600 border-slate-200',
+            variant: 'outline' as const
+        }
+    }
+
+    return {
+        label: 'INACTIVO',
+        className: 'bg-gray-50 text-gray-500 border-gray-200',
+        variant: 'secondary' as const
+    }
+}
+
 export function AdvisedTopBar({ client, allClients = [], activeTab }: AdvisedTopBarProps) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
     const [targetTab, setTargetTab] = useState<string | null>(null)
+    const statusMeta = getStatusMeta(client.status)
 
     // Mapeo de tabs con sus respectivos IDs y labels
     // Usaremos los IDs que ya maneja la app actualmente: profile, checkin, training, diet, settings
@@ -105,15 +146,13 @@ export function AdvisedTopBar({ client, allClients = [], activeTab }: AdvisedTop
                                 </span>
                             )}
                             <Badge
-                                variant={client.status === 'active' ? 'outline' : 'secondary'}
+                                variant={statusMeta.variant}
                                 className={cn(
                                     "text-[8px] md:text-[10px] uppercase font-bold tracking-widest h-4 md:h-5 px-1.5 w-fit rounded-full",
-                                    client.status === 'active'
-                                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                        : "bg-gray-50 text-gray-500 border-gray-200"
+                                    statusMeta.className
                                 )}
                             >
-                                {client.status === 'active' ? 'ACTIVO' : 'INACTIVO'}
+                                {statusMeta.label}
                             </Badge>
                         </div>
                     </div>

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { formatStoredWorkoutRest } from '@/lib/workout-rest'
 
 interface Exercise {
     id: string
@@ -95,7 +96,7 @@ export default function ClientWorkoutDetail({ workout }: { workout: Workout }) {
                             {exercise.rest && (
                                 <div className="bg-gray-50 p-2 rounded text-center">
                                     <span className="block text-[10px] uppercase text-gray-400 font-bold">Descanso</span>
-                                    <span className="font-mono font-medium text-gray-900">{exercise.rest}</span>
+                                    <span className="font-mono font-medium text-gray-900">{formatStoredWorkoutRest(exercise.rest)}</span>
                                 </div>
                             )}
                         </div>

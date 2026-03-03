@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { validateClientOAuthAccess } from '@/lib/auth-callback-client-guard'
+import { createNotification } from '@/lib/notifications'
 import { NextResponse } from 'next/server'
 
 export async function GET(request: Request) {
@@ -94,6 +95,49 @@ export async function GET(request: Request) {
             }
 
             clientOnboardingStatus = validationResult.onboardingStatus
+
+            const { data: linkedClient, error: linkedClientError } = await adminSupabase
+                .from('clients')
+                .select('id, trainer_id, full_name, onboarding_status')
+                .eq('user_id', verifiedUser.id)
+                .is('deleted_at', null)
+                .maybeSingle()
+
+            if (linkedClientError) {
+                console.error('Linked client lookup error:', linkedClientError)
+            } else if (linkedClient?.onboarding_status === 'invited') {
+                const { data: updatedClient, error: updateStatusError } = await adminSupabase
+                    .from('clients')
+                    .update({ onboarding_status: 'in_progress', status: 'pending' })
+                    .eq('id', linkedClient.id)
+                    .eq('onboarding_status', 'invited')
+                    .select('id')
+                    .maybeSingle()
+
+                if (updateStatusError) {
+                    console.error('Client onboarding status update error:', updateStatusError)
+                } else if (updatedClient) {
+                    clientOnboardingStatus = 'in_progress'
+
+                    if (linkedClient.trainer_id) {
+                        const clientFirstName = linkedClient.full_name?.trim().split(' ')[0] || 'Tu asesorado'
+                        const notificationResult = await createNotification({
+                            userId: linkedClient.trainer_id,
+                            type: 'new_client',
+                            title: 'Invitación aceptada',
+                            body: `${clientFirstName} aceptó tu invitación.`,
+                            data: {
+                                clientId: linkedClient.id,
+                                url: `/clients/${linkedClient.id}`
+                            }
+                        })
+
+                        if ('error' in notificationResult && notificationResult.error) {
+                            console.error('New client notification error:', notificationResult.error)
+                        }
+                    }
+                }
+            }
         }
 
         let finalRedirect = safeNext

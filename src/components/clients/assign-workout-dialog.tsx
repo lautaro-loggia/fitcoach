@@ -26,6 +26,13 @@ import { formatInjuryWarningMessage, getActiveInjuries } from '@/lib/injury-risk
 import { AIWorkoutBriefDialog } from '@/components/workouts/ai-workout-brief-dialog'
 import { getClientWorkoutDraftDefaultsAction } from '@/app/(dashboard)/workouts/ai-workout-actions'
 import type { AIGeneratedWorkoutDraft, AIWorkoutBriefDefaults } from '@/lib/ai/workout-ai-types'
+import {
+    formatStoredWorkoutRest,
+    getWorkoutRestStep,
+    inferWorkoutRestInput,
+    workoutRestInputToStoredSeconds,
+    type WorkoutRestUnit,
+} from '@/lib/workout-rest'
 
 // Helper to convert string to Title Case
 const toTitleCase = (str: string) => {
@@ -69,6 +76,36 @@ const getMuscleGroupColor = (muscleGroup: string) => {
         'Cardio': 'bg-orange-100 text-orange-700'
     }
     return colors[muscleGroup] || 'bg-gray-100 text-gray-600'
+}
+
+type EditableSet = {
+    reps: string
+    weight: string
+    rest: string
+    rest_unit: WorkoutRestUnit
+}
+
+function normalizeSetForForm(set: any): EditableSet {
+    const inferredRest = inferWorkoutRestInput(set?.rest)
+    return {
+        reps: String(set?.reps ?? '10'),
+        weight: String(set?.weight ?? '0'),
+        rest: inferredRest.value,
+        rest_unit: inferredRest.unit,
+    }
+}
+
+function normalizeSetsForForm(rawSets: any[] | undefined, fallbackSet: any): EditableSet[] {
+    const source = Array.isArray(rawSets) && rawSets.length > 0 ? rawSets : [fallbackSet]
+    return source.map((set) => normalizeSetForForm(set))
+}
+
+function sanitizeSetsForSave(sets: EditableSet[]) {
+    return sets.map((set) => ({
+        reps: String(set.reps ?? ''),
+        weight: String(set.weight ?? '0'),
+        rest: workoutRestInputToStoredSeconds(set.rest, set.rest_unit || 'sec'),
+    }))
 }
 
 interface AssignWorkoutDialogProps {
@@ -821,7 +858,7 @@ export function AssignWorkoutDialog({
                                                                     <TableCell className="text-center font-semibold">{ex.sets}</TableCell>
                                                                     <TableCell className="text-center">{ex.reps}</TableCell>
                                                                     <TableCell className="text-center">{ex.weight}kg</TableCell>
-                                                                    <TableCell className="text-center">{ex.rest} min</TableCell>
+                                                                    <TableCell className="text-center">{formatStoredWorkoutRest(ex.rest)}</TableCell>
                                                                 </>
                                                             )}
                                                             <TableCell>
@@ -955,8 +992,12 @@ function ExerciseForm({
     const [category, setCategory] = useState(initialData?.category || '')
     const [gifUrl, setGifUrl] = useState(initialData?.gif_url || '')
     const [instructions, setInstructions] = useState<string[]>(initialData?.instructions || [])
-    const [sets, setSets] = useState<any[]>(
-        initialData?.sets_detail || [{ reps: '10', weight: '40', rest: '1' }]
+    const [sets, setSets] = useState<EditableSet[]>(() =>
+        normalizeSetsForForm(initialData?.sets_detail, {
+            reps: initialData?.reps || '10',
+            weight: initialData?.weight || '40',
+            rest: initialData?.rest || '90',
+        })
     )
 
     // Cardio config state
@@ -1002,7 +1043,7 @@ function ExerciseForm({
         }
     }
 
-    const updateSet = (index: number, field: string, value: string) => {
+    const updateSet = (index: number, field: keyof EditableSet, value: string) => {
         const newSets = [...sets]
         newSets[index] = { ...newSets[index], [field]: value }
         setSets(newSets)
@@ -1028,13 +1069,15 @@ function ExerciseForm({
                 }
             })
         } else {
+            const normalizedSets = sanitizeSetsForSave(sets)
+
             onSave({
                 exercise_id: exerciseId || undefined,
                 name: name,
                 muscle_group: muscleGroup || undefined,
                 gif_url: gifUrl || undefined,
                 instructions: instructions.length > 0 ? instructions : undefined,
-                sets_detail: sets
+                sets_detail: normalizedSets
             })
         }
     }
@@ -1251,13 +1294,27 @@ function ExerciseForm({
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-center">
-                                            <div className="flex items-center justify-center gap-1">
+                                            <div className="flex items-center justify-center gap-2">
                                                 <Input
+                                                    type="number"
+                                                    min={0}
+                                                    step={getWorkoutRestStep(set.rest_unit || 'sec')}
                                                     className="h-8 w-16 text-center border rounded-md bg-muted/30"
                                                     value={set.rest}
                                                     onChange={(e) => updateSet(index, 'rest', e.target.value)}
                                                 />
-                                                <span className="text-sm text-muted-foreground">min</span>
+                                                <Select
+                                                    value={set.rest_unit || 'sec'}
+                                                    onValueChange={(value: WorkoutRestUnit) => updateSet(index, 'rest_unit', value)}
+                                                >
+                                                    <SelectTrigger className="h-8 w-[92px] bg-muted/30 border rounded-md text-xs">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="sec">segundos</SelectItem>
+                                                        <SelectItem value="min">minutos</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
                                             </div>
                                         </TableCell>
                                         <TableCell>
