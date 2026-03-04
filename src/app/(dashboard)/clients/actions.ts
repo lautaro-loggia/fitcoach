@@ -4,8 +4,26 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { parseISO } from 'date-fns'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { headers } from 'next/headers'
 
 const MAX_ACTIVE_CLIENTS_PER_TRAINER = 15
+
+async function resolveBaseUrl() {
+    const envBaseUrl = process.env.NEXT_PUBLIC_BASE_URL?.trim()
+    if (envBaseUrl) return envBaseUrl.replace(/\/+$/, '')
+
+    const headersList = await headers()
+    const origin = headersList.get('origin')?.trim()
+    if (origin) return origin.replace(/\/+$/, '')
+
+    const host = headersList.get('x-forwarded-host') || headersList.get('host')
+    if (host) {
+        const proto = headersList.get('x-forwarded-proto') || 'https'
+        return `${proto}://${host}`.replace(/\/+$/, '')
+    }
+
+    return 'https://orbit-fit.vercel.app'
+}
 
 export async function createClientAction(formData: FormData) {
     const supabase = await createClient()
@@ -306,7 +324,7 @@ export async function resendClientInviteAction(clientId: string) {
         }
 
         const email = client.email.trim().toLowerCase()
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://orbit-fit.vercel.app'
+        const baseUrl = await resolveBaseUrl()
         const redirectUrl = `${baseUrl}/auth/callback`
         const coachName = user.user_metadata?.full_name || 'Tu coach'
 
