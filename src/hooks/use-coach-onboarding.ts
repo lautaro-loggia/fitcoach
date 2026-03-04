@@ -27,6 +27,18 @@ const DEFAULT_STATE: CoachOnboardingState = {
     },
 }
 
+function markAllTasksAsCompleted(state: CoachOnboardingState): CoachOnboardingState {
+    return {
+        ...state,
+        tasks: {
+            clientInvited: true,
+            workoutCreated: true,
+            recipeCreated: true,
+            paymentsReviewed: true,
+        },
+    }
+}
+
 function getStoredState(): CoachOnboardingState {
     if (typeof window === 'undefined') return DEFAULT_STATE
     try {
@@ -109,29 +121,20 @@ export function useCoachOnboarding() {
                     !localState.modalCompleted &&
                     !Object.values(localState.tasks).some(Boolean)
 
-                // Coach activo legacy: tiene operación real y nunca inició onboarding local.
+                // Coach activo legacy (incluye migraciones de dominio): tiene operación real
+                // y nunca inició onboarding local en este origen.
                 const appearsActiveCoach =
                     isPristineLocalState &&
-                    status.hasClients &&
-                    status.hasWorkouts &&
-                    status.hasRecipes
-                if (appearsActiveCoach && !newState.modalCompleted) {
-                    newState.modalCompleted = true
-                    hasChanges = true
-                }
+                    status.hasAnyActivity
 
-                // Si parece coach activo, completamos el resto del checklist para no mostrar onboarding legacy.
+                // Si parece coach activo, cerramos el onboarding legacy y completamos checklist.
                 if (appearsActiveCoach) {
-                    if (!newState.tasks.workoutCreated) {
-                        newState.tasks.workoutCreated = true
-                        hasChanges = true
-                    }
-                    if (!newState.tasks.recipeCreated) {
-                        newState.tasks.recipeCreated = true
-                        hasChanges = true
-                    }
-                    if (!newState.tasks.paymentsReviewed) {
-                        newState.tasks.paymentsReviewed = true
+                    if (!newState.modalCompleted || !Object.values(newState.tasks).every(Boolean)) {
+                        const completedState = markAllTasksAsCompleted({
+                            ...newState,
+                            modalCompleted: true,
+                        })
+                        Object.assign(newState, completedState)
                         hasChanges = true
                     }
                 }

@@ -6,6 +6,7 @@ export interface OnboardingStatus {
     hasClients: boolean
     hasWorkouts: boolean
     hasRecipes: boolean
+    hasAnyActivity: boolean
 }
 
 export async function getCoachOnboardingStatus(): Promise<OnboardingStatus> {
@@ -17,6 +18,7 @@ export async function getCoachOnboardingStatus(): Promise<OnboardingStatus> {
             hasClients: false,
             hasWorkouts: false,
             hasRecipes: false,
+            hasAnyActivity: false,
         }
     }
 
@@ -27,9 +29,14 @@ export async function getCoachOnboardingStatus(): Promise<OnboardingStatus> {
         supabase.from('recipes').select('id', { count: 'exact', head: true }).eq('trainer_id', user.id),
     ])
 
+    const hasClients = (clientsResult.count || 0) > 0
+    const hasWorkouts = (workoutsResult.count || 0) > 0
+    const hasRecipes = (recipesResult.count || 0) > 0
+
     return {
-        hasClients: (clientsResult.count || 0) > 0,
-        hasWorkouts: (workoutsResult.count || 0) > 0,
-        hasRecipes: (recipesResult.count || 0) > 0,
+        hasClients,
+        hasWorkouts,
+        hasRecipes,
+        hasAnyActivity: hasClients || hasWorkouts || hasRecipes,
     }
 }
