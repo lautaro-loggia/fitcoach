@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Dialog, DialogClose, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { History, ChevronLeft, ChevronRight, CheckCircle2, X, Camera, UtensilsCrossed } from 'lucide-react'
@@ -180,18 +180,24 @@ export function MealHistoryDialog({ clientId }: MealHistoryDialogProps) {
     const [loading, setLoading] = useState(false)
     const [selectedLog, setSelectedLog] = useState<MealLog | null>(null)
     const [pendingCount, setPendingCount] = useState(0)
+    const hasSyncedPendingOnOpenRef = useRef(false)
 
-    const fetchLogs = useCallback(async () => {
-        setLoading(true)
-        const dateStr = format(date, 'yyyy-MM-dd')
-        const result = await getDailyMealLogs(clientId, dateStr)
-        const nextLogs = (result.logs || []) as MealLog[]
+    const fetchLogs = useCallback(async ({ showLoading = true }: { showLoading?: boolean } = {}) => {
+        if (showLoading) setLoading(true)
+        try {
+            const dateStr = format(date, 'yyyy-MM-dd')
+            const result = await getDailyMealLogs(clientId, dateStr)
+            const nextLogs = (result.logs || []) as MealLog[]
 
-        setLogs(nextLogs)
-        setSelectedLog((prevSelected) => (
-            nextLogs.find((log) => log.id === prevSelected?.id) || nextLogs[0] || null
-        ))
-        setLoading(false)
+            setLogs(nextLogs)
+            setSelectedLog((prevSelected) => (
+                nextLogs.find((log) => log.id === prevSelected?.id) || nextLogs[0] || null
+            ))
+        } catch (error) {
+            console.error('Error loading meal logs:', error)
+        } finally {
+            if (showLoading) setLoading(false)
+        }
     }, [clientId, date])
 
     useEffect(() => {
@@ -209,11 +215,15 @@ export function MealHistoryDialog({ clientId }: MealHistoryDialogProps) {
     }, [fetchLogs, open])
 
     useEffect(() => {
-        if (!open) return
+        if (!open || hasSyncedPendingOnOpenRef.current) return
+        hasSyncedPendingOnOpenRef.current = true
+
+        let isCancelled = false
 
         const syncPendingLogs = async () => {
             const result = await markAllPendingMealLogsAsReviewed(clientId)
             const latestCount = await getPendingMealLogsCount(clientId)
+            if (isCancelled) return
             setPendingCount(latestCount.count || 0)
 
             if (!result.success) return
@@ -224,11 +234,20 @@ export function MealHistoryDialog({ clientId }: MealHistoryDialogProps) {
             setSelectedLog((prev) => (
                 prev && prev.status === 'pending' ? { ...prev, status: 'reviewed' } : prev
             ))
-            await fetchLogs()
+            await fetchLogs({ showLoading: false })
         }
 
         void syncPendingLogs()
+
+        return () => {
+            isCancelled = true
+        }
     }, [clientId, fetchLogs, open])
+
+    useEffect(() => {
+        if (open) return
+        hasSyncedPendingOnOpenRef.current = false
+    }, [open])
 
     const handleReview = async (
         logId: string,
