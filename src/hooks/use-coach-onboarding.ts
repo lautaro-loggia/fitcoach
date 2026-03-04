@@ -115,20 +115,24 @@ export function useCoachOnboarding() {
                     hasChanges = true
                 }
 
-                // Solo tratamos al usuario como "coach legacy activo" si el estado local está intacto.
-                // Si ya empezó el onboarding en este dispositivo, no lo cerramos automáticamente.
+                // Solo tratamos al usuario como "coach legacy activo" por actividad general
+                // si el estado local está intacto.
                 const isPristineLocalState =
                     !localState.modalCompleted &&
                     !Object.values(localState.tasks).some(Boolean)
 
-                // Coach activo legacy (incluye migraciones de dominio): tiene operación real
-                // y nunca inició onboarding local en este origen.
-                const appearsActiveCoach =
+                // Coach establecido: ya invitó clientes y además usó la app de forma real.
+                // En este caso cerramos onboarding aunque el estado local no esté "prístino",
+                // para evitar que reaparezca en usuarios existentes.
+                const isEstablishedCoach = status.isEstablishedCoach
+
+                // Fallback legacy: para estados locales intactos mantenemos el comportamiento
+                // de cerrar onboarding si detectamos actividad.
+                const appearsLegacyActiveCoach =
                     isPristineLocalState &&
                     status.hasAnyActivity
 
-                // Si parece coach activo, cerramos el onboarding legacy y completamos checklist.
-                if (appearsActiveCoach) {
+                if (isEstablishedCoach || appearsLegacyActiveCoach) {
                     if (!newState.modalCompleted || !Object.values(newState.tasks).every(Boolean)) {
                         const completedState = markAllTasksAsCompleted({
                             ...newState,
