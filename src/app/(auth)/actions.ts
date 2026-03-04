@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 import { createClient } from '@/lib/supabase/server'
-import { headers } from 'next/headers'
+import { buildAuthCallbackUrl } from '@/lib/base-url'
 
 export async function login(formData: FormData) {
     const supabase = await createClient()
@@ -32,7 +32,7 @@ export async function login(formData: FormData) {
 
 export async function signup(formData: FormData) {
     const supabase = await createClient()
-    const origin = (await headers()).get('origin')
+    const callbackUrl = await buildAuthCallbackUrl()
 
     const email = formData.get('email') as string
     const password = formData.get('password') as string
@@ -59,7 +59,7 @@ export async function signup(formData: FormData) {
                 full_name: fullName,
                 needs_password: false
             },
-            emailRedirectTo: `${origin}/auth/callback`,
+            emailRedirectTo: callbackUrl,
         },
     })
 
@@ -102,17 +102,14 @@ export async function signup(formData: FormData) {
 export async function requestPasswordReset(formData: FormData) {
     const supabase = await createClient()
     const email = formData.get('email') as string
-    const origin = (await headers()).get('origin')
+    const redirectUrl = await buildAuthCallbackUrl('/reset-password')
 
     if (!email) {
         return { error: 'Por favor ingrese su correo electrónico' }
     }
 
-    const redirectUrl = new URL(`${origin}/auth/callback`)
-    redirectUrl.searchParams.set('next', '/reset-password')
-
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: redirectUrl.toString(),
+        redirectTo: redirectUrl,
     })
 
     if (error) {

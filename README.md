@@ -20,6 +20,16 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Auth Redirect Domain
+
+To control OAuth and email auth callback URLs (Google login, invites, reset password), set:
+
+```bash
+NEXT_PUBLIC_BASE_URL=https://tu-dominio.com
+```
+
+The app uses this value to build `/auth/callback` links across client and server flows.
+
 ## Motion Runtime
 
 Orbit includes a performance-first Motion layer that can be controlled with:

@@ -207,7 +207,7 @@ function StepInvite({ onNext, onSkip }: StepProps) {
     )
 }
 
-function StepWorkout({ onNext }: StepProps) {
+function StepWorkout({ onNext, onSkip }: StepProps) {
     return (
         <div className="flex flex-col items-center text-center">
             <DumbbellIcon className="w-14 h-14 mb-6" />
@@ -233,17 +233,26 @@ function StepWorkout({ onNext }: StepProps) {
                 </p>
             </div>
 
-            <Button
-                onClick={onNext}
-                className="mt-6 w-full h-11 text-[15px] font-medium rounded-xl bg-foreground hover:bg-foreground/90 text-background"
-            >
-                Crear entrenamiento
-            </Button>
+            <div className="flex flex-col gap-2 w-full mt-6">
+                <Button
+                    onClick={onNext}
+                    className="w-full h-11 text-[15px] font-medium rounded-xl bg-foreground hover:bg-foreground/90 text-background"
+                >
+                    Crear entrenamiento
+                </Button>
+                <Button
+                    variant="ghost"
+                    onClick={onSkip}
+                    className="w-full h-10 text-[13px] text-muted-foreground hover:text-foreground"
+                >
+                    Omitir por ahora
+                </Button>
+            </div>
         </div>
     )
 }
 
-function StepNutrition({ onNext }: StepProps) {
+function StepNutrition({ onNext, onSkip }: StepProps) {
     return (
         <div className="flex flex-col items-center text-center">
             <NutritionIcon className="w-14 h-14 mb-6" />
@@ -260,12 +269,21 @@ function StepNutrition({ onNext }: StepProps) {
                 Después podrás asignarlas fácilmente a cada plan de alimentación.
             </p>
 
-            <Button
-                onClick={onNext}
-                className="mt-8 w-full h-11 text-[15px] font-medium rounded-xl bg-foreground hover:bg-foreground/90 text-background"
-            >
-                Crear primera receta
-            </Button>
+            <div className="flex flex-col gap-2 w-full mt-8">
+                <Button
+                    onClick={onNext}
+                    className="w-full h-11 text-[15px] font-medium rounded-xl bg-foreground hover:bg-foreground/90 text-background"
+                >
+                    Crear primera receta
+                </Button>
+                <Button
+                    variant="ghost"
+                    onClick={onSkip}
+                    className="w-full h-10 text-[13px] text-muted-foreground hover:text-foreground"
+                >
+                    Omitir por ahora
+                </Button>
+            </div>
         </div>
     )
 }
@@ -451,8 +469,8 @@ export function CoachOnboardingModal({
     const steps: React.ReactNode[] = [
         <StepWelcome key="welcome" onNext={goNext} />,
         <StepInvite key="invite" onNext={() => handleStepAction(1)} onSkip={goSkip} />,
-        <StepWorkout key="workout" onNext={() => handleStepAction(2)} />,
-        <StepNutrition key="nutrition" onNext={() => handleStepAction(3)} />,
+        <StepWorkout key="workout" onNext={() => handleStepAction(2)} onSkip={goSkip} />,
+        <StepNutrition key="nutrition" onNext={() => handleStepAction(3)} onSkip={goSkip} />,
         <StepPayments
             key="payments"
             onGoPaymentsNow={() => handlePaymentsChoice(true)}
