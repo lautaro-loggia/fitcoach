@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { parseISO } from 'date-fns'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { buildAuthCallbackUrl } from '@/lib/base-url'
+import { actionError, assertCoachOwnsClient } from '@/lib/security/client-access'
 
 const MAX_ACTIVE_CLIENTS_PER_TRAINER = 15
 
@@ -106,7 +107,7 @@ export async function createClientAction(formData: FormData) {
             default: activityMultiplier = 1.2
         }
 
-        let tdee = bmr * activityMultiplier
+        const tdee = bmr * activityMultiplier
 
         // Goal Adjustment
         let targetCalories = tdee
@@ -190,7 +191,7 @@ export async function createClientAction(formData: FormData) {
     return { success: true }
 }
 
-export async function updateClientAction(clientId: string, data: any) {
+export async function updateClientAction(clientId: string, data: Record<string, unknown>) {
     const supabase = await createClient()
     const {
         data: { user },
@@ -214,7 +215,7 @@ export async function updateClientAction(clientId: string, data: any) {
     const adminSupabase = createAdminClient()
 
     // Filter out undefined values and convert empty strings to null
-    const sanitizedData = Object.keys(data).reduce((acc: any, key) => {
+    const sanitizedData = Object.keys(data).reduce<Record<string, unknown>>((acc, key) => {
         const value = data[key]
         acc[key] = value === '' ? null : value
         return acc
@@ -230,7 +231,7 @@ export async function updateClientAction(clientId: string, data: any) {
     // Force schema cache reload in case column was recently added
     try {
         await adminSupabase.rpc('reload_schema_cache')
-    } catch (e) {
+    } catch {
         // Fallback
     }
 
@@ -241,7 +242,11 @@ export async function updateClientAction(clientId: string, data: any) {
 
 
 export async function deleteClientAction(clientId: string) {
-    const supabase = await createClient()
+    const access = await assertCoachOwnsClient(clientId, { allowDeleted: false })
+    if (!access.ok) {
+        return access.response
+    }
+
     const adminSupabase = createAdminClient()
 
     // Soft-delete: marcamos deleted_at en lugar de borrar el registro.
@@ -257,10 +262,12 @@ export async function deleteClientAction(clientId: string) {
             user_id: null // Deslinkar la cuenta de auth para evitar acceso residual
         })
         .eq('id', clientId)
+        .eq('trainer_id', access.user.id)
+        .is('deleted_at', null)
 
     if (error) {
         console.error("Error soft-deleting client:", error)
-        return { error: "Error al eliminar el cliente" }
+        return actionError('Error al eliminar el cliente', 'VALIDATION')
     }
 
     revalidatePath('/clients')

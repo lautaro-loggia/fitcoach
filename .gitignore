@@ -23,6 +23,7 @@
 # misc
 .DS_Store
 *.pem
+tmp/demo-coach-manifest.json
 
 # debug
 npm-debug.log*

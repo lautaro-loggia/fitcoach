@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { createNotification } from '@/lib/notifications'
+import { actionError, assertCoachOwnsClient } from '@/lib/security/client-access'
 
 async function getClientAuthUserId(supabase: Awaited<ReturnType<typeof createClient>>, clientId: string, trainerId: string) {
     const { data: client, error } = await supabase
@@ -31,12 +32,11 @@ export async function createCheckinAction(data: {
     photos?: string[]
     nextCheckinDate?: string
 }) {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-        return { error: 'No autorizado' }
+    const access = await assertCoachOwnsClient(data.clientId)
+    if (!access.ok) {
+        return access.response
     }
+    const { supabase, user } = access
 
     // Insert checkin record
     const { error: checkinError } = await supabase.from('checkins').insert({
@@ -53,7 +53,7 @@ export async function createCheckinAction(data: {
 
     if (checkinError) {
         console.error('Error creating checkin:', checkinError)
-        return { error: 'Error al registrar check-in' }
+        return actionError('Error al registrar check-in', 'VALIDATION')
     }
 
     // Update client's next checkin date if provided
@@ -62,6 +62,7 @@ export async function createCheckinAction(data: {
             .from('clients')
             .update({ next_checkin_date: data.nextCheckinDate })
             .eq('id', data.clientId)
+            .eq('trainer_id', user.id)
 
         if (clientError) {
             console.error('Error updating next checkin date:', clientError)
@@ -78,7 +79,7 @@ export async function deleteCheckinAction(id: string, clientId: string) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
-        return { error: 'No autorizado' }
+        return actionError('No autorizado', 'UNAUTHORIZED')
     }
 
     const { error } = await supabase
@@ -88,7 +89,7 @@ export async function deleteCheckinAction(id: string, clientId: string) {
         .eq('trainer_id', user.id)
 
     if (error) {
-        return { error: 'Error al eliminar' }
+        return actionError('Error al eliminar', 'VALIDATION')
     }
 
     revalidatePath(`/clients/${clientId}`)
@@ -99,7 +100,7 @@ export async function updateNextCheckinDateAction(clientId: string, date: string
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
-        return { error: 'No autorizado' }
+        return actionError('No autorizado', 'UNAUTHORIZED')
     }
 
     const { error } = await supabase
@@ -109,7 +110,7 @@ export async function updateNextCheckinDateAction(clientId: string, date: string
         .eq('trainer_id', user.id)
 
     if (error) {
-        return { error: 'Error al actualizar la fecha' }
+        return actionError('Error al actualizar la fecha', 'VALIDATION')
     }
 
     revalidatePath(`/clients/${clientId}`)
@@ -117,12 +118,11 @@ export async function updateNextCheckinDateAction(clientId: string, date: string
 }
 
 export async function updateCheckinNoteAction(checkinId: string, clientId: string, note: string) {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-        return { error: 'No autorizado' }
+    const access = await assertCoachOwnsClient(clientId)
+    if (!access.ok) {
+        return access.response
     }
+    const { supabase, user } = access
 
     const { error } = await supabase
         .from('checkins')
@@ -132,10 +132,12 @@ export async function updateCheckinNoteAction(checkinId: string, clientId: strin
             // But we can also set it explicitly if needed, though the trigger is safer.
         })
         .eq('id', checkinId)
+        .eq('trainer_id', user.id)
+        .eq('client_id', clientId)
 
     if (error) {
         console.error('Error updating checkin note:', error)
-        return { error: error.message || 'Error al actualizar la nota' }
+        return actionError(error.message || 'Error al actualizar la nota', 'VALIDATION')
     }
 
     // Notify Client (auth user id, not client row id)

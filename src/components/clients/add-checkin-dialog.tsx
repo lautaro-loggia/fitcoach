@@ -161,7 +161,7 @@ export function AddCheckinDialog({ clientId, autoOpen, trigger }: AddCheckinDial
             nextCheckinDate: nextCheckinDate
         })
 
-        if (result.error) {
+        if ('error' in result) {
             toast.error(result.error)
         } else {
             setOpen(false)

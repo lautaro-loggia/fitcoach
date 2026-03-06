@@ -115,7 +115,6 @@ export async function inviteClient(_prevState: unknown, formData: FormData) {
         // Get coach name from profiles or user metadata
         const coachName = user.user_metadata?.full_name || 'Tu coach'
 
-        console.log('Sending invite with redirect URL:', redirectUrl)
 
         const inviteOptions = {
             redirectTo: redirectUrl,
@@ -136,7 +135,6 @@ export async function inviteClient(_prevState: unknown, formData: FormData) {
             if (inviteError.message.includes('already been registered')) {
                 // El usuario ya existe en auth (ej: fue eliminado como cliente pero su auth user quedó).
                 // Lo eliminamos de auth y reenviamos la invitación normal.
-                console.log('User already exists in auth, deleting and re-inviting...')
 
                 // Buscar el usuario existente por email
                 const { data: existingUsers } = await adminSupabase.auth.admin.listUsers()
@@ -148,7 +146,6 @@ export async function inviteClient(_prevState: unknown, formData: FormData) {
                         console.error('Error deleting existing auth user:', deleteError)
                         return { error: `Error preparando re-invitación: ${deleteError.message}`, success: false }
                     }
-                    console.log('Existing auth user deleted, re-sending invite...')
                 }
 
                 // Reintentar la invitación ahora que el usuario fue eliminado

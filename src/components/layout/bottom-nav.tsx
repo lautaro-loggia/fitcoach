@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home01Icon, UserGroupIcon, Dumbbell01Icon, Settings01Icon, KitchenUtensilsIcon } from 'hugeicons-react'
+import { Home01Icon, UserGroupIcon, Dumbbell01Icon, KitchenUtensilsIcon, CreditCardIcon } from 'hugeicons-react'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { useOrbitMotion } from '@/components/motion/orbit-motion-provider'
@@ -39,10 +39,10 @@ export function BottomNav() {
             activePatterns: ['/workouts']
         },
         {
-            label: 'Ajustes',
-            href: '/settings',
-            icon: Settings01Icon,
-            activePatterns: ['/settings']
+            label: 'Pagos',
+            href: '/pagos',
+            icon: CreditCardIcon,
+            activePatterns: ['/pagos', '/payments']
         }
     ]
 

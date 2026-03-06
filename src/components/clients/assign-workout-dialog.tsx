@@ -525,7 +525,7 @@ export function AssignWorkoutDialog({
             })
         }
 
-        if (result?.error) {
+        if (result && 'error' in result) {
             toast.error(result.error)
         } else {
             if (!existingWorkout && aiDraftQueue.length > 1 && aiDraftIndex < aiDraftQueue.length - 1) {

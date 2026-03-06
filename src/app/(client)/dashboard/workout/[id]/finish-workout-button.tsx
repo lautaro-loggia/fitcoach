@@ -83,7 +83,7 @@ export function FinishWorkoutButton({ sessionId }: { sessionId: string }) {
             toast.success('¡Entrenamiento completado!')
             router.push('/dashboard')
             router.refresh()
-        } catch (error) {
+        } catch {
             toast.error('Error al completar el entrenamiento')
         } finally {
             setIsSubmitting(false)
@@ -98,6 +98,7 @@ export function FinishWorkoutButton({ sessionId }: { sessionId: string }) {
                 onClick={handleFinishClick}
                 variant={isAllCompleted ? "default" : "outline"}
                 size="sm"
+                disabled={isSubmitting}
                 className={cn(
                     "gap-1 font-semibold shadow-sm transition-all duration-300",
                     isAllCompleted

@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { createNotification } from '@/lib/notifications'
+import { actionError, assertCoachOwnsClient } from '@/lib/security/client-access'
 
 async function getClientAuthUserId(supabase: Awaited<ReturnType<typeof createClient>>, clientId: string, trainerId: string) {
     const { data: client, error } = await supabase
@@ -32,12 +33,11 @@ export async function assignWorkoutAction(data: {
     startTime?: string
     endTime?: string
 }) {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-        return { error: 'No autorizado' }
+    const access = await assertCoachOwnsClient(data.clientId)
+    if (!access.ok) {
+        return access.response
     }
+    const { supabase, user } = access
 
     const { error } = await supabase.from('assigned_workouts').insert({
         trainer_id: user.id,
@@ -56,11 +56,15 @@ export async function assignWorkoutAction(data: {
 
     if (error) {
         console.error('Error assigning workout:', error)
-        return { error: 'Error al asignar el entrenamiento' }
+        return actionError('Error al asignar el entrenamiento', 'VALIDATION')
     }
 
     // Update client planning status to 'planned'
-    await supabase.from('clients').update({ planning_status: 'planned' }).eq('id', data.clientId)
+    await supabase
+        .from('clients')
+        .update({ planning_status: 'planned' })
+        .eq('id', data.clientId)
+        .eq('trainer_id', user.id)
 
     // Notify Client (auth user id, not client row id)
     const clientUserId = await getClientAuthUserId(supabase, data.clientId, user.id)
@@ -93,12 +97,11 @@ export async function updateAssignedWorkoutAction(data: {
     startTime?: string
     endTime?: string
 }) {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-        return { error: 'No autorizado' }
+    const access = await assertCoachOwnsClient(data.clientId)
+    if (!access.ok) {
+        return access.response
     }
+    const { supabase, user } = access
 
     const { error } = await supabase.from('assigned_workouts')
         .update({
@@ -116,7 +119,7 @@ export async function updateAssignedWorkoutAction(data: {
 
     if (error) {
         console.error('Error updating workout:', error)
-        return { error: 'Error al actualizar el entrenamiento' }
+        return actionError('Error al actualizar el entrenamiento', 'VALIDATION')
     }
 
     // Notify Client (auth user id, not client row id)

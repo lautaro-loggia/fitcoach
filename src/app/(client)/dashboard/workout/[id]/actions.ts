@@ -148,6 +148,7 @@ export async function getOrCreateSession(assignedWorkoutId: string, createIfMiss
             `)
             .eq('client_id', client.id)
             .eq('assigned_workout_id', assignedWorkoutId)
+            .in('status', ['in_progress', 'completed'])
             .gte('started_at', startISO)
             .lt('started_at', endISO)
             .order('started_at', { ascending: false })
@@ -613,7 +614,7 @@ export async function updateRestSettings(checkinId: string, enabled: boolean, se
 
 // Complete session
 // Complete session and log it to history
-export async function completeSession(sessionId: string, feedback?: any) {
+export async function completeSession(sessionId: string, feedback?: Record<string, unknown>) {
     const auth = await getAuthenticatedClientContext()
     if (!auth.context) {
         return { error: auth.error || 'No autorizado' }
@@ -628,37 +629,70 @@ export async function completeSession(sessionId: string, feedback?: any) {
         return { error: 'Sesión no encontrada o no autorizada' }
     }
 
-    // 2. Log to workout_logs (Vital for Dashboard stats)
-    // We try to log it. If it fails (e.g. duplicate for some reason), we log error but continue closing session.
-    const { error: logError } = await adminSupabase
-        .from('workout_logs')
-        .insert({
-            client_id: session.client_id,
-            workout_id: session.assigned_workout_id,
-            date: getTodayString(),
-            completed_at: new Date().toISOString(),
-            exercises_log: [], // storing empty for now, detail is in set_logs
-            feedback: feedback || {}
-        })
+    if (session.status === 'completed') {
+        return { success: true, idempotent: true }
+    }
 
-    if (logError) {
-        console.error('Error linking to workout_logs:', logError)
-        // We don't block completion, but valid to know
+    const completionDate = getTodayString()
+    const feedbackPayload = feedback || {}
+
+    const { data: existingWorkoutLog } = await adminSupabase
+        .from('workout_logs')
+        .select('id')
+        .eq('client_id', session.client_id)
+        .eq('workout_id', session.assigned_workout_id)
+        .eq('date', completionDate)
+        .maybeSingle()
+
+    // 2. Log to workout_logs (Vital for Dashboard stats)
+    // We try to log it. If it fails, we log error but continue closing session.
+    if (!existingWorkoutLog) {
+        const { error: logError } = await adminSupabase
+            .from('workout_logs')
+            .insert({
+                client_id: session.client_id,
+                workout_id: session.assigned_workout_id,
+                date: completionDate,
+                completed_at: new Date().toISOString(),
+                exercises_log: [], // storing empty for now, detail is in set_logs
+                feedback: feedbackPayload
+            })
+
+        if (logError) {
+            console.error('Error linking to workout_logs:', logError)
+        }
     }
 
     // 3. Close the session
-    const { error } = await adminSupabase
+    const { data: updatedSession, error } = await adminSupabase
         .from('workout_sessions')
         .update({
             status: 'completed',
             ended_at: new Date().toISOString(),
-            feedback: feedback || {}
+            feedback: feedbackPayload
         })
         .eq('id', sessionId)
+        .eq('status', 'in_progress')
+        .select('id, client_id, trainer_id')
+        .maybeSingle()
 
     if (error) {
         console.error('Error completing session:', error)
         return { error: 'Error al completar sesión' }
+    }
+
+    if (!updatedSession) {
+        const { data: latestSession } = await adminSupabase
+            .from('workout_sessions')
+            .select('status')
+            .eq('id', sessionId)
+            .maybeSingle()
+
+        if (latestSession?.status === 'completed') {
+            return { success: true, idempotent: true }
+        }
+
+        return { error: 'No se pudo completar sesión' }
     }
 
     // Notify Coach
@@ -668,13 +702,13 @@ export async function completeSession(sessionId: string, feedback?: any) {
     const clientName = clientNameRes?.full_name || 'Asesorado'
 
     await createNotification({
-        userId: session.trainer_id,
+        userId: updatedSession.trainer_id,
         type: 'workout_completed',
         title: 'Entrenamiento completado',
         body: `${clientName} completó su rutina de hoy.`,
         data: {
-            clientId: session.client_id,
-            url: `/clients/${session.client_id}?tab=training`
+            clientId: updatedSession.client_id,
+            url: `/clients/${updatedSession.client_id}?tab=training`
         }
     })
 
@@ -718,11 +752,21 @@ export async function getTodaysWorkouts() {
 
     const todayName = getNormalizedARTWeekday()
 
+    type AssignedWorkoutForToday = {
+        id: string
+        name: string
+        structure: unknown[]
+        scheduled_days: unknown
+    }
+
     const todaysWorkouts = workouts.filter(w => {
-        // @ts-ignore
-        if (!w.scheduled_days || w.scheduled_days.length === 0) return true
-        // @ts-ignore
-        return w.scheduled_days.map((d: string) => normalizeText(d)).includes(todayName)
+        const typedWorkout = w as AssignedWorkoutForToday
+        const scheduledDays = Array.isArray(typedWorkout.scheduled_days)
+            ? typedWorkout.scheduled_days.filter((day): day is string => typeof day === 'string')
+            : []
+
+        if (scheduledDays.length === 0) return true
+        return scheduledDays.map((day) => normalizeText(day)).includes(todayName)
     })
 
     const { data: clientInfo } = await supabase.from('clients').select('id, full_name').eq('id', client.id).single()
@@ -776,10 +820,12 @@ export async function validateSessionCompletionStatus(sessionId: string) {
         `)
         .eq('session_id', sessionId)
 
-    const checkinsMap = new Map()
-    checkins?.forEach(c => {
-        // @ts-ignore
-        const hasCompletedSet = c.set_logs?.some(s => s.is_completed)
+    const checkinsMap = new Map<number, boolean>()
+    checkins?.forEach((c) => {
+        const setLogs = Array.isArray(c.set_logs)
+            ? (c.set_logs as Array<{ is_completed?: boolean | null }>)
+            : []
+        const hasCompletedSet = setLogs.some((setLog) => Boolean(setLog.is_completed))
         if (hasCompletedSet) {
             checkinsMap.set(c.exercise_index, true)
         }
