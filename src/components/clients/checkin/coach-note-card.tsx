@@ -49,13 +49,14 @@ export function CoachNoteCard({ checkin, comparisonCheckin, clientId, onUpdate }
         setIsLoading(true)
         try {
             const result = await updateCheckinNoteAction(checkin.id, clientId, note)
-            if (result.success) {
-                toast.success('Nota guardada correctamente')
-                setIsEditing(false)
-                onUpdate()
-            } else {
+            if ('error' in result) {
                 toast.error(result.error || 'Error al guardar la nota')
+                return
             }
+
+            toast.success('Nota guardada correctamente')
+            setIsEditing(false)
+            onUpdate()
         } catch (error) {
             toast.error('Ocurrió un error inesperado')
         } finally {
