@@ -110,8 +110,8 @@ export function SettingsTab({ client }: { client: any }) {
 
         const result = await updateClientAction(client.id, dataToUpdate)
 
-        if (result?.error) {
-            setMessage({ type: 'error', text: result.error })
+        if ('error' in result) {
+            setMessage({ type: 'error', text: result.error ?? 'No se pudo actualizar la información.' })
         } else {
             setMessage({ type: 'success', text: "Información actualizada correctamente." })
         }
@@ -121,8 +121,8 @@ export function SettingsTab({ client }: { client: any }) {
     const handleDelete = async () => {
         setLoading(true)
         const result = await deleteClientAction(client.id)
-        if (result?.error) {
-            setMessage({ type: 'error', text: result.error })
+        if ('error' in result) {
+            setMessage({ type: 'error', text: result.error ?? 'No se pudo eliminar el asesorado.' })
             setLoading(false)
         } else {
             router.push('/clients')
@@ -371,8 +371,8 @@ export function SettingsTab({ client }: { client: any }) {
                             allergens,
                             dietary_preference: preference
                         })
-                        if (result?.error) {
-                            setMessage({ type: 'error', text: result.error })
+                        if ('error' in result) {
+                            setMessage({ type: 'error', text: result.error ?? 'No se pudieron actualizar las restricciones.' })
                         } else {
                             setMessage({ type: 'success', text: "Restricciones alimentarias actualizadas." })
                         }

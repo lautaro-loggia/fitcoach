@@ -12,6 +12,38 @@ export type MealConfig = {
     included: boolean
 }
 
+type WeeklyPlanItem = {
+    created_at: string
+    recipe_id: string | null
+    custom_name: string | null
+    portions: number | null
+}
+
+type WeeklyPlanMeal = {
+    name: string
+    sort_order: number
+    is_skipped: boolean | null
+    items: WeeklyPlanItem[]
+}
+
+type WeeklyPlanDay = {
+    id: string
+    day_of_week: number
+    meals: WeeklyPlanMeal[]
+}
+
+type WeeklyMealInsert = {
+    day_id: string
+    name: string
+    sort_order: number
+}
+
+type CopiedMealItem = {
+    recipe_id: string | null
+    custom_name: string | null
+    portions: number | null
+}
+
 function normalizeMealLogImagePath(imagePath: unknown): string | null {
     if (typeof imagePath !== 'string') return null
 
@@ -127,7 +159,7 @@ export async function getWeeklyPlan(clientId: string) {
     }
 
     // Verify ownership
-    let { data: clientCheck, error: clientCheckError } = await supabase
+    const { data: clientCheck, error: clientCheckError } = await supabase
         .from('clients')
         .select('id, trainer_id')
         .eq('id', clientId)
@@ -150,7 +182,7 @@ export async function getWeeklyPlan(clientId: string) {
     const adminSupabase = createAdminClient()
 
     // Attempt to fetch existing active plan
-    const { data: plan, error: planError } = await adminSupabase
+    const { data: plan } = await adminSupabase
         .from('weekly_meal_plans')
         .select(`
             *,
@@ -172,14 +204,15 @@ export async function getWeeklyPlan(clientId: string) {
         .maybeSingle()
 
     if (plan) {
+        const typedDays = (plan.days || []) as WeeklyPlanDay[]
         // Sort days and meals here or in UI. SQL result order isn't guaranteed without order by.
         // We can sort them here to be safe.
-        plan.days.sort((a: any, b: any) => a.day_of_week - b.day_of_week)
-        plan.days.forEach((day: any) => {
-            day.meals.sort((a: any, b: any) => a.sort_order - b.sort_order)
-            day.meals.forEach((meal: any) => {
+        typedDays.sort((a, b) => a.day_of_week - b.day_of_week)
+        typedDays.forEach((day) => {
+            day.meals.sort((a, b) => a.sort_order - b.sort_order)
+            day.meals.forEach((meal) => {
                 // items sort? Maybe by created_at
-                meal.items.sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+                meal.items.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
             })
         })
         return { plan }
@@ -197,7 +230,7 @@ export async function createWeeklyPlan(clientId: string, mealConfig: string[]) {
     }
 
     // Auth check: Ensure the coach owns this client
-    let { data: clientCheck, error: clientCheckError } = await supabase
+    const { data: clientCheck, error: clientCheckError } = await supabase
         .from('clients')
         .select('id, trainer_id')
         .eq('id', clientId)
@@ -258,9 +291,10 @@ export async function createWeeklyPlan(clientId: string, mealConfig: string[]) {
 
     // 3. Create Meals for each day
     // We want to bulk insert all meals for all days to be efficient
-    const mealsToInsert: any[] = []
+    const mealsToInsert: WeeklyMealInsert[] = []
+    const typedDays = (days || []) as WeeklyPlanDay[]
 
-    days.forEach(day => {
+    typedDays.forEach(day => {
         mealConfig.forEach((mealName, index) => {
             mealsToInsert.push({
                 day_id: day.id,
@@ -290,7 +324,7 @@ export async function updateReviewDate(planId: string, clientId: string, date: s
     if (!user) return
 
     // Auth check
-    let { data: clientCheck, error: clientCheckError } = await supabase
+    const { data: clientCheck, error: clientCheckError } = await supabase
         .from('clients')
         .select('id, trainer_id')
         .eq('id', clientId)
@@ -323,7 +357,7 @@ export async function addDishToMeal(mealId: string, clientId: string, data: {
     if (!user) return { error: 'No autorizado' }
 
     // Auth check
-    let { data: clientCheck, error: clientCheckError } = await supabase
+    const { data: clientCheck, error: clientCheckError } = await supabase
         .from('clients')
         .select('id, trainer_id')
         .eq('id', clientId)
@@ -361,7 +395,7 @@ export async function removeDish(itemId: string, clientId: string) {
     if (!user) return
 
     // Auth check
-    let { data: clientCheck, error: clientCheckError } = await supabase
+    const { data: clientCheck, error: clientCheckError } = await supabase
         .from('clients')
         .select('id, trainer_id')
         .eq('id', clientId)
@@ -391,7 +425,7 @@ export async function toggleMealSkip(mealId: string, currentSkip: boolean, clien
     if (!user) return
 
     // Auth check
-    let { data: clientCheck, error: clientCheckError } = await supabase
+    const { data: clientCheck, error: clientCheckError } = await supabase
         .from('clients')
         .select('id, trainer_id')
         .eq('id', clientId)
@@ -421,7 +455,7 @@ export async function copyDay(sourceDayId: string, targetDayId: string, clientId
     if (!user) return { error: 'No autorizado' }
 
     // Auth check
-    let { data: clientCheck, error: clientCheckError } = await supabase
+    const { data: clientCheck, error: clientCheckError } = await supabase
         .from('clients')
         .select('id, trainer_id')
         .eq('id', clientId)
@@ -452,6 +486,7 @@ export async function copyDay(sourceDayId: string, targetDayId: string, clientId
         .single()
 
     if (!sourceDay) return { error: 'Día origen no encontrado' }
+    const typedSourceDay = sourceDay as { meals: Array<WeeklyPlanMeal & { items: CopiedMealItem[] }> }
 
     // Fetch target day meals to match names (or wipe and recreate? Wiping is cleaner but ID changes)
     // Strategy: Wipe target day meals and recreate them exactly as source day
@@ -463,7 +498,7 @@ export async function copyDay(sourceDayId: string, targetDayId: string, clientId
     // Since we can't easily deep insert with potentially different IDs in one go without complex logic,
     // we'll loop. It's 4-5 meals, so acceptable.
 
-    for (const sourceMeal of sourceDay.meals) {
+    for (const sourceMeal of typedSourceDay.meals) {
         const { data: newMeal } = await adminSupabase.from('weekly_meal_plan_meals').insert({
             day_id: targetDayId,
             name: sourceMeal.name,
@@ -472,7 +507,7 @@ export async function copyDay(sourceDayId: string, targetDayId: string, clientId
         }).select().single()
 
         if (newMeal && sourceMeal.items.length > 0) {
-            const itemsToInsert = sourceMeal.items.map((item: any) => ({
+            const itemsToInsert = sourceMeal.items.map((item) => ({
                 meal_id: newMeal.id,
                 recipe_id: item.recipe_id,
                 custom_name: item.custom_name,
@@ -494,7 +529,7 @@ export async function addMealToDay(dayId: string, name: string, clientId: string
     if (!user) return { error: 'No autorizado' }
 
     // Auth check
-    let { data: clientCheck, error: clientCheckError } = await supabase
+    const { data: clientCheck, error: clientCheckError } = await supabase
         .from('clients')
         .select('id, trainer_id')
         .eq('id', clientId)
@@ -542,7 +577,7 @@ export async function deleteMealFromDay(mealId: string, clientId: string) {
     if (!user) return { error: 'No autorizado' }
 
     // Auth check
-    let { data: clientCheck, error: clientCheckError } = await supabase
+    const { data: clientCheck, error: clientCheckError } = await supabase
         .from('clients')
         .select('id, trainer_id')
         .eq('id', clientId)
@@ -572,8 +607,6 @@ export async function deleteMealFromDay(mealId: string, clientId: string) {
 
 // 6. Register Meal Log (Photo or Manual)
 export async function registerMealLog(clientId: string, mealType: string, formData: FormData) {
-    console.log('registerMealLog: Start', { clientId, mealType })
-
     const access = await authorizeClientAccess(clientId, { allowClientSelf: true })
     if (!access.ok) {
         console.error('registerMealLog: unauthorized', access.error)
@@ -598,7 +631,7 @@ export async function registerMealLog(clientId: string, mealType: string, formDa
     if (metadataStr) {
         try {
             metadata = JSON.parse(metadataStr)
-        } catch (e) {
+        } catch {
             console.error('registerMealLog: Invalid metadata JSON')
         }
     }
@@ -622,8 +655,6 @@ export async function registerMealLog(clientId: string, mealType: string, formDa
                         : (file.name.split('.').pop() || 'webp')
         filePath = `${clientId}/${dateStr}/${timestamp}.${fileExt}`
 
-        console.log('registerMealLog: Uploading to storage...', filePath)
-
         const { error: uploadError } = await adminSupabase.storage
             .from('meal-logs')
             .upload(filePath, file, {
@@ -639,7 +670,6 @@ export async function registerMealLog(clientId: string, mealType: string, formDa
     }
 
     // 2. Insert into DB
-    console.log('registerMealLog: Inserting into DB...', { metadata })
     const { error: dbError } = await adminSupabase
         .from('meal_logs')
         .insert({
@@ -684,7 +714,6 @@ export async function registerMealLog(clientId: string, mealType: string, formDa
         // Notification failure should not block meal log creation
     }
 
-    console.log('registerMealLog: Success')
     revalidatePath(`/dashboard/diet`)
     revalidatePath(`/clients/${clientId}`)
     return { success: true }

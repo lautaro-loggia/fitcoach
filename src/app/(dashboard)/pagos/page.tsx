@@ -127,7 +127,6 @@ export default function PagosPage() {
     }
 
     async function loadData() {
-        console.log('[Pagos] loadData called')
         try {
             setLoading(true)
 

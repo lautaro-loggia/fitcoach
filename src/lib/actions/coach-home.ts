@@ -11,6 +11,7 @@ import {
     getTodayString,
     normalizeText
 } from '@/lib/utils'
+import { buildWorkoutCompletionSignature, mergeWorkoutCompletions } from '@/lib/workout-completions'
 
 type DashboardClient = {
     id: string
@@ -520,7 +521,11 @@ export async function getCoachHomeData(): Promise<CoachHomeData> {
             .map((session) => {
                 const day = toDateStringFromTimestamp(session.ended_at || session.started_at)
                 if (!day) return null
-                return `${session.client_id}:${day}:${session.assigned_workout_id || 'log'}`
+                return buildWorkoutCompletionSignature({
+                    clientId: session.client_id,
+                    date: day,
+                    workoutId: session.assigned_workout_id,
+                })
             })
             .filter((signature): signature is string => !!signature)
     )
@@ -531,7 +536,11 @@ export async function getCoachHomeData(): Promise<CoachHomeData> {
             .map((session) => {
                 const day = toDateStringFromTimestamp(session.ended_at || session.started_at)
                 if (!day) return null
-                return `${session.client_id}:${day}:${session.assigned_workout_id || 'log'}`
+                return buildWorkoutCompletionSignature({
+                    clientId: session.client_id,
+                    date: day,
+                    workoutId: session.assigned_workout_id,
+                })
             })
             .filter((signature): signature is string => !!signature)
     )
@@ -540,9 +549,31 @@ export async function getCoachHomeData(): Promise<CoachHomeData> {
         [...invalidSessionSignatures].filter((signature) => !validSessionSignatures.has(signature))
     )
 
-    const workoutLogs = workoutLogsRaw.filter((log) => {
-        const signature = `${log.client_id}:${log.date}:${log.workout_id || 'log'}`
+    const workoutLogsAfterInvalidFilter = workoutLogsRaw.filter((log) => {
+        const signature = buildWorkoutCompletionSignature({
+            clientId: log.client_id,
+            date: log.date,
+            workoutId: log.workout_id,
+        })
         return !invalidOnlySessionSignatures.has(signature)
+    })
+
+    const normalizedCompletions = mergeWorkoutCompletions({
+        sessions: workoutSessions,
+        logs: workoutLogsAfterInvalidFilter,
+    })
+
+    const completionSourceBySignature = new Map(
+        normalizedCompletions.map((completion) => [completion.signature, completion.source] as const)
+    )
+
+    const workoutLogs = workoutLogsAfterInvalidFilter.filter((log) => {
+        const signature = buildWorkoutCompletionSignature({
+            clientId: log.client_id,
+            date: log.date,
+            workoutId: log.workout_id,
+        })
+        return completionSourceBySignature.get(signature) === 'log'
     })
 
     const workoutsByClient = new Map<string, DashboardAssignedWorkout[]>()
@@ -577,23 +608,12 @@ export async function getCoachHomeData(): Promise<CoachHomeData> {
     }
 
     const completedWorkoutDays = new Map<string, Set<string>>()
-    for (const session of workoutSessions) {
-        const day = toDateStringFromTimestamp(session.ended_at) || toDateStringFromTimestamp(session.started_at)
-        if (!day) continue
-        if (compareDateStrings(day, weekStart) < 0 || compareDateStrings(day, today) > 0) continue
-        const key = session.client_id
+    for (const completion of normalizedCompletions) {
+        if (compareDateStrings(completion.date, weekStart) < 0 || compareDateStrings(completion.date, today) > 0) continue
+        const key = completion.clientId
         const set = completedWorkoutDays.get(key) || new Set<string>()
-        const workoutKey = session.assigned_workout_id || 'session'
-        set.add(`${day}:${workoutKey}`)
-        completedWorkoutDays.set(key, set)
-    }
-
-    for (const log of workoutLogs) {
-        if (compareDateStrings(log.date, weekStart) < 0 || compareDateStrings(log.date, today) > 0) continue
-        const key = log.client_id
-        const set = completedWorkoutDays.get(key) || new Set<string>()
-        const workoutKey = log.workout_id || 'log'
-        set.add(`${log.date}:${workoutKey}`)
+        const workoutKey = completion.workoutId || (completion.source === 'session' ? 'session' : 'log')
+        set.add(`${completion.date}:${workoutKey}`)
         completedWorkoutDays.set(key, set)
     }
 
@@ -1030,24 +1050,16 @@ export async function getCoachHomeData(): Promise<CoachHomeData> {
                 monthCompletions.set(
                     client.id,
                     new Set(
-                        [
-                            ...workoutSessions
-                                .filter((session) => session.client_id === client.id)
-                                .map((session) => {
-                                    const day = toDateStringFromTimestamp(session.ended_at || session.started_at)
-                                    if (!day) return null
-                                    if (compareDateStrings(day, monthStart) < 0 || compareDateStrings(day, effectiveEnd) > 0) return null
-                                    return `${day}:${session.assigned_workout_id || 'session'}`
-                                })
-                                .filter((item): item is string => !!item),
-                            ...workoutLogs
-                                .filter((log) => log.client_id === client.id)
-                                .map((log) => {
-                                    if (compareDateStrings(log.date, monthStart) < 0 || compareDateStrings(log.date, effectiveEnd) > 0) return null
-                                    return `${log.date}:${log.workout_id || 'log'}`
-                                })
-                                .filter((item): item is string => !!item)
-                        ]
+                        normalizedCompletions
+                            .filter((completion) => completion.clientId === client.id)
+                            .map((completion) => {
+                                if (compareDateStrings(completion.date, monthStart) < 0 || compareDateStrings(completion.date, effectiveEnd) > 0) {
+                                    return null
+                                }
+                                const workoutKey = completion.workoutId || (completion.source === 'session' ? 'session' : 'log')
+                                return `${completion.date}:${workoutKey}`
+                            })
+                            .filter((item): item is string => !!item)
                     )
                 )
 

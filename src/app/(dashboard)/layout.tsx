@@ -3,6 +3,7 @@ import { SidebarProvider } from '@/components/layout/sidebar-context'
 import { BottomNav } from '@/components/layout/bottom-nav'
 import { createClient } from '@/lib/supabase/server'
 import { PushNotificationPromptGuard } from '@/components/notifications/push-notification-prompt-guard'
+import { redirect } from 'next/navigation'
 
 export default async function DashboardLayout({
     children,
@@ -13,13 +14,11 @@ export default async function DashboardLayout({
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
-        return <div className="fixed inset-0 bg-background" />
+        redirect('/login')
     }
 
-    // Si es un cliente, no renderizamos la interfaz del coach para evitar el flash.
-    // El middleware o la página se encargarán de la redirección.
     if (user?.user_metadata?.role === 'client') {
-        return <div className="fixed inset-0 bg-background" />
+        redirect('/dashboard')
     }
 
     const { data: profile } = await supabase

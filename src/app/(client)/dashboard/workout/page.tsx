@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card'
 import { ChevronRight, Dumbbell, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { getNormalizedARTWeekday, getTodayString, normalizeText } from '@/lib/utils'
+import { getARTDayBounds, getNormalizedARTWeekday, getTodayString, normalizeText } from '@/lib/utils'
 import { MotionEnter, MotionStagger, MotionStaggerItem } from '@/components/motion/orbit-motion'
 
 export default async function WorkoutPage() {
@@ -37,15 +37,26 @@ export default async function WorkoutPage() {
     let isTodayCompleted = false
     if (todayWorkout) {
         const todayStr = getTodayString()
+        const { startISO, endISO } = getARTDayBounds()
 
-        const { count } = await adminClient
-            .from('workout_logs')
-            .select('id', { count: 'exact', head: true })
-            .eq('client_id', client.id)
-            .eq('workout_id', todayWorkout.id)
-            .eq('date', todayStr)
+        const [logsResult, sessionsResult] = await Promise.all([
+            adminClient
+                .from('workout_logs')
+                .select('id', { count: 'exact', head: true })
+                .eq('client_id', client.id)
+                .eq('workout_id', todayWorkout.id)
+                .eq('date', todayStr),
+            adminClient
+                .from('workout_sessions')
+                .select('id', { count: 'exact', head: true })
+                .eq('client_id', client.id)
+                .eq('assigned_workout_id', todayWorkout.id)
+                .eq('status', 'completed')
+                .gte('started_at', startISO)
+                .lt('started_at', endISO),
+        ])
 
-        isTodayCompleted = (count || 0) > 0
+        isTodayCompleted = (logsResult.count || 0) > 0 || (sessionsResult.count || 0) > 0
     }
 
     return (

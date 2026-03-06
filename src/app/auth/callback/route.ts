@@ -54,6 +54,15 @@ export async function GET(request: Request) {
         const adminSupabase = createAdminClient()
         let clientOnboardingStatus: string | null = null
 
+        // Ensure notification preferences exist so scheduled reminders can run for this user.
+        const { error: notificationPreferencesError } = await adminSupabase
+            .from('notification_preferences')
+            .upsert({ user_id: verifiedUser.id }, { onConflict: 'user_id' })
+
+        if (notificationPreferencesError) {
+            console.error('Notification preferences upsert error:', notificationPreferencesError)
+        }
+
         if (isClientUser) {
             const validationResult = await validateClientOAuthAccess({
                 linkClientByEmail: async () => {

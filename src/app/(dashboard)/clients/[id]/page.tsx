@@ -48,16 +48,25 @@ export default async function ClientNotesPage({
     const defaultTab = tab || "profile"
 
     const supabase = await createClient()
+    const {
+        data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+        notFound()
+    }
 
     const { data: client, error } = await supabase
         .from('clients')
         .select('*')
         .eq('id', id)
+        .eq('trainer_id', user.id)
         .single()
 
     const { data: allClients } = await supabase
         .from('clients')
         .select('id, full_name, status')
+        .eq('trainer_id', user.id)
         .eq('status', 'active')
         .order('full_name', { ascending: true })
 

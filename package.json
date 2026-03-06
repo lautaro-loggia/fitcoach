@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "lint:coach-client-smoke": "eslint \"src/actions/invite-client.ts\" \"src/app/(client)/dashboard/page.tsx\" \"src/app/(client)/dashboard/workout/[id]/actions.ts\" \"src/app/(client)/dashboard/workout/[id]/finish-workout-button.tsx\" \"src/app/(client)/dashboard/workout/page.tsx\" \"src/app/(dashboard)/clients/actions.ts\" \"src/app/(dashboard)/clients/[id]/checkin-actions.ts\" \"src/app/(dashboard)/clients/[id]/meal-plan-actions.ts\" \"src/app/(dashboard)/clients/[id]/page.tsx\" \"src/app/(dashboard)/clients/[id]/target-actions.ts\" \"src/app/(dashboard)/clients/[id]/training-actions.ts\" \"src/app/(dashboard)/pagos/page.tsx\" \"src/lib/actions/coach-home.ts\" \"src/lib/security/client-access.ts\" \"src/lib/workout-completions.ts\" \"src/proxy.ts\"",
     "security:check": "bash scripts/security-checks.sh"
   },
   "dependencies": {

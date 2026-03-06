@@ -1,10 +1,15 @@
 'use server'
 
-import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
+import { actionError, assertCoachOwnsClient } from '@/lib/security/client-access'
 
 export async function updateClientTargetAction(clientId: string, metricKey: string, value: number) {
-    const supabase = await createClient()
+    const access = await assertCoachOwnsClient(clientId)
+    if (!access.ok) {
+        return access.response
+    }
+
+    const supabase = access.supabase
 
     try {
         // Special legacy columns
@@ -13,6 +18,8 @@ export async function updateClientTargetAction(clientId: string, metricKey: stri
                 .from('clients')
                 .update({ target_weight: value })
                 .eq('id', clientId)
+                .eq('trainer_id', access.user.id)
+                .is('deleted_at', null)
 
             if (error) throw error
         }
@@ -21,6 +28,8 @@ export async function updateClientTargetAction(clientId: string, metricKey: stri
                 .from('clients')
                 .update({ target_fat: value })
                 .eq('id', clientId)
+                .eq('trainer_id', access.user.id)
+                .is('deleted_at', null)
 
             if (error) throw error
         }
@@ -30,6 +39,8 @@ export async function updateClientTargetAction(clientId: string, metricKey: stri
                 .from('clients')
                 .select('targets')
                 .eq('id', clientId)
+                .eq('trainer_id', access.user.id)
+                .is('deleted_at', null)
                 .single()
 
             if (fetchError) throw fetchError
@@ -41,6 +52,8 @@ export async function updateClientTargetAction(clientId: string, metricKey: stri
                 .from('clients')
                 .update({ targets: newTargets })
                 .eq('id', clientId)
+                .eq('trainer_id', access.user.id)
+                .is('deleted_at', null)
 
             if (updateError) throw updateError
         }
@@ -49,6 +62,6 @@ export async function updateClientTargetAction(clientId: string, metricKey: stri
         return { success: true }
     } catch (error) {
         console.error("Error updating client target:", error)
-        return { success: false, error: "Error updating target" }
+        return actionError('Error updating target', 'VALIDATION')
     }
 }

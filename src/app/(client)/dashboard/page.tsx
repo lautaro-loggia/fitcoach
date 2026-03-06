@@ -27,6 +27,7 @@ import {
 import { estimateWorkoutDurationMinutes } from '@/lib/workout-time-estimate'
 import { AdvisedDashboardMenu } from '@/components/clients/advised-dashboard-menu'
 import { MotionEnter, MotionScrollReveal } from '@/components/motion/orbit-motion'
+import { mergeWorkoutCompletions } from '@/lib/workout-completions'
 
 export default async function ClientDashboard() {
     const supabase = await createClient()
@@ -117,12 +118,29 @@ export default async function ClientDashboard() {
     // 3. Weekly Stats (Real)
     const thirtyFiveDaysAgo = addDaysToDateString(todayStr, -35)
 
-    // Fetch logs from last 5 weeks
-    const { data: recentLogs } = await adminClient
-        .from('workout_logs')
-        .select('date')
-        .eq('client_id', client.id)
-        .gte('date', thirtyFiveDaysAgo)
+    // Fetch completions from last 5 weeks (sessions + legacy logs)
+    const [recentLogsResult, recentSessionsResult] = await Promise.all([
+        adminClient
+            .from('workout_logs')
+            .select('id, client_id, workout_id, date, completed_at')
+            .eq('client_id', client.id)
+            .gte('date', thirtyFiveDaysAgo),
+        adminClient
+            .from('workout_sessions')
+            .select('id, client_id, assigned_workout_id, started_at, ended_at')
+            .eq('client_id', client.id)
+            .eq('status', 'completed')
+            .gte('started_at', `${thirtyFiveDaysAgo}T00:00:00-03:00`)
+    ])
+
+    const mergedCompletions = mergeWorkoutCompletions({
+        sessions: (recentSessionsResult.data || []).map((session) => ({
+            ...session,
+            started_at: session.started_at,
+            ended_at: session.ended_at,
+        })),
+        logs: recentLogsResult.data || [],
+    })
 
     let weeklyTarget = 0
     workouts?.forEach(w => {
@@ -135,8 +153,8 @@ export default async function ClientDashboard() {
     // Calculate weekly counts for the last 5 weeks (rolling windows)
     const logsByWeek = [0, 0, 0, 0, 0] // [Week-4, Week-3, Week-2, PreviousWeek, CurrentWeek]
 
-    recentLogs?.forEach((log) => {
-        const diffDays = diffDateStringsInDays(todayStr, log.date)
+    mergedCompletions.forEach((completion) => {
+        const diffDays = diffDateStringsInDays(todayStr, completion.date)
 
         if (diffDays < 7) logsByWeek[4]++             // Current Week
         else if (diffDays < 14) logsByWeek[3]++       // Previous Week
