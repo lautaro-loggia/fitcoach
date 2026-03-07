@@ -24,6 +24,7 @@ import { toast } from 'sonner'
 import { AlertTriangle, Sparkles } from 'lucide-react'
 import { formatInjuryWarningMessage, getActiveInjuries } from '@/lib/injury-risk-utils'
 import { AIWorkoutBriefDialog } from '@/components/workouts/ai-workout-brief-dialog'
+import { ExerciseInfoDialog } from '@/components/workout-session/exercise-info-dialog'
 import { getClientWorkoutDraftDefaultsAction } from '@/app/(dashboard)/workouts/ai-workout-actions'
 import type { AIGeneratedWorkoutDraft, AIWorkoutBriefDefaults } from '@/lib/ai/workout-ai-types'
 import {
@@ -1135,16 +1136,25 @@ function ExerciseForm({
                                                 setOpenCombobox(false)
                                             }}
                                         >
-                                            <Tick01Icon
-                                                className={cn(
-                                                    "mr-2 h-4 w-4",
-                                                    exerciseId === ex.id ? "opacity-100" : "opacity-0"
-                                                )}
-                                            />
-                                            <div className="flex items-center justify-between w-full">
-                                                <span>{ex.name}</span>
+                                            {exerciseId === ex.id && (
+                                                <Tick01Icon className="mr-2 h-4 w-4" />
+                                            )}
+                                            <div className="flex items-center justify-between w-full gap-2">
+                                                <div className="flex items-center gap-1 min-w-0">
+                                                    <div
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        onPointerDown={(e) => e.stopPropagation()}
+                                                    >
+                                                        <ExerciseInfoDialog
+                                                            name={ex.name}
+                                                            gifUrl={ex.gif_url}
+                                                            instructions={ex.instructions}
+                                                        />
+                                                    </div>
+                                                    <span className="truncate">{ex.name}</span>
+                                                </div>
                                                 {ex.main_muscle_group && (
-                                                    <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${getMuscleGroupColor(ex.main_muscle_group)}`}>
+                                                    <span className={`px-2 py-0.5 text-xs rounded-full shrink-0 ${getMuscleGroupColor(ex.main_muscle_group)}`}>
                                                         {ex.main_muscle_group}
                                                     </span>
                                                 )}
